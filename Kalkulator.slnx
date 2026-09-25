@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Kalkulator.Documents/Kalkulator.Documents.csproj" />
+    <Project Path="src/Kalkulator.Domain/Kalkulator.Domain.csproj" />
+    <Project Path="src/Kalkulator.Infrastructure/Kalkulator.Infrastructure.csproj" />
+    <Project Path="src/Kalkulator.Web/Kalkulator.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Kalkulator.Domain.Tests/Kalkulator.Domain.Tests.csproj" />
+    <Project Path="tests/Kalkulator.Web.Tests/Kalkulator.Web.Tests.csproj" />
+  </Folder>
+</Solution>

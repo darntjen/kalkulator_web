@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kalkulator.Domain\Kalkulator.Domain.csproj" />
+    <ProjectReference Include="..\Kalkulator.Infrastructure\Kalkulator.Infrastructure.csproj" />
+    <ProjectReference Include="..\Kalkulator.Documents\Kalkulator.Documents.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+  </PropertyGroup>
+
+</Project>

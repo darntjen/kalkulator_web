@@ -1,0 +1,25 @@
+@inherits LayoutComponentBase
+
+<div class="app-shell">
+    <header class="app-header">
+        <a class="app-brand" href="">
+            <img src="img/noesse-logo.jpg" alt="Nösse – Ihr IT-Umsorger" class="app-logo" />
+            <span class="app-title">Managed-Services-Kalkulator</span>
+        </a>
+        <NavMenu />
+    </header>
+
+    <main class="app-main">
+        @Body
+    </main>
+
+    <footer class="app-footer">
+        Nösse Datentechnik GmbH &amp; Co. KG · interne Anwendung
+    </footer>
+</div>
+
+<div id="blazor-error-ui" data-nosnippet>
+    Es ist ein unerwarteter Fehler aufgetreten.
+    <a href="." class="reload">Neu laden</a>
+    <span class="dismiss">🗙</span>
+</div>

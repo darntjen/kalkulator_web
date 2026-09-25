@@ -1,0 +1,25 @@
+@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Fehler · Managed-Services-Kalkulator</PageTitle>
+
+<h1>Fehler</h1>
+<p>Bei der Verarbeitung Ihrer Anfrage ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut oder wenden Sie sich an die interne IT.</p>
+
+@if (ShowRequestId)
+{
+    <p>
+        <strong>Anfrage-ID:</strong> <code>@RequestId</code>
+    </p>
+}
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

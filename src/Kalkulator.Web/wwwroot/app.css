@@ -1,0 +1,89 @@
+/* Nösse Corporate Design (Styleguide Marketing): Petrol, Grau, Orange; Schrift Verdana */
+:root {
+    --petrol: #006c88;
+    --petrol-hell: #e6f0f3;
+    --grau: #737373;
+    --orange: #ee7f00;
+    --weiss: #ffffff;
+    --linie: #d0d7da;
+    --text: #1f1f1f;
+}
+
+html, body {
+    margin: 0;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: #f7f9fa;
+}
+
+h1, h2, h3 {
+    color: var(--petrol);
+}
+
+h1 {
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--orange);
+}
+
+h1:focus {
+    outline: none;
+}
+
+a {
+    color: var(--petrol);
+}
+
+.kacheln {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.kachel {
+    display: block;
+    padding: 1.25rem;
+    background: var(--weiss);
+    border: 1px solid var(--linie);
+    border-top: 4px solid var(--petrol);
+    color: var(--text);
+    text-decoration: none;
+}
+
+    .kachel:hover {
+        border-top-color: var(--orange);
+    }
+
+    .kachel h2 {
+        margin-top: 0;
+        font-size: 1.1rem;
+    }
+
+.hinweis {
+    padding: 1rem 1.25rem;
+    background: var(--petrol-hell);
+    border-left: 4px solid var(--petrol);
+}
+
+.valid.modified:not([type=checkbox]) {
+    outline: 1px solid #26b050;
+}
+
+.invalid {
+    outline: 1px solid #e50000;
+}
+
+.validation-message {
+    color: #e50000;
+}
+
+.blazor-error-boundary {
+    padding: 1rem;
+    background: #b32121;
+    color: white;
+}
+
+    .blazor-error-boundary::after {
+        content: "Es ist ein Fehler aufgetreten.";
+    }
