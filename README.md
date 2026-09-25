@@ -58,6 +58,23 @@ Vor einem Push prüfen, ob der Code-Stil passt (das prüft auch die CI):
 dotnet format Kalkulator.slnx --verify-no-changes
 ```
 
+## Datenbank
+
+Die Anwendung nutzt SQL Server über Entity Framework Core. Die Verbindungszeichenfolge
+steht unter `ConnectionStrings:Kalkulator`. Für die lokale Entwicklung ist SQL Server
+LocalDB voreingestellt (`appsettings.Development.json`), im Betrieb setzt sie die interne IT.
+
+Migrationen erzeugen und einspielen (Werkzeug über `dotnet tool restore`):
+
+```bash
+dotnet tool restore
+dotnet ef migrations add <Name> --project src/Kalkulator.Infrastructure --output-dir Persistenz/Migrationen
+KALKULATOR_DB="<Verbindungszeichenfolge>" dotnet ef database update --project src/Kalkulator.Infrastructure
+```
+
+Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
+SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
+
 ## Repository-Struktur
 
 ```

@@ -22,7 +22,7 @@ Dokument im Ordner `docs/adr/` festgehalten. Grundlage ist
 | [0002](0002-technologie-stack.md) | Technologie-Stack: ASP.NET Core, Blazor Server, SQL Server, IIS | angenommen (25.09.2026) |
 | [0003](0003-anmeldung-entra-id.md) | Anmeldung über Microsoft Entra ID (OIDC), Rollen über App-Rollen | angenommen (25.09.2026) |
 | 0004 | Erzeugung von Word-Dokumenten aus Vorlagen (Open XML SDK) | offen, Umsetzung Phase 3 |
-| 0005 | Versionierung von Preislisten und Einfrieren von Kalkulationen | offen |
+| [0005](0005-versionierung-preislisten.md) | Versionierung von Preislisten (Entwurf/Freigegeben, Sperre, Änderungsprotokoll) | angenommen (25.09.2026) |
 
 ## Konsequenzen
 
