@@ -1,0 +1,21 @@
+.app-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+    .app-nav ::deep a {
+        padding: 0.5rem 0.9rem;
+        color: var(--petrol);
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+    }
+
+        .app-nav ::deep a:hover {
+            background: var(--petrol-hell);
+        }
+
+        .app-nav ::deep a.active {
+            border-bottom-color: var(--orange);
+            font-weight: bold;
+        }

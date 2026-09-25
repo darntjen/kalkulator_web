@@ -1,21 +1,23 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-.pytest_cache/
-.coverage
-htmlcov/
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+publish/
+*.rsuser
 
 # Umgebung und Geheimnisse
 .env
 .env.*
 !.env.example
+appsettings.*.local.json
+secrets.json
 
 # Erzeugte Dokumente und lokale Daten
 /media/
 /output/
-*.sqlite3
 
 # Office-Sperrdateien
 ~$*

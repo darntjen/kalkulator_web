@@ -1,0 +1,71 @@
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.app-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 2rem;
+    background: var(--weiss);
+    border-bottom: 3px solid var(--petrol);
+}
+
+.app-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+}
+
+.app-logo {
+    height: 44px;
+    width: auto;
+}
+
+.app-title {
+    color: var(--petrol);
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+.app-main {
+    flex: 1;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    box-sizing: border-box;
+}
+
+.app-footer {
+    padding: 0.75rem 2rem;
+    color: var(--grau);
+    font-size: 0.75rem;
+    border-top: 1px solid var(--linie);
+}
+
+#blazor-error-ui {
+    color-scheme: light only;
+    background: #fff4e5;
+    border-top: 2px solid var(--orange);
+    bottom: 0;
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }

@@ -10,10 +10,9 @@ Die Anwendung läuft auf einem Webserver **innerhalb unseres Netzwerks**
 
 ## Projektstatus
 
-**Phase 0 – Planung.** Es gibt noch keinen Anwendungscode. Der fachliche
-Ist-Stand aus dem SharePoint ist ausgewertet, die Architektur ist entschieden
-(ASP.NET Core, SQL Server, IIS, Entra ID), und die Angebotsvorlage ist als Arbeitsgrundlage abgenommen.
-Offen sind noch einzelne fachliche Fragen.
+**Phase 1 – Fundament und Servicekatalog.** Die Planung (Phase 0) ist
+abgeschlossen. Das technische Projektgerüst steht; als Nächstes folgen
+Anmeldung, Datenmodell und Katalogpflege (siehe `docs/05_roadmap.md`).
 
 ## Die vier Kernfunktionen
 
@@ -40,13 +39,37 @@ Offen sind noch einzelne fachliche Fragen.
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 
-## Repository-Struktur (geplant)
+## Lokal starten
+
+Voraussetzung: [.NET SDK 10](https://dotnet.microsoft.com/download) (siehe `global.json`).
+
+```bash
+dotnet build Kalkulator.slnx
+dotnet test Kalkulator.slnx
+dotnet run --project src/Kalkulator.Web
+```
+
+Die Anwendung ist danach unter der in der Konsole angezeigten Adresse erreichbar
+(Standard: `http://localhost:5226`). Der Health-Check liegt unter `/health`.
+
+Vor einem Push prüfen, ob der Code-Stil passt (das prüft auch die CI):
+
+```bash
+dotnet format Kalkulator.slnx --verify-no-changes
+```
+
+## Repository-Struktur
 
 ```
 kalkulator_web/
-├── docs/            Planung, Fachkonzept, Architekturentscheidungen
-├── src/             Anwendungscode (ab Phase 1)
-├── templates/       Word-Vorlagen für Angebote und Verträge (ab Phase 2)
-├── tests/           Automatisierte Tests
-└── deploy/          Installations- und Serverkonfiguration (IIS, Windows Server)
+├── docs/                          Planung, Fachkonzept, Architekturentscheidungen
+├── src/
+│   ├── Kalkulator.Web/            Blazor-Server-Oberfläche, Einstiegspunkt
+│   ├── Kalkulator.Domain/         Fachmodell und Rechenkern (ohne UI- und Datenbankabhängigkeit)
+│   ├── Kalkulator.Infrastructure/ Datenbank (EF Core, SQL Server), Dateiablage
+│   └── Kalkulator.Documents/      Word-Erzeugung (ab Phase 3)
+├── tests/                         Automatisierte Tests (xUnit)
+├── templates/                     Angebotsvorlage, Logo
+├── deploy/                        Installation auf Windows Server/IIS (Issue #8)
+└── .github/workflows/             CI: Code-Stil, Build, Tests, Veröffentlichungspaket
 ```

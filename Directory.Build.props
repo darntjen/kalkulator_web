@@ -1,0 +1,17 @@
+<Project>
+  <!-- Gemeinsame Einstellungen für alle Projekte der Lösung -->
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <!-- Nötig, damit IDE0005 (unnötige usings) im Build greift; fehlende XML-Kommentare sind kein Fehler -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <NeutralLanguage>de-DE</NeutralLanguage>
+    <Company>Nösse Datentechnik GmbH &amp; Co. KG</Company>
+    <Product>Managed-Services-Kalkulator</Product>
+  </PropertyGroup>
+</Project>
