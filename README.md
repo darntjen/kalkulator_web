@@ -12,7 +12,7 @@ Die Anwendung läuft auf einem Webserver **innerhalb unseres Netzwerks**
 
 **Phase 0 – Planung.** Es gibt noch keinen Anwendungscode. Der fachliche
 Ist-Stand aus dem SharePoint ist ausgewertet, die Architektur ist entschieden
-(ASP.NET Core, SQL Server, IIS, Entra ID), und die Angebotsvorlage liegt als Entwurf vor.
+(ASP.NET Core, SQL Server, IIS, Entra ID), und die Angebotsvorlage ist als Arbeitsgrundlage abgenommen.
 Offen sind noch einzelne fachliche Fragen.
 
 ## Die vier Kernfunktionen
