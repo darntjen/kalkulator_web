@@ -62,7 +62,7 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 
 ## RK-05 – Onboarding-Grenzfälle
 
-| Connect-Stufe | Arbeitsplätze | Erwartung |
+| Connect-Stufe | User | Erwartung |
 |---------------|--------------:|-----------|
 | Enterprise | 30 | XS → 2.200,00 € |
 | Enterprise | 31 | S → 3.000,00 € |
@@ -91,3 +91,19 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 | B01 × 20 und S03 × 20 gewählt | Hinweis: S03 ist in B01 enthalten, wird nicht zusätzlich berechnet |
 | Zukünftigen Service gewählt | nicht auswählbar |
 | B04 gewählt | S14-Baukasten muss ausgefüllt werden |
+
+## RK-08 – Auflösung des Vertragspakets
+
+| Gebucht | Erwartetes Paket (Reihenfolge) |
+|---------|--------------------------------|
+| S01 Premium, B02 × 40, B05, S31 × 40 | AVV · Grundvertrag · AVB · SLA (Premium) · S01 (Premium) · B02 · S02 · S03 · S04 · S05 · S06 · S07 · B05 · S21 · S22 · S23 · S31 |
+| S01 Standard, B06, S25-Assets 20 Clients | AVV · Grundvertrag · AVB · SLA (Standard) · S01 (Standard) · B06 · S21 · S22 · S23 · S24 · S25. **Zu klären:** Gilt die Voraussetzung aus LS S25 (aktives Bundle B01–B04) auch, wenn S25 über B06 gebucht wird? Falls ja → Hinweis/Fehler |
+| S01 Standard, B01 × 10, S03 × 10 | … · B01 · S02 · S03 · S04 (S03 nicht doppelt; nicht zusätzlich berechnet) |
+| S01 Enterprise, S61, S21, B04 × 3, S14 | … · S01 (Enterprise) · B04 · S11 · S12 · S13 · S14 · S21 · S61 |
+
+## RK-09 – Schwachstellenmanagement (S25)
+
+| Gebucht | Rechnung | Monatlich |
+|---------|----------|----------:|
+| S25 einzeln, 30 Clients, 3 Server (mit B01 und B03) | 499 + 30 × 12 + 3 × 69 | 1.066,00 € |
+| B06 + S25-Assets 30 Clients, 3 Server | 1.590 + 30 × 12 + 3 × 69 | 2.157,00 € |

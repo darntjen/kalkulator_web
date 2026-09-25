@@ -103,8 +103,8 @@ Alle Preise netto pro Monat, sofern nicht anders angegeben.
 | Code | Bezeichnung | Preisbildung |
 |------|-------------|--------------|
 | S60 | Supportkontingent (NOS-SUP-OPT-60-KON) | Rechner, siehe 4.2. Voraussetzung S01 |
-| S41 | Strategische IT-Begleitung | Leistungsschein vorhanden, Einordnung und Preis **geparkt** (Backlog K26) |
-| S61 | Cloud Server-Bereitstellung (TERRA Cloud) | Leistungsschein V2.1 vorhanden, **nicht im Mastersheet**. Preis entsteht im Kalkulator des Plattformbetreibers |
+| S41 | Strategische IT-Begleitung | Pauschal/Monat, Preis nach Vereinbarung (Referenz: 350 €); Roadmap-Erstellung 2.400 € einmalig. **In v1 enthalten** |
+| S61 | Cloud Server-Bereitstellung (TERRA Cloud) | Nicht im Mastersheet; Preis aus dem TERRA-Kalkulator. **In v1 enthalten**, siehe 5.2 |
 | – | Zukünftige Services (IT-Dokumentation, NAC, Pentesting, Backupkonzept, Compliance-Audit) | **Nicht verkaufen**, im Kalkulator nicht auswählbar |
 
 ### 3.8 Server Backup (S14): Baukasten V5.7, Stand 23.09.2026
@@ -145,15 +145,15 @@ eine **vollständig berechenbare Preislogik**:
 | Monatspreis | `RUNDEN(Kontingent × 30,38; 2)` |
 | Ad-hoc-Vergleich | `RUNDEN(Kontingent × 33,75; 2)` |
 
-### 4.3 Onboarding (einmalig, abhängig von Connect-Stufe und Arbeitsplätzen)
+### 4.3 Onboarding (einmalig, abhängig von Connect-Stufe und Anzahl **User**; bestätigt 25.09.2026)
 
 | Größe | Arbeitsplätze | Standard | Premium | Enterprise |
 |-------|---------------|---------:|--------:|-----------:|
-| XS | bis 30 | 900 € | 1.200 € | 2.200 € |
+| XS | bis 30 User | 900 € | 1.200 € | 2.200 € |
 | S | 31–100 | 1.400 € | 2.000 € | 3.000 € |
 | M | 101–250 | 2.000 € | 2.800 € | 4.200 € |
 | L | 251–500 | 2.800 € | 3.800 € | 5.500 € |
-| – | über 500 | individuelle Projektkalkulation | | |
+| – | ab 501 User | individuelle Projektkalkulation | | |
 
 Bundles erheben kein eigenes Onboarding. Das ist in der Connect-Pauschale enthalten (LS B01, Ziffer 5.2).
 
@@ -179,10 +179,44 @@ Rangfolge laut Grundvertrag § 1 Abs. 3: **AVV → Grundvertrag → AVB → Anla
 | S14 | `Leistungsscheine/Leistungsschein S14 - Backup (Sonderfall)/Vorlage Leistungsschein S14 V5.7.docx` | bei Server Backup bzw. B04 | Variante ankreuzen, Ziffer 1.2 nur bei S61, Kalkulation in Ziffer 6.1, Serverliste in Ziffer 6.2 |
 | S60 | `Leistungsscheine/Leistungsschein S60 - Supportkontingent V1.0.docx` | bei gebuchtem Supportkontingent | Kontingent (AE), Monatspreis |
 
-**Beispiel für die Auflösung der Anlagen:** Gebucht sind Connect Premium, B02
-und B05. Das Paket besteht dann aus AVV, Grundvertrag, AVB, SLA, S01, B01?, B02,
-S02–S07, B05 und S21–S23.
-→ Offene Frage: Wird bei B02 zusätzlich der Bundle-Leistungsschein B01 beigelegt? (Abschnitt 9)
+### 5.1 Auflösung der Bundles im Vertragspaket (bestätigt 25.09.2026)
+
+- B-Scheine sind Bundles. Sie setzen sich aus S-Scheinen zusammen, die im B-Schein unter Ziffer 2 aufgeführt sind.
+- **Hinter jeden B-Schein gehören die zu ihm gehörenden S-Scheine.**
+- Nennt ein B-Schein ein anderes Bundle (B02 → B01, B04 → B03, B06 → B05), wird dieses **nicht** als eigener B-Schein beigelegt, sondern direkt in seine S-Scheine aufgelöst.
+- **S01 ist immer zu beauftragen.** Die gewählte Stufe (Standard/Premium/Enterprise) muss im Vertrag sichtbar sein: im Grundvertrag § 3, im Leistungsschein S01 und in der Anlage SLA.
+
+| Bundle | Beizulegende S-Scheine |
+|--------|------------------------|
+| B01 User Standard | S02, S03, S04 |
+| B02 User Premium | S02, S03, S04, S05, S06, S07 |
+| B03 Server Standard | S11, S12, S13 |
+| B04 Server Premium | S11, S12, S13, S14 |
+| B05 Security Standard | S21, S22, S23 |
+| B06 Security Premium | S21, S22, S23, S24, S25 |
+| B07 Network Standard | S51, S52, S53 |
+
+**Beispiel:** Gebucht sind Connect Premium, B02, B05 und S31. Das Vertragspaket hat dann diese Reihenfolge:
+
+1. AVV
+2. Grundvertrag
+3. AVB
+4. Anlage SLA (Stufe Premium)
+5. S01 (Premium)
+6. B02 → S02, S03, S04, S05, S06, S07
+7. B05 → S21, S22, S23
+8. S31
+
+Wird ein Einzelservice zusätzlich zu einem Bundle gebucht, das ihn bereits enthält, wird sein S-Schein nur einmal beigelegt (hinter dem Bundle).
+
+### 5.2 Weitere Leistungsscheine mit Besonderheiten
+
+| Schein | Besonderheit |
+|--------|--------------|
+| S25 Schwachstellenmanagement | Grundservice 499 €/Kundenumgebung + 12 €/Client + 69 €/Server. **Voraussetzung: S01 und ein aktives Bundle B01, B02, B03 oder B04.** In B06 enthalten; die Assetpreise kommen dort zusätzlich hinzu |
+| S41 Strategische IT-Begleitung | Pauschal pro Monat, Preis „[nach Vereinbarung]“ (im AAV-Angebot 350 €). Optional Roadmap-Erstellung 2.400 € einmalig. Laut Leistungsschein ohne Connect buchbar, das widerspricht der S01-Pflicht (offene Frage 9.1). Nicht Teil eines Bundles |
+| S61 Cloud Server (TERRA Cloud) | Buchungsübersicht Ziffer 7.1 (Server Windows/Linux, vCores, RAM, Speicher, IPs, VLANs, Connectoren, Firewall-Appliance, Lizenzen RDS/Office/Exchange/SQL). Gesamtvergütung aus dem TERRA-Kalkulator. **Voraussetzungen:** S01 und **S21 als zusätzliche Firewall-Instanz**. Datensicherung per Ankreuzen: S14 oder Kunde selbst. S11–S13/B03/B04 nur für Windows-Server |
+| B04 / B06 | Bundle-Preis im Schein als „[Preis nach Vereinbarung]“. Wird aus der Kalkulation befüllt (offene Frage 9.4) |
 
 ## 6. Interne Kalkulation (EK, Deckungsbeitrag). Nur für Führung und Controlling
 
@@ -215,6 +249,8 @@ Die vollständige Tabelle aller Einzelservices steht in der Quelldatei. S35 (NAS
 | R4 | B04 = B03 + S14 (Server Backup nach Baukasten) | Mastersheet, EK-Kalkulation |
 | R5 | S61-Server → S14 zwingend in der Variante Cloud-Backup, S21 zwingend | S14 Baukasten 6.3.1, 7.2 |
 | R6 | Zukünftige Services dürfen nicht angeboten werden | Mastersheet |
+| R6a | S25 setzt ein aktives Bundle B01, B02, B03 oder B04 voraus | LS S25 Ziffer 1.2 b |
+| R6b | S61 setzt S21 voraus (zusätzliche Firewall-Instanz); Backup-Entscheidung ist Pflicht (S14 oder Kunde) | LS S61 Ziffer 4.2, 4.4 |
 | R7 | Vertragslaufzeit 12 Monate, automatische Verlängerung um 12 Monate, Kündigungsfrist 3 Monate | Grundvertrag § 2 |
 | R8 | Abrechnung monatlich im Voraus, Zahlungsziel 14 Tage netto | Grundvertrag § 4 |
 | R9 | Mengenreduktion max. 10 % je Quartal | Grundvertrag § 5 |
@@ -229,7 +265,10 @@ Die vollständige Tabelle aller Einzelservices steht in der Quelldatei. S35 (NAS
 | I4 | Der S14-Baukasten nennt als Preisuntergrenze sowohl 183 € (Abschnitt 5) als auch 187 € (Abschnitte 7.3 und 10 d) | Richtigen Wert bestätigen |
 | I5 | Die Beispieltabelle in § 3 des Grundvertrags enthält veraltete Daten (S34 Managed WiFi, B05 mit Menge 4) | Die Vorlage muss vor der Automatisierung auf Platzhalter umgestellt werden |
 | I6 | Das Mastersheet nennt für B02 den Preis „54,9“ ohne Formatierung | kosmetisch |
-| I7 | Die AVV ist im Vertragswerk-Ordner nicht vorhanden, wird aber als vorrangige Anlage referenziert | Ablage klären |
+| I7 | Die AVV ist im Vertragswerk-Ordner nicht vorhanden, wird aber als vorrangige Anlage referenziert | Wird nachgereicht |
+| I8 | Leistungsschein B05 Ziffer 5.1 nennt „199,90 € pro Firewall-Instanz“, Überschrift und Mastersheet sagen „pro Kunde“ | Leistungsschein korrigieren |
+| I9 | Leistungsschein S41 erlaubt die Buchung ohne Connect, laut Vertrieb ist S01 immer Pflicht | Klärung offene Frage 9.1 |
+| I10 | Einheitenbezeichnungen weichen ab: S22 „Tenant“ (Mastersheet) vs. „Mandant“ (B05); S23 „AD-Umgebung“ vs. „AD-Forest“ | kosmetisch, vereinheitlichen |
 
 ## 9. Offene Punkte aus der Analyse
 

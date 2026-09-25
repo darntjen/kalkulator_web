@@ -11,8 +11,9 @@ Die Anwendung läuft auf einem Webserver **innerhalb unseres Netzwerks**
 ## Projektstatus
 
 **Phase 0 – Planung.** Es gibt noch keinen Anwendungscode. Der fachliche
-Ist-Stand aus dem SharePoint ist ausgewertet. Offen sind noch einzelne Fragen
-und die Architekturentscheidung.
+Ist-Stand aus dem SharePoint ist ausgewertet, die Architektur ist entschieden
+(ASP.NET Core, SQL Server, IIS, Entra ID), und die Angebotsvorlage liegt als Entwurf vor.
+Offen sind noch einzelne fachliche Fragen.
 
 ## Die vier Kernfunktionen
 
@@ -35,6 +36,7 @@ und die Architekturentscheidung.
 | [docs/05_roadmap.md](docs/05_roadmap.md) | Phasen, Meilensteine und Arbeitspakete |
 | [docs/06_ist-analyse.md](docs/06_ist-analyse.md) | Auswertung des SharePoint-Servicekatalogs: Services, Preise, Regeln, Vertragswerk |
 | [docs/07_referenzkalkulationen.md](docs/07_referenzkalkulationen.md) | Beispielrechnungen mit erwarteten Ergebnissen (spätere Abnahmetests) |
+| [docs/08_angebotsvorlage.md](docs/08_angebotsvorlage.md) | Aufbau und Platzhalter der Angebotsvorlage; Musterangebot in `templates/angebot/` |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 

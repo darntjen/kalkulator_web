@@ -27,11 +27,12 @@ So kann der Vertrieb früh Rückmeldung geben.
 - [x] Referenzmaterial im SharePoint gesichtet und ausgewertet ([06_ist-analyse.md](06_ist-analyse.md))
 - [x] Preislogik beschrieben und Referenzkalkulationen entworfen ([07_referenzkalkulationen.md](07_referenzkalkulationen.md))
 - [x] Grundsatzentscheidungen: keine Rabatte, Projektstatus im Kalkulator, HubSpot später, Windows Server, Entra ID
-- [ ] Offene Fragen aus Abschnitt 8 klären ([02_offene-fragen.md](02_offene-fragen.md))
+- [x] Offene Fragen aus Abschnitt 8 geklärt (außer AVV, wird nachgereicht)
+- [ ] Offene Fragen aus Abschnitt 9 klären ([02_offene-fragen.md](02_offene-fragen.md))
 - [ ] Referenzkalkulationen durch den Fachbereich bestätigen lassen
-- [ ] Angebotsvorlage klären bzw. entwerfen
+- [x] Angebotsvorlage entworfen ([08_angebotsvorlage.md](08_angebotsvorlage.md)); Abnahme des Entwurfs offen
 - [ ] Rollen, Rechte und Kennzahlen final festlegen
-- [ ] Architekturentscheidung treffen (ADR-0002 Technologie-Stack)
+- [x] Architekturentscheidung getroffen (ADR-0002, ADR-0003)
 - [ ] Umfang von Version 1.0 festschreiben
 
 **Ergebnis:** Freigegebenes Fachkonzept, Architekturentscheidung, Umfang v1.0.
@@ -50,7 +51,8 @@ So kann der Vertrieb früh Rückmeldung geben.
 
 - Rechenkern mit Tests gegen die Referenzkalkulationen
 - Kalkulationsoberfläche mit Live-Berechnung und Regelprüfung (Connect-Pflicht, Bundle-Deduplizierung)
-- Sonderrechner: Onboarding, Supportkontingent, Server Backup (S14)
+- Sonderrechner: Onboarding, Supportkontingent (S60), Server Backup (S14), Schwachstellenmanagement (S25), Cloud Server (S61), Strategische IT-Begleitung (S41)
+- Freie Sonderpositionen
 - Vorher/Nachher-Vergleich für Bestandskunden
 - Speichern, Versionieren, Projektstatus
 
@@ -91,7 +93,6 @@ So kann der Vertrieb früh Rückmeldung geben.
 - HubSpot-Anbindung
 - Ablage der Dokumente in SharePoint/Teams-Kundenordnern; Vorlagen-Sync aus SharePoint
 - PDF-Ausgabe, weitere Vorlagen
-- S61 Cloud Server, S41 Strategische IT-Begleitung
 - Anbindung an das ERP-System
 
 ## Arbeitsweise

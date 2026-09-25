@@ -62,27 +62,27 @@ erDiagram
 | **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner; später HubSpot-ID |
 | **Kalkulation** | Vorgang zu einem Kunden | Titel, Kunde, Ersteller, **Projektstatus**, Verlustgrund, Neukunde/Bestandskunde |
 | **Status-Ereignis** | Historie des Projektstatus | alter/neuer Status, wer, wann, Kommentar |
-| **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Arbeitsplätze, Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
+| **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Anzahl User (für Onboarding), Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
 | **Position** | Service × Menge | Service, Preiskomponente, Menge, Einzelpreis (eingefroren), Betrag, Hinweis „im Bundle enthalten“ |
-| **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste |
+| **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste; S25: Clients, Server; S61: Buchungsübersicht, TERRA-Wert, Backup-Entscheidung; S41: Roadmap-Erstellung ja/nein |
+| **Sonderposition** | Freie Position | Bezeichnung, Einheit, Menge, Preis, Begründung, Kennzeichen |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
-## Projektstatus einer Kalkulation (Vorschlag, siehe offene Frage 8.3)
+## Projektstatus einer Kalkulation (bestätigt 25.09.2026)
 
 ```mermaid
 stateDiagram-v2
     [*] --> Entwurf
     Entwurf --> Angebot_versendet: Angebot erzeugt und versendet
-    Angebot_versendet --> In_Verhandlung
     Angebot_versendet --> Entwurf: neue Version
-    In_Verhandlung --> Entwurf: neue Version
-    Angebot_versendet --> Gewonnen
-    In_Verhandlung --> Gewonnen
+    Angebot_versendet --> Vertrag_erstellt: Vertragspaket erzeugt
+    Vertrag_erstellt --> Entwurf: Änderungswunsch, neue Version
+    Vertrag_erstellt --> Gewonnen: Vertrag unterschrieben
     Angebot_versendet --> Verloren
-    In_Verhandlung --> Verloren
+    Vertrag_erstellt --> Verloren
     Angebot_versendet --> Zurueckgestellt
-    In_Verhandlung --> Zurueckgestellt
-    Zurueckgestellt --> In_Verhandlung
+    Vertrag_erstellt --> Zurueckgestellt
+    Zurueckgestellt --> Angebot_versendet
     Gewonnen --> [*]
     Verloren --> [*]
 ```
@@ -96,7 +96,14 @@ protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
 1. Positionen: `Betrag = RUNDEN(VK × Menge; 2)`
 2. Bundle-Deduplizierung: Einzelservices, die in einem gebuchten Bundle enthalten sind, werden bis zur Bundle-Menge mit 0 € berechnet und gekennzeichnet (Regel R3)
 3. Sonderrechner: S60 (Supportkontingent), S14 (Server Backup) → jeweils eine Position
-4. Summe monatlich; Onboarding aus Staffel (Connect-Stufe × Arbeitsplätze)
+4. Summe monatlich; Onboarding aus Staffel (Connect-Stufe × User; ab 501 User „individuell“)
 5. Kennzahlen: MRR = Summe monatlich; ARR = 12 × MRR; Wert der Erstlaufzeit = 12 × MRR + Onboarding
 6. Nur für berechtigte Rollen: Kosten, DB und Marge je Position und gesamt
 7. Regelprüfung (R1–R6) → Fehler (blockiert Angebot) oder Hinweis
+
+## Auflösung des Vertragspakets (Algorithmus)
+
+1. Rahmendokumente in fester Reihenfolge: AVV, Grundvertrag, AVB, Anlage SLA (mit gewählter Connect-Stufe), S01 (gewählte Stufe).
+2. Für jedes gebuchte Bundle (Reihenfolge nach Code): B-Schein, danach rekursiv alle enthaltenen S-Scheine. Verschachtelte Bundles werden aufgelöst, aber nicht selbst beigelegt.
+3. Danach alle einzeln gebuchten S-Scheine (nach Code), sofern nicht bereits durch ein Bundle enthalten.
+4. Sonderpositionen haben keinen Leistungsschein. Sie erscheinen nur im Angebot und in § 3 des Grundvertrags.

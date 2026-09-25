@@ -36,13 +36,17 @@
 | B-06 | ~~Rabatte je Position oder auf die Gesamtsumme~~. **Entfällt:** Vertriebler geben keine Rabatte (Entscheidung 25.09.2026) | – |
 | B-07 | Prüfung der Regeln R1–R6 (Connect-Pflicht, Abhängigkeiten, keine Doppelberechnung Bundle/Einzelservice, zukünftige Services gesperrt) mit verständlichen Hinweisen | M |
 | B-08 | Kalkulation speichern, duplizieren, versionieren (Angebotsstände V1, V2 …) | M |
-| B-09 | **Projektstatus je Kundenkalkulation**, vom Vertrieb gesetzt (Werte siehe offene Frage 8.3), inkl. Verlustgrund und Änderungshistorie | M |
+| B-09 | **Projektstatus je Kundenkalkulation**, vom Vertrieb gesetzt: Entwurf, Angebot versendet, Vertrag erstellt, Gewonnen, Verloren (Grund Pflicht), Zurückgestellt; mit Änderungshistorie | M |
 | B-10 | Anzeige von Marge und Deckungsbeitrag nur für berechtigte Rollen | S |
 | B-11 | Freitextpositionen bzw. individuelle Sonderleistungen (mit Kennzeichnung) | S |
 | B-12 | Übernahme von Kundendaten aus HubSpot | K |
-| B-13 | **Onboarding-Pauschale** automatisch aus Connect-Stufe und Anzahl Arbeitsplätze (Staffel XS–L; darüber „individuell“) | M |
+| B-13 | **Onboarding-Pauschale** automatisch aus Connect-Stufe und Anzahl **User** (Staffel XS–L bis 500 User; ab 501 „individuell“) | M |
 | B-14 | **Supportkontingent-Rechner** (S60): Anfragen/Monat × Ø AE → Kontingent (2er-Block) × 30,38 € | M |
-| B-15 | **Server-Backup-Rechner** (S14 nach Baukasten V5.7): Variante, Serverzahl, Datenmenge, Lizenzherkunft, inkl. Pflicht-Checkliste | M (vorbehaltlich Frage 8.5) |
+| B-15 | **Server-Backup-Rechner** (S14 nach Baukasten V5.7): Variante, Serverzahl, Datenmenge, Lizenzherkunft, inkl. Pflicht-Checkliste | M |
+| B-18 | **Schwachstellenmanagement** (S25) mit Grundservice und assetabhängigen Preisen je Client und Server; Prüfung der Voraussetzung (Bundle B01–B04) | M |
+| B-19 | **Cloud Server** (S61): Erfassung der Buchungsübersicht, Preisbildung aus dem TERRA-Kalkulator (Details offene Frage 9.2), Pflichtkopplung S21 und Backup-Entscheidung | M |
+| B-20 | **Strategische IT-Begleitung** (S41) inkl. optionaler Roadmap-Erstellung (einmalig) | M |
+| B-21 | **Freie Sonderpositionen** mit Pflichtbegründung und Kennzeichnung (Regeln offene Frage 9.3) | M |
 | B-16 | **Vorher/Nachher-Vergleich** für Bestandskunden (alter Monatspreis gegen neues Modell) | S |
 | B-17 | Anzeige des Bundle-Vorteils gegenüber Einzelbuchung (Verkaufsargument) | S |
 
@@ -51,7 +55,7 @@
 | ID | Anforderung | Prio |
 |----|-------------|------|
 | C-01 | Aus einer Kalkulation wird per Knopfdruck ein Angebot als **.docx** erzeugt | M |
-| C-02 | Grundlage ist eine im Corporate Design gestaltete **Word-Vorlage** mit Platzhaltern, die ohne Programmierung angepasst werden kann | M |
+| C-02 | Grundlage ist eine im Corporate Design gestaltete **Word-Vorlage** (Entwurf: [08_angebotsvorlage.md](08_angebotsvorlage.md)). Die Vorlage muss später austauschbar sein, ohne den Code zu ändern | M |
 | C-03 | Das Angebot enthält Deckblatt, Anschreiben, Leistungsbeschreibungen der gewählten Services, Preistabelle, Konditionen und Gültigkeit | M |
 | C-04 | Textbausteine je Service werden automatisch eingefügt (Leistungsinhalt, Voraussetzungen, Ausschlüsse) | M |
 | C-05 | Individuelle Texte (z. B. Ausgangssituation des Kunden) können vor der Erzeugung erfasst werden | S |
@@ -64,9 +68,12 @@
 
 | ID | Anforderung | Prio |
 |----|-------------|------|
-| D-01 | Die nötigen Vertragsdokumente werden automatisch passend zu den gewählten Services zusammengestellt. Bei Bundles werden die Leistungsscheine der enthaltenen Einzelservices mitgeliefert | M |
+| D-01 | Die nötigen Vertragsdokumente werden automatisch passend zu den gewählten Services zusammengestellt. Hinter jeden B-Schein kommen die zugehörigen S-Scheine; verschachtelte Bundles (B01 in B02 usw.) werden in S-Scheine aufgelöst und nicht separat beigelegt; kein S-Schein doppelt (Ist-Analyse 5.1) | M |
 | D-02 | Dokumente laut Vertragswerk: AVV, Grundvertrag, AVB, Anlage SLA, S01, Bundle-Leistungsscheine, Einzel-Leistungsscheine (inkl. S14, S60). Reihenfolge gemäß Rangfolge § 1 Abs. 3 Grundvertrag | M |
 | D-03 | Grundvertrag: Kunde, Anschrift, Vertragsnummer, Vertragsbeginn, Vergütungstabelle § 3 und Anlagenliste § 6 automatisch befüllt | M |
+| D-08 | Die gewählte Connect-Stufe ist im Vertrag sichtbar: § 3 Grundvertrag, Leistungsschein S01 und Anlage SLA | M |
+| D-09 | Vorlagen mit Ausfüllfeldern werden befüllt: S14 (Variante, Serverliste, Kalkulation Ziffer 6.1/6.2, Ziffer 1.2 nur bei S61), S61 (Buchungsübersicht 7.1, Backup-Ankreuzfeld 4.4), S60 (Kontingent), B04/B06 (Bundle-Preis) | M |
+| D-10 | Erzeugen des Vertragspakets setzt den Projektstatus auf „Vertrag erstellt“ | S |
 | D-04 | Ausgabe als fertiges Paket: ZIP mit einzelnen Dokumenten und/oder ein zusammengeführtes Gesamtdokument (Format zu klären) | M |
 | D-05 | Die Vertragsvorlagen sind versioniert. Es ist nachvollziehbar, welche Version an welchen Kunden ging | M |
 | D-06 | Checkliste der beizulegenden Dokumente, inklusive manuell beizufügender Unterlagen | S |

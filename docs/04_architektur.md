@@ -1,9 +1,8 @@
 # 04 – Architektur (Vorschlag)
 
-> Status: **Vorschlag v2 (25.09.2026), noch nicht entschieden.**
-> Rahmenbedingungen: **Windows Server** im internen Netz, Anmeldung über
-> **Microsoft Entra ID**. Die endgültige Entscheidung wird als ADR-0002 festgehalten,
-> sobald die offene Frage 8.2 (SQL Server, Betrieb) beantwortet ist.
+> Status: **Entschieden (25.09.2026)**, siehe [ADR-0002](adr/0002-technologie-stack.md) und [ADR-0003](adr/0003-anmeldung-entra-id.md).
+> Rahmenbedingungen: **Windows Server** im internen Netz, vorhandener **SQL Server**,
+> Betrieb durch die **interne IT**, Anmeldung über **Microsoft Entra ID**.
 
 ## 1. Überblick
 
@@ -46,7 +45,7 @@ Linux-Containern ist auf Windows Server nur umständlich zu betreiben.
 | Betrieb durch interne IT | Vertraut (IIS, SQL Server, Windows-Updates, Veeam-Sicherung) | Zusätzliche Laufzeitumgebung (Python) zu pflegen |
 | Oberfläche | Blazor Server (interaktiv, Live-Berechnung ohne eigenes JavaScript-Framework) | Django-Templates + HTMX |
 
-**Empfehlung: Option A (ASP.NET Core mit Blazor Server, SQL Server, IIS).**
+**Entscheidung: Option A (ASP.NET Core mit Blazor Server, SQL Server, IIS).**
 Die Anwendung passt sich nahtlos in eine Windows-/Microsoft-Umgebung ein.
 Die Anmeldung per Entra ID ist Standard. Die interne IT kann Betrieb,
 Updates und Sicherung mit bekannten Werkzeugen erledigen. Der Nachteil ist, dass
@@ -64,7 +63,7 @@ doch auf einem Linux-Server bzw. einer Linux-VM laufen kann.
 | Laufzeit | .NET (aktuelle LTS-Version), ASP.NET Core |
 | Oberfläche | Blazor Server, Komponentenbibliothek (z. B. MudBlazor, MIT-Lizenz) |
 | Datenzugriff | Entity Framework Core mit Migrationen |
-| Datenbank | SQL Server (bestehende Instanz oder SQL Server Express) |
+| Datenbank | vorhandener SQL Server (eigene Datenbank für die Anwendung) |
 | Anmeldung | Entra ID über OpenID Connect (App-Registrierung); Rollen über **App-Rollen** oder Entra-Gruppen: `Vertrieb`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin` |
 | Word-Erzeugung | Open XML SDK; Vorlagen mit Platzhaltern bzw. Inhaltssteuerelementen; Tabellen (§ 3 Vergütung, Preistabelle) programmatisch |
 | Vertragspaket | ZIP mit befüllten .docx in Rangfolge und Anlagenverzeichnis; PDF optional später über LibreOffice headless |

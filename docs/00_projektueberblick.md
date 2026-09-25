@@ -42,7 +42,8 @@ zentralen Überblick darüber, was kalkuliert, angeboten und abgeschlossen wurde
 - Angebotsausgabe als Word-Dokument auf Basis einer Firmenvorlage
 - Zusammenstellung der Vertragsunterlagen passend zu den gewählten Services
 - Statistiken und Auswertungen für die Führungsebene
-- Betrieb auf einem internen Server mit Anmeldung über die Firmenkonten (Ziel)
+- Betrieb auf einem internen Windows Server (IIS, SQL Server) mit Anmeldung über Microsoft Entra ID
+- **Alle** Services ab Version 1, einschließlich Server Backup (S14), Schwachstellenmanagement mit Assetpreisen (S25), Cloud Server (S61), Strategische IT-Begleitung (S41) und freier Sonderpositionen
 
 ### Nicht im Scope (vorerst, bitte bestätigen)
 - Kalkulation von Projekten, Hardware und Lizenzhandel (außer als Bestandteil eines Managed Service)
@@ -56,7 +57,6 @@ zentralen Überblick darüber, was kalkuliert, angeboten und abgeschlossen wurde
 - Anbindung an das ERP-System
 - Ablage erzeugter Dokumente in den SharePoint-/Teams-Kundenordnern
 - Ausgabe als PDF zusätzlich zu Word
-- Kalkulation von S61 (Cloud Server) und S41 (Strategische IT-Begleitung)
 
 ### Bewusst ausgeschlossen
 - Rabatte durch den Vertrieb (Entscheidung 25.09.2026)
