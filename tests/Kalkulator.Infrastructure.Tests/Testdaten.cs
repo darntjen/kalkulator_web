@@ -75,7 +75,7 @@ internal sealed class Testdaten
         Staffel(connectOnboarding, 501, null);
         Staffel(s41, 1, 350m);
         Staffel(s41, 51, 550m);
-        Preisliste.Parameter.Add(new Parameter { Schluessel = ParameterSchluessel.SupportkontingentAeSatz, Wert = 30.38m });
+        Preisliste.Parameter.Add(new Parameter { Schluessel = ParameterSchluessel.AeSatzEbene2, Wert = 33.75m });
         Preisliste.Parameter.Add(new Parameter { Schluessel = ParameterSchluessel.CloudServerMargenteiler, Wert = 0.55m });
         Preisliste.EkPositionen.Add(new EkPosition { Preiskomponente = s02, EkLizenz = 3.59m, AufwandMinuten = 1, Overhead = 1.50m });
     }
