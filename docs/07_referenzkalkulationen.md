@@ -121,3 +121,11 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 | S61 ohne Backup-Entscheidung | – | Fehler: S14 buchen oder „Datensicherung durch Kunden“ wählen |
 
 Rundung: kaufmännisch auf 2 Nachkommastellen (zu bestätigen).
+
+## RK-11 – Strategische IT-Begleitung (S41)
+
+| Mitarbeitende | Roadmap-Erstellung | Monatlich | Einmalig |
+|--------------:|--------------------|----------:|---------:|
+| 35 | nein | 350,00 € | – |
+| 50 | nein | 350,00 € | – |
+| 51 | ja | 550,00 € | 2.400,00 € |

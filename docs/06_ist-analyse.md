@@ -103,7 +103,7 @@ Alle Preise netto pro Monat, sofern nicht anders angegeben.
 | Code | Bezeichnung | Preisbildung |
 |------|-------------|--------------|
 | S60 | Supportkontingent (NOS-SUP-OPT-60-KON) | Rechner, siehe 4.2. Voraussetzung S01 |
-| S41 | Strategische IT-Begleitung | Pauschal/Monat, Preis nach Vereinbarung (Referenz: 350 €); Roadmap-Erstellung 2.400 € einmalig. **In v1 enthalten** |
+| S41 | Strategische IT-Begleitung | Pauschal/Monat nach Kundengröße: **bis 50 Mitarbeitende 350 €, ab 51 Mitarbeitenden 550 €** (bestätigt 25.09.2026); Roadmap-Erstellung 2.400 € einmalig. **In v1 enthalten** |
 | S61 | Cloud Server-Bereitstellung (TERRA Cloud) | Nicht im Mastersheet; Preis aus dem TERRA-Kalkulator. **In v1 enthalten**, siehe 5.2 |
 | – | Zukünftige Services (IT-Dokumentation, NAC, Pentesting, Backupkonzept, Compliance-Audit) | **Nicht verkaufen**, im Kalkulator nicht auswählbar |
 
@@ -214,7 +214,7 @@ Wird ein Einzelservice zusätzlich zu einem Bundle gebucht, das ihn bereits enth
 | Schein | Besonderheit |
 |--------|--------------|
 | S25 Schwachstellenmanagement | Grundservice 499 €/Kundenumgebung + 12 €/Client + 69 €/Server. **Voraussetzung: S01 und ein aktives Bundle B01, B02, B03 oder B04.** In B06 enthalten; die Assetpreise kommen dort zusätzlich hinzu |
-| S41 Strategische IT-Begleitung | Pauschal pro Monat, Preis „[nach Vereinbarung]“ (im AAV-Angebot 350 €). Optional Roadmap-Erstellung 2.400 € einmalig. Ohne Connect buchbar: **einzige Ausnahme von der S01-Pflicht** (bestätigt). Nicht Teil eines Bundles |
+| S41 Strategische IT-Begleitung | Pauschal pro Monat: bis 50 Mitarbeitende 350 €, ab 51 Mitarbeitenden 550 €. Im Leistungsschein steht „[Preis nach Vereinbarung]“ und wird aus der Kalkulation befüllt. Optional Roadmap-Erstellung 2.400 € einmalig. Ohne Connect buchbar: **einzige Ausnahme von der S01-Pflicht** (bestätigt). Nicht Teil eines Bundles |
 | S61 Cloud Server (TERRA Cloud) | Buchungsübersicht Ziffer 7.1 (Server Windows/Linux, vCores, RAM, Speicher, IPs, VLANs, Connectoren, Firewall-Appliance, Lizenzen RDS/Office/Exchange/SQL). Gesamtvergütung: Vertrieb erfasst den EK aus dem TERRA-Kalkulator, der Kalkulator rechnet VK = EK ÷ 0,55 (bestätigt). **Voraussetzungen:** S01 und **S21 als zusätzliche Firewall-Instanz**. Datensicherung per Ankreuzen: S14 oder Kunde selbst. S11–S13/B03/B04 nur für Windows-Server |
 | B04 / B06 | Bundle-Preis im Schein als „[Preis nach Vereinbarung]“. Wird aus der Kalkulation befüllt: B06 = 1.590 € zzgl. S25-Assetpreise; B04 = 49,90 €/Server, S14 als eigene Zeile (bestätigt) |
 

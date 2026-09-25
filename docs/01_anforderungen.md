@@ -45,7 +45,7 @@
 | B-15 | **Server-Backup-Rechner** (S14 nach Baukasten V5.7): Variante, Serverzahl, Datenmenge, Lizenzherkunft, inkl. Pflicht-Checkliste | M |
 | B-18 | **Schwachstellenmanagement** (S25) mit Grundservice und assetabhängigen Preisen je Client und Server; Prüfung der Voraussetzung (Bundle B01–B04) | M |
 | B-19 | **Cloud Server** (S61): Erfassung der Buchungsübersicht (Ziffer 7.1) und des EK aus dem TERRA-Kalkulator; VK = EK ÷ 0,55 (45 % Marge); Pflichtkopplung S21 (zusätzliche Firewall-Instanz) und Backup-Entscheidung (S14 oder Kunde). Der EK ist für den Vertrieb nur als Eingabefeld sichtbar, nicht in Auswertungen | M |
-| B-20 | **Strategische IT-Begleitung** (S41) inkl. optionaler Roadmap-Erstellung (einmalig). **Einzige Ausnahme von der Connect-Pflicht:** Kalkulationen nur mit S41 sind ohne S01 zulässig | M |
+| B-20 | **Strategische IT-Begleitung** (S41): Preis nach Anzahl Mitarbeitende (bis 50: 350 €, ab 51: 550 €), optionale Roadmap-Erstellung 2.400 € einmalig. **Einzige Ausnahme von der Connect-Pflicht:** Kalkulationen nur mit S41 sind ohne S01 zulässig | M |
 | B-21 | **Freie Sonderpositionen:** Pflichtfelder Bezeichnung, Einheit, Menge, Preis (nur positiv), Begründung; gekennzeichnet in Angebot und Statistik; kein eigener Leistungsschein | M |
 | B-22 | **Freigabe von Sonderpositionen durch die Vertriebsleitung:** Solange eine Sonderposition nicht freigegeben ist, kann weder Angebot noch Vertragspaket erzeugt werden. Freigabe und Ablehnung werden mit Kommentar protokolliert; der Vertrieb wird benachrichtigt | M |
 | B-16 | **Vorher/Nachher-Vergleich** für Bestandskunden (alter Monatspreis gegen neues Modell) | S |
