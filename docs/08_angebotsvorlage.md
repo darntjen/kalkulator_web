@@ -1,6 +1,6 @@
 # 08 – Angebotsvorlage (Entwurf v0.1)
 
-> Status: **Entwurf zur Abnahme** (25.09.2026). Es gab bisher keine Vorlage.
+> Status: **Abgenommen als Arbeitsgrundlage** (25.09.2026). Es gab bisher keine Vorlage.
 > Der Entwurf kann später gegen eine intern entwickelte Vorlage ausgetauscht
 > werden. Deshalb ist die Vorlage eine austauschbare Datei und nicht im Code
 > „eingebaut“ (Anforderung C-02).

@@ -95,14 +95,14 @@
 | 8.3 | **Projektstatus:** Welche Statuswerte? | – | ✅ Entwurf, Angebot versendet, Vertrag erstellt, Gewonnen, Verloren (mit Grund), Zurückgestellt |
 | 8.4 🟢 | **AVV:** Wo liegt die aktuelle Auftragsverarbeitungsvereinbarung? | – | ⏳ Wird später nachgeliefert. Bis dahin wird ohne AVV geplant und entwickelt; der Platz im Vertragspaket ist vorgesehen |
 | 8.5 | **Sonderfälle in v1** (S14, S25 assetabhängig, S61, S41, freie Sonderpositionen) | – | ✅ **Alles ab Version 1.** Detailfragen siehe 9.1–9.3 |
-| 8.6 🟠 | **Nummernkreise:** Wie sehen Angebotsnummer und Vertragsnummer aus? Kommen sie aus dem ERP? | Vorschlag: `MS-A-2026-0001` (Angebot), `MS-V-2026-0001` (Vertrag), vergeben durch die Anwendung | |
-| 8.7 🟠 | **Vertragspaket:** Einzelne Word-Dateien als ZIP, ein zusammengeführtes Dokument oder zusätzlich PDF? | v1: ZIP mit befüllten Word-Dateien und Deckblatt/Anlagenverzeichnis; PDF später | |
-| 8.8 🟠 | **Statistik-Rechte:** Wer sieht was? | Vertrieb: eigene Kalkulationen und eigene Kennzahlen; Führung: alles inkl. DB/Marge; Produktmanagement: Katalog, Preise, EK | |
+| 8.6 🟠 | **Nummernkreise:** Wie sehen Angebotsnummer und Vertragsnummer aus? Kommen sie aus dem ERP? | Vorschlag: `MS-A-2026-0001` (Angebot), `MS-V-2026-0001` (Vertrag), vergeben durch die Anwendung || ✅ Übernommen (25.09.2026) |
+| 8.7 🟠 | **Vertragspaket:** Einzelne Word-Dateien als ZIP, ein zusammengeführtes Dokument oder zusätzlich PDF? | v1: ZIP mit befüllten Word-Dateien und Deckblatt/Anlagenverzeichnis; PDF später || ✅ Übernommen (25.09.2026) |
+| 8.8 🟠 | **Statistik-Rechte:** Wer sieht was? | Vertrieb: eigene Kalkulationen und eigene Kennzahlen; Führung: alles inkl. DB/Marge; Produktmanagement: Katalog, Preise, EK || ✅ Übernommen (25.09.2026) |
 | 8.9 | **Onboarding-Grenze und Bezugsgröße** | – | ✅ Individuell ab **501**; es zählen die **User** |
 | 8.10 | **Bundles im Vertragspaket** | – | ✅ B-Scheine sind Bundles aus S-Scheinen. Hinter jeden B-Schein gehören die in ihm aufgeführten S-Scheine; ein in einem B-Schein genanntes Bundle (z. B. B01 in B02) wird **nicht** als eigener B-Schein beigelegt, sondern in seine S-Scheine aufgelöst. S01 ist immer zu beauftragen; die gewählte Stufe muss im Vertrag sichtbar sein |
-| 8.11 🟢 | **S14-Preisuntergrenze:** 183 € oder 187 €? (Der Baukasten nennt beide Werte) | – | |
-| 8.12 🟢 | **Katalogpflege:** Soll die Anwendung nach dem Go-live die maßgebliche Preisquelle sein? Das Mastersheet würde dann aus der Anwendung exportiert | Ja, sonst laufen zwei Preislisten auseinander | |
-| 8.13 🟢 | **Vorher/Nachher-Vergleich** für Bestandskunden-Migration in v1? | Ja (geringer Aufwand, hoher Nutzen) | |
+| 8.11 🟠 | **S14-Preisuntergrenze:** 183 € oder 187 €? (Der Baukasten nennt beide Werte) | – | |
+| 8.12 🟢 | **Katalogpflege:** Soll die Anwendung nach dem Go-live die maßgebliche Preisquelle sein? Das Mastersheet würde dann aus der Anwendung exportiert | Ja, sonst laufen zwei Preislisten auseinander || ✅ Übernommen (25.09.2026) |
+| 8.13 🟢 | **Vorher/Nachher-Vergleich** für Bestandskunden-Migration in v1? | Ja (geringer Aufwand, hoher Nutzen) || ✅ Übernommen (25.09.2026) |
 
 ## 9. Neue Fragen (Stand 25.09.2026, nach Durchsicht von S25, S41, S61 und der Bundle-Scheine)
 
@@ -113,8 +113,8 @@
 | 9.3 🔴 | **Freie Sonderpositionen:** Da es keine Rabatte gibt, könnten freie Preise ein Umweg sein. Welche Regeln gelten? | Pflichtfelder Bezeichnung, Einheit, Menge, Preis und Begründung; deutlich gekennzeichnet in Angebot und Statistik; nur positive Beträge; kein eigener Leistungsschein (erscheinen nur in Angebot und § 3 Grundvertrag). Optional: Freigabe durch Vertriebsleitung | ✅ Ja, wie vorgeschlagen, **zusätzlich Freigabe durch die Vertriebsleitung** |
 | 9.4 🟠 | **B04 und B06 im Vertrag:** In beiden Bundle-Scheinen steht „[Preis nach Vereinbarung]“. | B06 = 1.590,00 €/Kunde (Mastersheet) zzgl. S25-Assetpreise. B04 = 49,90 €/Server (B03-Anteil), Server Backup (S14) als eigene Zeile nach Baukasten | ✅ Einverstanden |
 | 9.5 🟢 | **Inkonsistenz B05:** Leistungsschein B05 Ziffer 5.1 nennt „199,90 € pro Firewall-Instanz“, Überschrift und Mastersheet sagen „pro Kunde“. | „pro Kunde“ ist richtig; Leistungsschein korrigieren | ✅ Bleibt vorerst so; Dennis nimmt es mit. Der Kalkulator rechnet „pro Kunde“ |
-| 9.6 🟢 | **Absenderdaten im Angebot:** Name, Funktion, Telefon und E-Mail des Vertrieblers automatisch aus dem Entra-ID-Profil übernehmen? | Ja | |
-| 9.7 🟢 | **Angebots-Gültigkeit:** Standardmäßig 30 Tage ab Angebotsdatum? | Ja, vom Vertrieb änderbar | |
+| 9.6 🟢 | **Absenderdaten im Angebot:** Name, Funktion, Telefon und E-Mail des Vertrieblers automatisch aus dem Entra-ID-Profil übernehmen? | Ja || ✅ Übernommen (25.09.2026) |
+| 9.7 🟢 | **Angebots-Gültigkeit:** Standardmäßig 30 Tage ab Angebotsdatum? | Ja, vom Vertrieb änderbar || ✅ Übernommen (25.09.2026) |
 
 ## 10. Neue Fragen (Stand 25.09.2026, nach den Antworten zu Abschnitt 9)
 
@@ -122,7 +122,7 @@
 |-----|-------|-----------|---------|
 | 10.1 🟠 | **Preis S41:** Ist 350 € pro Monat der feste Katalogpreis, oder legt der Vertrieb den Preis je Kunde fest (dann wäre es eine freigabepflichtige Position)? | Fester Katalogpreis 350 €; Roadmap-Erstellung 2.400 € einmalig | ✅ Staffel nach Kundengröße: **bis 50 Mitarbeitende 350 €/Monat, ab 51 Mitarbeitenden 550 €/Monat** |
 | 10.2 🟠 | **Vertrag ohne S01 (nur S41):** Grundvertrag § 1 Abs. 2 vereinbart S01 automatisch mit. Welche Dokumente bekommt ein Kunde, der nur S41 bucht? | Grundvertrag (mit angepasstem § 1 Abs. 2 bzw. Variante „ohne Connect“), AVB, AVV, S41 | ✅ S41 braucht selbstverständlich einen Grundvertrag (so war der Vorschlag auch gemeint). Offen ist nur § 1 Abs. 2 und die SLA-Stufe, siehe 10.4 und 10.5 |
-| 10.3 🟢 | **Logo in höherer Auflösung:** Das verwendete Logo (Intranet-Wiki, 292 × 123 px) ist für den Druck knapp. Gibt es eine größere Fassung oder eine Vektordatei? | Bei Gelegenheit aus dem ELO bereitstellen | |
+| 10.3 🟢 | **Logo in höherer Auflösung:** Das verwendete Logo (Intranet-Wiki, 292 × 123 px) ist für den Druck knapp. Gibt es eine größere Fassung oder eine Vektordatei? | Bei Gelegenheit aus dem ELO bereitstellen || ⏳ Übernommen; Logo folgt bei Gelegenheit |
 | 10.4 🟠 | **§ 1 Abs. 2 Grundvertrag bei reinen S41-Verträgen:** Der Absatz vereinbart S01 automatisch mit. Soll er bei reinen S41-Verträgen entfallen, oder soll der Absatz so umformuliert werden, dass er nur gilt, wenn andere Leistungsscheine als S41 gebucht sind? | Umformulierung im Grundvertrag, damit es nur eine Fassung gibt | ⏳ Bleibt vorerst so; wird intern abgestimmt. Für die Entwicklung nicht blockierend: Der Kalkulator legt bei reinen S41-Verträgen den Grundvertrag unverändert bei, bis eine angepasste Fassung vorliegt |
 | 10.5 🟠 | **SLA bei reinen S41-Verträgen:** S41 verweist auf die Anlage SLA (Ziffer 2.5). Die Reaktionszeiten hängen aber von der Connect-Stufe ab, die es hier nicht gibt. Welche Stufe gilt? | Anlage SLA beilegen; es gelten die Werte der Stufe Standard | ✅ Ja |
 | 10.6 🟢 | **Bezugsgröße S41:** „Mitarbeitende“ ist eine eigene Eingabe, nicht die Zahl der User (die für das Onboarding zählt)? | Eigene Eingabe „Anzahl Mitarbeitende“ | ✅ Ja |

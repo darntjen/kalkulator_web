@@ -31,10 +31,11 @@ So kann der Vertrieb früh Rückmeldung geben.
 - [x] Offene Fragen aus Abschnitt 9 geklärt
 - [ ] Offene Fragen aus Abschnitt 10 klären ([02_offene-fragen.md](02_offene-fragen.md))
 - [ ] Referenzkalkulationen durch den Fachbereich bestätigen lassen
-- [x] Angebotsvorlage entworfen ([08_angebotsvorlage.md](08_angebotsvorlage.md)); Abnahme des Entwurfs offen
-- [ ] Rollen, Rechte und Kennzahlen final festlegen
+- [x] Angebotsvorlage entworfen und abgenommen ([08_angebotsvorlage.md](08_angebotsvorlage.md))
+- [x] Rollen, Rechte und Kennzahlen festgelegt (Vorschläge übernommen)
 - [x] Architekturentscheidung getroffen (ADR-0002, ADR-0003)
-- [ ] Umfang von Version 1.0 festschreiben
+- [x] Umfang von Version 1.0 festgeschrieben (alle Services, siehe Anforderungen)
+- [x] Arbeitspakete Phase 1 als GitHub-Issues angelegt
 
 **Ergebnis:** Freigegebenes Fachkonzept, Architekturentscheidung, Umfang v1.0.
 
@@ -47,6 +48,15 @@ So kann der Vertrieb früh Rückmeldung geben.
 - Erstbefüllung aus Mastersheet, Vertriebskalkulator, S14-Baukasten und EK-Kalkulation
 
 **Ergebnis:** Katalog ist vollständig gepflegt und von der Produktverantwortung abgenommen.
+
+**Issues:** [darntjen/kalkulator_web#1](https://github.com/darntjen/kalkulator_web/issues/1) (Übersicht) mit den Unter-Issues
+[#2 Vorbereitung IT](https://github.com/darntjen/kalkulator_web/issues/2) ·
+[#3 Projektgerüst](https://github.com/darntjen/kalkulator_web/issues/3) ·
+[#4 Entra ID](https://github.com/darntjen/kalkulator_web/issues/4) ·
+[#5 Datenmodell](https://github.com/darntjen/kalkulator_web/issues/5) ·
+[#6 Pflegeoberfläche](https://github.com/darntjen/kalkulator_web/issues/6) ·
+[#7 Erstbefüllung](https://github.com/darntjen/kalkulator_web/issues/7) ·
+[#8 Installation und Betrieb](https://github.com/darntjen/kalkulator_web/issues/8)
 
 ## Phase 2 – Kalkulator (Modul 1)
 
