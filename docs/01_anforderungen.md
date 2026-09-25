@@ -2,7 +2,9 @@
 
 > Status: **Entwurf.** IDs bleiben stabil, damit wir uns in Diskussionen,
 > Tickets und Commits darauf beziehen können.
-> Priorität: **M** = Muss (v1.0), **S** = Soll (v1.x), **K** = Kann (später)
+> Priorität: **M** = Muss (v1.0), **S** = Soll (v1.x), **K** = Kann (später), **–** = entfällt
+>
+> Fachliche Grundlage: [06_ist-analyse.md](06_ist-analyse.md) (Servicekatalog, Preisregeln, Vertragswerk aus dem SharePoint)
 
 ## A. Servicekatalog und Preispflege (Grundlage für alle Module)
 
@@ -17,6 +19,10 @@
 | A-07 | Katalog und Preise werden über eine Oberfläche gepflegt, ohne Programmierung | M |
 | A-08 | Änderungen am Katalog werden protokolliert (wer, wann, was) | S |
 | A-09 | Import und Export des Katalogs (z. B. aus oder nach Excel) | K |
+| A-10 | **Bundles** bestehen aus Einzelservices (B01 = S02+S03+S04 usw.). Die Zusammensetzung ist gepflegt und wird für die Regelprüfung und das Vertragspaket genutzt | M |
+| A-11 | Services haben einen Vertriebsstatus: verkaufsfähig, auf Anfrage, geparkt, zukünftig (nicht verkaufen) | M |
+| A-12 | Jedem Service bzw. Bundle ist seine Leistungsschein-Vorlage (Code, Version) zugeordnet | M |
+| A-13 | Initiale Befüllung aus Mastersheet V1.0, Vertriebskalkulator V1.1, S14-Baukasten V5.7 und EK-Kalkulation V1.0 | M |
 
 ## B. Modul 1 – Kalkulator
 
@@ -27,13 +33,18 @@
 | B-03 | Geführte Eingabe: Der Kalkulator fragt Mengengerüst und Rahmendaten ab und schlägt passende Services vor | S |
 | B-04 | Live-Berechnung: monatliche Kosten, einmalige Kosten, Jahres- und Vertragsgesamtwert | M |
 | B-05 | Vertragsparameter: Laufzeit, Zahlungsweise, Startdatum | M |
-| B-06 | Rabatte je Position oder auf die Gesamtsumme. Oberhalb einer Grenze ist eine Freigabe nötig | M (Rabatt) / S (Freigabe) |
-| B-07 | Prüfung von Regeln (Abhängigkeiten, Mindestmengen) mit verständlichen Hinweisen | M |
+| B-06 | ~~Rabatte je Position oder auf die Gesamtsumme~~. **Entfällt:** Vertriebler geben keine Rabatte (Entscheidung 25.09.2026) | – |
+| B-07 | Prüfung der Regeln R1–R6 (Connect-Pflicht, Abhängigkeiten, keine Doppelberechnung Bundle/Einzelservice, zukünftige Services gesperrt) mit verständlichen Hinweisen | M |
 | B-08 | Kalkulation speichern, duplizieren, versionieren (Angebotsstände V1, V2 …) | M |
-| B-09 | Status je Kalkulation: Entwurf → Angebot versendet → gewonnen / verloren / zurückgezogen, inkl. Verlustgrund | M |
+| B-09 | **Projektstatus je Kundenkalkulation**, vom Vertrieb gesetzt (Werte siehe offene Frage 8.3), inkl. Verlustgrund und Änderungshistorie | M |
 | B-10 | Anzeige von Marge und Deckungsbeitrag nur für berechtigte Rollen | S |
 | B-11 | Freitextpositionen bzw. individuelle Sonderleistungen (mit Kennzeichnung) | S |
 | B-12 | Übernahme von Kundendaten aus HubSpot | K |
+| B-13 | **Onboarding-Pauschale** automatisch aus Connect-Stufe und Anzahl Arbeitsplätze (Staffel XS–L; darüber „individuell“) | M |
+| B-14 | **Supportkontingent-Rechner** (S60): Anfragen/Monat × Ø AE → Kontingent (2er-Block) × 30,38 € | M |
+| B-15 | **Server-Backup-Rechner** (S14 nach Baukasten V5.7): Variante, Serverzahl, Datenmenge, Lizenzherkunft, inkl. Pflicht-Checkliste | M (vorbehaltlich Frage 8.5) |
+| B-16 | **Vorher/Nachher-Vergleich** für Bestandskunden (alter Monatspreis gegen neues Modell) | S |
+| B-17 | Anzeige des Bundle-Vorteils gegenüber Einzelbuchung (Verkaufsargument) | S |
 
 ## C. Modul 2 – Angebotserstellung (Word)
 
@@ -53,9 +64,9 @@
 
 | ID | Anforderung | Prio |
 |----|-------------|------|
-| D-01 | Die nötigen Vertragsdokumente werden automatisch passend zu den gewählten Services zusammengestellt | M |
-| D-02 | Dokumenttypen (Entwurf, zu bestätigen): Rahmenvertrag, Leistungsscheine bzw. Leistungsbeschreibungen je Service, SLA, Preisblatt, AVV, AGB, TOMs | M |
-| D-03 | Variable Inhalte wie Kunde, Preise, Laufzeit, Startdatum und Mengen werden automatisch befüllt | M |
+| D-01 | Die nötigen Vertragsdokumente werden automatisch passend zu den gewählten Services zusammengestellt. Bei Bundles werden die Leistungsscheine der enthaltenen Einzelservices mitgeliefert | M |
+| D-02 | Dokumente laut Vertragswerk: AVV, Grundvertrag, AVB, Anlage SLA, S01, Bundle-Leistungsscheine, Einzel-Leistungsscheine (inkl. S14, S60). Reihenfolge gemäß Rangfolge § 1 Abs. 3 Grundvertrag | M |
+| D-03 | Grundvertrag: Kunde, Anschrift, Vertragsnummer, Vertragsbeginn, Vergütungstabelle § 3 und Anlagenliste § 6 automatisch befüllt | M |
 | D-04 | Ausgabe als fertiges Paket: ZIP mit einzelnen Dokumenten und/oder ein zusammengeführtes Gesamtdokument (Format zu klären) | M |
 | D-05 | Die Vertragsvorlagen sind versioniert. Es ist nachvollziehbar, welche Version an welchen Kunden ging | M |
 | D-06 | Checkliste der beizulegenden Dokumente, inklusive manuell beizufügender Unterlagen | S |
@@ -68,8 +79,8 @@
 | E-01 | Dashboard: Anzahl Kalkulationen und Angebote, Angebotsvolumen (MRR/ARR, Vertragswert), Abschlussquote | M |
 | E-02 | Filter nach Zeitraum, Vertriebsmitarbeiter, Service, Kundengruppe und Status | M |
 | E-03 | Auswertung je Service: Wie oft angeboten, wie oft gewonnen, welches Volumen | M |
-| E-04 | Rabattauswertung: durchschnittlicher Rabatt je Vertriebler bzw. Service | S |
-| E-05 | Margen- und Deckungsbeitragsauswertung | S |
+| E-04 | ~~Rabattauswertung~~. **Entfällt** (keine Rabatte) | – |
+| E-05 | Margen- und Deckungsbeitragsauswertung auf Basis der internen EK-Kalkulation (nur Führung) | S |
 | E-06 | Pipeline-Entwicklung über die Zeit (Trend) | S |
 | E-07 | Verlustgründe | S |
 | E-08 | Export der Daten nach Excel bzw. CSV | M |
@@ -79,14 +90,14 @@
 | ID | Anforderung | Prio |
 |----|-------------|------|
 | F-01 | Betrieb im internen Netzwerk; kein Zugriff aus dem Internet | M |
-| F-02 | Anmeldung mit den Firmenkonten (Active Directory bzw. Microsoft Entra ID, SSO), Details siehe offene Fragen | M |
+| F-02 | Anmeldung mit den Firmenkonten über **Microsoft Entra ID** (SSO); Rollen über Entra-Gruppen bzw. App-Rollen | M |
 | F-03 | Rollen- und Rechtekonzept gemäß Projektüberblick, Abschnitt 5 | M |
 | F-04 | Verschlüsselte Verbindung (HTTPS mit internem Zertifikat) | M |
 | F-05 | Tägliche Datensicherung und dokumentierte Wiederherstellung | M |
 | F-06 | DSGVO-konform: Kundenkontaktdaten minimal halten, Lösch- und Aufbewahrungskonzept | M |
 | F-07 | Bedienung im Browser (Edge/Chrome), responsiv mindestens bis Tablet | M |
 | F-08 | Antwortzeit der Kalkulation unter 1 Sekunde | S |
-| F-09 | Nachvollziehbarkeit: Protokoll relevanter Aktionen (Preisänderungen, Rabattfreigaben, Dokumenterzeugung) | S |
+| F-09 | Nachvollziehbarkeit: Protokoll relevanter Aktionen (Preisänderungen, Statusänderungen, Dokumenterzeugung) | S |
 | F-10 | Einfache Installation und Aktualisierung (Container), dokumentierter Betrieb | M |
 | F-11 | Automatisierte Tests für die Preisberechnung (Referenzkalkulationen) | M |
 | F-12 | Oberfläche vollständig in deutscher Sprache | M |

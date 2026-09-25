@@ -19,9 +19,9 @@ Dokument im Ordner `docs/adr/` festgehalten. Grundlage ist
 
 | Nr. | Thema | Status |
 |-----|-------|--------|
-| 0002 | Technologie-Stack (Vorschlag: Django, PostgreSQL, Docker) | offen, siehe [04_architektur.md](../04_architektur.md) |
-| 0003 | Anmeldung (Entra ID/OIDC oder AD/LDAP) | offen, siehe Offene Fragen 6.3 |
-| 0004 | Erzeugung von Word-Dokumenten (Vorlagen mit docxtpl) | offen |
+| 0002 | Technologie-Stack (Vorschlag: ASP.NET Core, SQL Server, IIS auf Windows Server) | offen, siehe [04_architektur.md](../04_architektur.md) |
+| 0003 | Anmeldung über Microsoft Entra ID (OIDC) | Rahmen festgelegt (25.09.2026), ADR folgt mit ADR-0002 |
+| 0004 | Erzeugung von Word-Dokumenten aus Vorlagen | offen, abhängig von ADR-0002 |
 | 0005 | Versionierung von Preislisten und Einfrieren von Kalkulationen | offen |
 
 ## Konsequenzen

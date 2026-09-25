@@ -4,10 +4,17 @@
 
 ## 1. Ausgangslage
 
-Managed Services werden heute (Annahme, bitte bestätigen) von wenigen
-Fachleuten kalkuliert, zum Beispiel in Excel. Vertriebsmitarbeitende sind dafür
-auf diese Personen angewiesen. Das kostet Zeit, führt zu uneinheitlichen
-Angeboten und liefert der Führungsebene keinen Überblick über die Pipeline.
+Der neue Managed-Services-Katalog ist fachlich vollständig ausgearbeitet und im
+SharePoint dokumentiert (Details in [06_ist-analyse.md](06_ist-analyse.md)):
+
+- Servicemodell: Nösse Connect als Pflichtbasis, dazu Bundles, Einzelservices und Add-ons
+- VK-Preisliste (Mastersheet) und interne EK-/Deckungsbeitrags-Kalkulation
+- Excel-Vertriebskalkulator V1.1 mit Angebotsrechner, Onboarding, Supportkontingent und Vorher/Nachher
+- Modulares Vertragswerk: Grundvertrag, AVB, SLA sowie Leistungsscheine je Service und Bundle
+
+Was fehlt: Die Kalkulationen liegen verstreut in Excel-Dateien. Angebote und
+Vertragspakete werden von Hand zusammengestellt. Die Führungsebene hat keinen
+zentralen Überblick darüber, was kalkuliert, angeboten und abgeschlossen wurde.
 
 ## 2. Vision
 
@@ -23,9 +30,9 @@ Angeboten und liefert der Führungsebene keinen Überblick über die Pipeline.
 |-----|------|-------------------|
 | Z1 | Vertrieb kalkuliert selbst | Anteil der Kalkulationen ohne Rückfrage bei Technik oder Produktmanagement |
 | Z2 | Schnellere Angebotserstellung | Zeit von der Kalkulation bis zum fertigen Angebot |
-| Z3 | Einheitliche, korrekte Preise | Keine Abweichung von der gültigen Preisliste außer durch freigegebene Rabatte |
+| Z3 | Einheitliche, korrekte Preise | Keine Abweichung von der gültigen Preisliste (keine Rabatte, keine Handrechnung) |
 | Z4 | Vollständige Vertragsunterlagen | Keine Nachforderungen fehlender Dokumente |
-| Z5 | Transparenz für die Führung | Pipeline, Volumen, Rabatte und Abschlussquote auf einen Blick |
+| Z5 | Transparenz für die Führung | Pipeline, Volumen, Deckungsbeitrag und Abschlussquote auf einen Blick |
 
 ## 4. Abgrenzung (Scope)
 
@@ -45,19 +52,23 @@ Angeboten und liefert der Führungsebene keinen Überblick über die Pipeline.
 - Kundenportal
 
 ### Mögliche spätere Ausbaustufen
-- Anbindung an HubSpot (Firma, Kontakt, Deal automatisch übernehmen oder zurückschreiben)
+- Anbindung an HubSpot (Firma, Kontakt, Deal automatisch übernehmen oder zurückschreiben). **Bewusst nicht in v1.0**
 - Anbindung an das ERP-System
-- Freigabe-Workflow für Rabatte
+- Ablage erzeugter Dokumente in den SharePoint-/Teams-Kundenordnern
 - Ausgabe als PDF zusätzlich zu Word
+- Kalkulation von S61 (Cloud Server) und S41 (Strategische IT-Begleitung)
+
+### Bewusst ausgeschlossen
+- Rabatte durch den Vertrieb (Entscheidung 25.09.2026)
 
 ## 5. Beteiligte und Rollen
 
 | Rolle | Beschreibung | Rechte in der Anwendung (Entwurf) |
 |-------|--------------|-----------------------------------|
-| **Vertrieb** | Erstellt Kalkulationen, Angebote und Vertragsunterlagen | Eigene Kalkulationen anlegen, bearbeiten und ausgeben; Rabatt bis zu einer festgelegten Grenze |
-| **Vertriebsleitung** | Gibt höhere Rabatte frei, sieht das Team | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams und Rabattfreigabe |
-| **Produktmanagement / Service-Owner** | Pflegt Services, Preise und Vorlagen | Pflege von Servicekatalog, Preislisten sowie Angebots- und Vertragsvorlagen |
-| **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken |
+| **Vertrieb** | Erstellt Kalkulationen, Angebote und Vertragsunterlagen, pflegt den Projektstatus | Eigene Kalkulationen anlegen, bearbeiten und ausgeben. **Keine Rabatte, kein Einblick in EK/Marge** |
+| **Vertriebsleitung** | Sieht das Team (Rolle ggf. mit Führungsebene zusammenlegen) | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams |
+| **Produktmanagement / Service-Owner** | Pflegt Services, Preise, EK und Vorlagen | Pflege von Servicekatalog, Preislisten, EK-Kalkulation sowie Angebots- und Vertragsvorlagen |
+| **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken inkl. Deckungsbeitrag und Marge |
 | **Administration (IT)** | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups |
 
 ## 6. Erfolgskriterien für Version 1.0

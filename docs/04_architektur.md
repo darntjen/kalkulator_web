@@ -1,70 +1,94 @@
 # 04 – Architektur (Vorschlag)
 
-> Status: **Vorschlag, noch nicht entschieden.** Die endgültige Entscheidung
-> wird als ADR in [docs/adr/](adr/) festgehalten, sobald die Fragen zur
-> IT-Infrastruktur ([Abschnitt 6](02_offene-fragen.md#6-it-betrieb-und-infrastruktur-)) beantwortet sind.
+> Status: **Vorschlag v2 (25.09.2026), noch nicht entschieden.**
+> Rahmenbedingungen: **Windows Server** im internen Netz, Anmeldung über
+> **Microsoft Entra ID**. Die endgültige Entscheidung wird als ADR-0002 festgehalten,
+> sobald die offene Frage 8.2 (SQL Server, Betrieb) beantwortet ist.
 
 ## 1. Überblick
 
 ```mermaid
 flowchart LR
     subgraph Browser
-        U[Vertrieb / Führung / Pflege]
+        U[Vertrieb / Führung / Produktmanagement]
     end
-    subgraph Interner Server
-        RP[Reverse Proxy<br/>HTTPS]
+    subgraph Windows Server intern
+        IIS[IIS<br/>HTTPS]
         APP[Webanwendung<br/>Kalkulation · Angebote · Verträge · Statistik]
-        DOC[Dokumenten-Engine<br/>Word-Vorlagen → .docx / PDF]
-        DB[(Datenbank)]
-        FS[(Dokumentenablage)]
+        DOC[Dokumenten-Engine<br/>Word-Vorlagen → .docx]
+        DB[(SQL Server)]
+        FS[(Dateiablage<br/>Vorlagen & erzeugte Dokumente)]
     end
-    IDP[Firmen-Anmeldung<br/>AD / Entra ID]
-    HS[HubSpot<br/>optional, später]
+    ENTRA[Microsoft Entra ID<br/>SSO, Gruppen/App-Rollen]
+    SP[SharePoint<br/>später: Vorlagen-Sync, Ablage]
+    HS[HubSpot<br/>später]
 
-    U --> RP --> APP
+    U --> IIS --> APP
     APP --> DB
     APP --> DOC --> FS
-    APP -. SSO .-> IDP
+    APP -. OpenID Connect .-> ENTRA
+    APP -. später .-> SP
     APP -. später .-> HS
 ```
 
-## 2. Empfohlener Technologie-Stack
+## 2. Technologie-Optionen für Windows Server
 
-| Baustein | Empfehlung | Begründung |
-|----------|------------|------------|
-| Programmiersprache / Framework | **Python mit Django** | Bringt Benutzerverwaltung, Rechte, Datenbankzugriff, Migrationen und eine fertige **Admin-Oberfläche für die Katalogpflege** mit. Bewährt, gut wartbar, große Community |
-| Oberfläche | Django-Templates mit **HTMX** (Live-Berechnung ohne Neuladen), einheitliches CSS-Framework | Interaktiv genug für den Kalkulator, ohne getrenntes JavaScript-Frontend; weniger Komplexität im Betrieb |
-| Word-Erzeugung | **docxtpl** (Word-Vorlagen mit Platzhaltern) | Vorlagen werden in Word gestaltet und gepflegt. Corporate Design bleibt vollständig erhalten |
-| PDF und Zusammenführen | **LibreOffice headless** (Konvertierung) + pypdf | Nur falls PDF oder ein zusammengeführtes Vertragspaket gewünscht ist |
-| Datenbank | **PostgreSQL** | Robust, kostenfrei, gut für Auswertungen. Alternativ bestehender SQL Server |
-| Statistik / Diagramme | Auswertung in der Datenbank, Diagramme mit Chart.js | Keine zusätzliche BI-Lizenz nötig; Export nach Excel/CSV |
-| Anmeldung | **Microsoft Entra ID (OIDC)** oder **LDAP gegen Active Directory** | Abhängig von Frage 6.3. Rollen über AD-Gruppen steuerbar |
-| Betrieb | **Docker Compose** (App, Datenbank, Reverse Proxy) | Einfache Installation, Aktualisierung und Wiederherstellung |
-| Tests | pytest, Referenzkalkulationen als Testfälle | Preisberechnung ist geschäftskritisch und muss automatisch geprüft werden |
+Mit Windows Server als Ziel ändert sich die Empfehlung aus Version 1. Docker mit
+Linux-Containern ist auf Windows Server nur umständlich zu betreiben.
 
-### Betrachtete Alternativen
+| Kriterium | **Option A: ASP.NET Core (.NET, LTS)** | Option B: Python/Django |
+|-----------|----------------------------------------|-------------------------|
+| Hosting auf Windows Server | Nativ unter IIS, Standardfall | Möglich (IIS + Python-Prozess), weniger verbreitet |
+| Entra-ID-Anmeldung | Erstklassig über Microsoft.Identity.Web | Gut über OIDC-Bibliothek (MSAL) |
+| Datenbank | SQL Server (auch Express, kostenlos bis 10 GB) oder PostgreSQL | SQL Server über mssql-django oder PostgreSQL |
+| Word-Vorlagen | Open XML SDK (Microsoft, kostenlos) mit Platzhaltern bzw. Inhaltssteuerelementen; etwas mehr Eigenentwicklung | docxtpl (sehr komfortabel, Schleifen/Tabellen direkt in Word) |
+| Admin-Oberfläche für Katalogpflege | Selbst zu bauen (überschaubar) | Django-Admin fertig enthalten |
+| Betrieb durch interne IT | Vertraut (IIS, SQL Server, Windows-Updates, Veeam-Sicherung) | Zusätzliche Laufzeitumgebung (Python) zu pflegen |
+| Oberfläche | Blazor Server (interaktiv, Live-Berechnung ohne eigenes JavaScript-Framework) | Django-Templates + HTMX |
 
-| Alternative | Warum (vorerst) nicht bevorzugt |
-|-------------|--------------------------------|
-| TypeScript (Node.js) + React | Moderner Frontend-Stack, aber getrenntes Frontend und Backend bedeuten mehr Aufwand in Entwicklung und Betrieb. Die Admin-Oberfläche müsste selbst gebaut werden |
-| .NET (ASP.NET Core) | Sinnvoll, falls die interne IT stark auf Windows/.NET ausgerichtet ist. Word-Vorlagen sind etwas aufwendiger. **Neu bewerten, falls der Zielserver ein Windows Server ist** |
-| Low-Code (Power Apps o. Ä.) | Schnell für einfache Formulare. Komplexe Preislogik, Word-Vorlagen und Versionierung stoßen aber an Grenzen; zudem Lizenzkosten |
-| Weiterentwicklung der Excel-Lösung | Keine zentrale Datenhaltung, keine Statistik, keine Rechteverwaltung |
+**Empfehlung: Option A (ASP.NET Core mit Blazor Server, SQL Server, IIS).**
+Die Anwendung passt sich nahtlos in eine Windows-/Microsoft-Umgebung ein.
+Die Anmeldung per Entra ID ist Standard. Die interne IT kann Betrieb,
+Updates und Sicherung mit bekannten Werkzeugen erledigen. Der Nachteil ist, dass
+Word-Vorlagen und Pflegemasken mehr Eigenentwicklung brauchen. Dem steht ein
+dauerhaft einfacherer Betrieb gegenüber.
 
-## 3. Modulschnitt im Code (geplant)
+Option B wäre vorzuziehen, wenn die Pflege von Word-Vorlagen mit komplexen
+Tabellen durch Fachanwender höchste Priorität hat oder wenn die Anwendung
+doch auf einem Linux-Server bzw. einer Linux-VM laufen kann.
+
+## 3. Empfohlener Stack (Option A) im Detail
+
+| Baustein | Empfehlung |
+|----------|------------|
+| Laufzeit | .NET (aktuelle LTS-Version), ASP.NET Core |
+| Oberfläche | Blazor Server, Komponentenbibliothek (z. B. MudBlazor, MIT-Lizenz) |
+| Datenzugriff | Entity Framework Core mit Migrationen |
+| Datenbank | SQL Server (bestehende Instanz oder SQL Server Express) |
+| Anmeldung | Entra ID über OpenID Connect (App-Registrierung); Rollen über **App-Rollen** oder Entra-Gruppen: `Vertrieb`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin` |
+| Word-Erzeugung | Open XML SDK; Vorlagen mit Platzhaltern bzw. Inhaltssteuerelementen; Tabellen (§ 3 Vergütung, Preistabelle) programmatisch |
+| Vertragspaket | ZIP mit befüllten .docx in Rangfolge und Anlagenverzeichnis; PDF optional später über LibreOffice headless |
+| Diagramme | Chart-Komponente der UI-Bibliothek oder Chart.js |
+| Export | Excel über ClosedXML (MIT-Lizenz) |
+| Tests | xUnit; Referenzkalkulationen ([07](07_referenzkalkulationen.md)) als Testfälle |
+| Hosting | IIS auf Windows Server, HTTPS mit internem Zertifikat |
+| Sicherung | SQL-Backup + Dateiablage über vorhandene Backup-Lösung |
+| CI | GitHub Actions: Build, Tests, Artefakt für die Installation |
+
+## 4. Modulschnitt im Code
 
 | Modul | Verantwortung |
 |-------|---------------|
-| `katalog` | Services, Preiskomponenten, Preislisten, Regeln, Textbausteine |
-| `kalkulation` | Kalkulationen, Versionen, Positionen, **Rechenkern** (ohne Oberflächenbezug, voll getestet) |
-| `dokumente` | Angebots- und Vertragserzeugung aus Vorlagen, Archiv |
-| `statistik` | Kennzahlen, Dashboards, Exporte |
-| `konten` | Anmeldung, Rollen, Rechte |
+| `Katalog` | Services, Bundles, Preiskomponenten, Preislisten, Parameter, Regeln |
+| `Kalkulation` | Kalkulationen, Versionen, Positionen, Projektstatus, **Rechenkern** (ohne UI-Bezug, voll getestet), Sonderrechner S14/S60/Onboarding |
+| `Dokumente` | Vorlagenverwaltung, Angebotserzeugung, Vertragspaket, Archiv, Nummernkreise |
+| `Statistik` | Kennzahlen, Dashboards, Exporte, rollenabhängige Sicht |
+| `Konten` | Entra-Anmeldung, Rollen, Rechte, Audit-Protokoll |
 
-## 4. Sicherheit und Datenschutz (Grundsätze)
+## 5. Sicherheit und Datenschutz
 
-- Zugriff nur aus dem internen Netz; HTTPS mit internem Zertifikat.
-- Anmeldung ausschließlich über Firmenkonten; keine lokalen Passwörter außer einem Notfall-Admin.
-- Interne Kosten und Margen nur für berechtigte Rollen.
-- Protokollierung sicherheits- und geschäftsrelevanter Aktionen.
-- Keine Kundendaten im Git-Repository; Beispieldaten nur anonymisiert.
+- Zugriff nur aus dem internen Netz (ggf. VPN); HTTPS.
+- Anmeldung ausschließlich über Entra ID; kein lokales Passwort außer einem dokumentierten Notfallzugang.
+- EK- und Margendaten werden serverseitig nur für berechtigte Rollen geladen.
+- Protokollierung von Preisänderungen, Vorlagenwechseln, Statusänderungen und Dokumenterzeugung.
+- Das Repository darf interne Preise und Vorlagen enthalten (Freigabe 25.09.2026). Kundendaten gehören nicht ins Repository.

@@ -24,31 +24,35 @@ So kann der Vertrieb früh Rückmeldung geben.
 **Ziel:** Klarheit über Umfang, Preislogik, Dokumente und Technik.
 
 - [x] Repository und Planungsstruktur anlegen
-- [ ] Offene Fragen klären ([02_offene-fragen.md](02_offene-fragen.md))
-- [ ] Referenzmaterial sammeln: aktuelle Preisliste bzw. Kalkulations-Excel, Angebotsvorlage, Vertragsvorlagen
-- [ ] Preislogik aller Services fachlich beschreiben und mit 3–5 **Referenzkalkulationen** (Eingabe → erwartetes Ergebnis) belegen
-- [ ] Rollen und Rechte final festlegen
-- [ ] Kennzahlen für die Führungsebene festlegen
-- [ ] Architekturentscheidung treffen (ADR-0002 Technologie-Stack, ADR-0003 Anmeldung)
-- [ ] Anforderungen priorisieren und Umfang von Version 1.0 festschreiben
+- [x] Referenzmaterial im SharePoint gesichtet und ausgewertet ([06_ist-analyse.md](06_ist-analyse.md))
+- [x] Preislogik beschrieben und Referenzkalkulationen entworfen ([07_referenzkalkulationen.md](07_referenzkalkulationen.md))
+- [x] Grundsatzentscheidungen: keine Rabatte, Projektstatus im Kalkulator, HubSpot später, Windows Server, Entra ID
+- [ ] Offene Fragen aus Abschnitt 8 klären ([02_offene-fragen.md](02_offene-fragen.md))
+- [ ] Referenzkalkulationen durch den Fachbereich bestätigen lassen
+- [ ] Angebotsvorlage klären bzw. entwerfen
+- [ ] Rollen, Rechte und Kennzahlen final festlegen
+- [ ] Architekturentscheidung treffen (ADR-0002 Technologie-Stack)
+- [ ] Umfang von Version 1.0 festschreiben
 
 **Ergebnis:** Freigegebenes Fachkonzept, Architekturentscheidung, Umfang v1.0.
 
 ## Phase 1 – Fundament und Servicekatalog
 
-- Projektgerüst, Docker-Setup, automatisierte Tests und Code-Prüfung (CI)
-- Anmeldung an Firmenkonten, Rollen
-- Datenmodell für Katalog, Preislisten, Regeln, Textbausteine
+- Projektgerüst, automatisierte Tests und Code-Prüfung (CI), Installationspaket für IIS
+- Entra-ID-Anmeldung (App-Registrierung), Rollen
+- Datenmodell für Katalog, Bundles, Preislisten, Parameter, Regeln, EK-Kalkulation
 - Pflegeoberfläche für den Katalog
-- Erstbefüllung mit den echten Services und Preisen
+- Erstbefüllung aus Mastersheet, Vertriebskalkulator, S14-Baukasten und EK-Kalkulation
 
 **Ergebnis:** Katalog ist vollständig gepflegt und von der Produktverantwortung abgenommen.
 
 ## Phase 2 – Kalkulator (Modul 1)
 
 - Rechenkern mit Tests gegen die Referenzkalkulationen
-- Kalkulationsoberfläche mit Live-Berechnung, Regelprüfung, Rabatten
-- Speichern, Versionieren, Statusverwaltung
+- Kalkulationsoberfläche mit Live-Berechnung und Regelprüfung (Connect-Pflicht, Bundle-Deduplizierung)
+- Sonderrechner: Onboarding, Supportkontingent, Server Backup (S14)
+- Vorher/Nachher-Vergleich für Bestandskunden
+- Speichern, Versionieren, Projektstatus
 
 **Ergebnis:** Vertrieb kann kalkulieren. Die Ergebnisse stimmen mit den Referenzkalkulationen überein.
 
@@ -61,8 +65,9 @@ So kann der Vertrieb früh Rückmeldung geben.
 
 ## Phase 4 – Vertragsunterlagen (Modul 3)
 
-- Vertragsvorlagen mit Platzhaltern, Zuordnung zu Services
-- Paketausgabe (ZIP und/oder zusammengeführtes Dokument)
+- Vertragsvorlagen aus `03_Vertragswerk` mit Platzhaltern versehen (Grundvertrag § 3/§ 6, S14, S60)
+- Automatische Auflösung: Bundle → enthaltene Einzel-Leistungsscheine; Rangfolge nach § 1 Abs. 3
+- Paketausgabe (ZIP mit Anlagenverzeichnis)
 - Versionierung der Vorlagen
 
 **Ergebnis:** Vollständige Vertragsunterlagen per Knopfdruck.
@@ -84,8 +89,9 @@ So kann der Vertrieb früh Rückmeldung geben.
 ## Phase 7 – Ausbau (nach Bedarf)
 
 - HubSpot-Anbindung
-- Freigabe-Workflow für Rabatte (falls nicht in v1.0)
+- Ablage der Dokumente in SharePoint/Teams-Kundenordnern; Vorlagen-Sync aus SharePoint
 - PDF-Ausgabe, weitere Vorlagen
+- S61 Cloud Server, S41 Strategische IT-Begleitung
 - Anbindung an das ERP-System
 
 ## Arbeitsweise

@@ -8,7 +8,9 @@ gebraucht wird:
 - Textbausteine bzw. Leistungsbeschreibungen je Service
 - Vertragsvorlagen (Rahmenvertrag, Leistungsscheine, SLA, AVV, AGB …)
 
-> ⚠️ **Wichtig:** Keine echten Kundendaten und keine vertraulichen
-> Einkaufspreise in das Repository legen, solange nicht geklärt ist, ob
-> GitHub dafür freigegeben ist (siehe Offene Fragen 6.9). Beispiele bitte
-> anonymisieren.
+Die maßgeblichen Originale liegen im SharePoint (Site „Service-Katalog“,
+Ordner „Nösse MSP Servicekatalog“), siehe [../06_ist-analyse.md](../06_ist-analyse.md).
+
+> Interne Preise und Vorlagen dürfen im Repository liegen (Freigabe vom
+> 25.09.2026). **Keine echten Kundendaten** ablegen. Kundenverträge
+> und -angebote bitte nur anonymisiert.

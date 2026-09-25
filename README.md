@@ -10,8 +10,9 @@ Die Anwendung läuft auf einem Webserver **innerhalb unseres Netzwerks**
 
 ## Projektstatus
 
-**Phase 0 – Planung.** Es gibt noch keinen Anwendungscode. Aktuell werden
-Ziele, Anforderungen und Architektur festgelegt.
+**Phase 0 – Planung.** Es gibt noch keinen Anwendungscode. Der fachliche
+Ist-Stand aus dem SharePoint ist ausgewertet. Offen sind noch einzelne Fragen
+und die Architekturentscheidung.
 
 ## Die vier Kernfunktionen
 
@@ -32,6 +33,8 @@ Ziele, Anforderungen und Architektur festgelegt.
 | [docs/03_fachmodell.md](docs/03_fachmodell.md) | Erster Entwurf des Datenmodells (Servicekatalog, Kalkulation, Angebot …) |
 | [docs/04_architektur.md](docs/04_architektur.md) | Architekturvorschlag und Technologieoptionen |
 | [docs/05_roadmap.md](docs/05_roadmap.md) | Phasen, Meilensteine und Arbeitspakete |
+| [docs/06_ist-analyse.md](docs/06_ist-analyse.md) | Auswertung des SharePoint-Servicekatalogs: Services, Preise, Regeln, Vertragswerk |
+| [docs/07_referenzkalkulationen.md](docs/07_referenzkalkulationen.md) | Beispielrechnungen mit erwarteten Ergebnissen (spätere Abnahmetests) |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 
@@ -43,5 +46,5 @@ kalkulator_web/
 ├── src/             Anwendungscode (ab Phase 1)
 ├── templates/       Word-Vorlagen für Angebote und Verträge (ab Phase 2)
 ├── tests/           Automatisierte Tests
-└── deploy/          Container- und Serverkonfiguration
+└── deploy/          Installations- und Serverkonfiguration (IIS, Windows Server)
 ```

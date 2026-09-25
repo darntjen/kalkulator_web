@@ -1,76 +1,102 @@
-# 03 – Fachmodell (erster Entwurf)
+# 03 – Fachmodell
 
-> Status: **Entwurf.** Das Modell wird verfeinert, sobald die Antworten zu
-> [Offene Fragen, Abschnitt 1](02_offene-fragen.md#1-services-und-preislogik-) vorliegen.
+> Status: **Entwurf v2** (25.09.2026), abgeleitet aus der SharePoint-Analyse
+> ([06_ist-analyse.md](06_ist-analyse.md)).
 
 ## Zentrale Designprinzipien
 
-1. **Datengetrieben statt hartcodiert:** Services, Preise, Regeln und Texte
-   stehen in der Datenbank. Sie werden über die Oberfläche gepflegt, nicht im
-   Programmcode.
-2. **Unveränderliche Historie:** Eine gespeicherte Kalkulationsversion
-   „friert“ Preise und Texte ein, als Momentaufnahme. Spätere Preisänderungen
-   verändern alte Angebote nicht. Das ist wichtig für Nachvollziehbarkeit
-   und Statistik.
+1. **Datengetrieben statt hartcodiert:** Services, Preise, Bundles, Regeln und
+   Vorlagen stehen in der Datenbank. Sie werden über die Oberfläche gepflegt,
+   nicht im Programmcode. Ausnahme sind Spezialrechner mit eigener Logik
+   (Onboarding, Supportkontingent, Server Backup): Ihre **Parameter** sind pflegbar,
+   ihr **Rechenweg** ist Code und durch Tests abgesichert.
+2. **Unveränderliche Historie:** Eine gespeicherte Kalkulationsversion „friert“
+   Preise, Bezeichnungen und Vorlagenversionen ein, als Momentaufnahme.
+   Spätere Preisänderungen verändern alte Angebote nicht.
 3. **Eine Rechenlogik für alles:** Kalkulator, Angebot, Vertrag und Statistik
-   nutzen dieselbe Berechnung. So gibt es keine abweichenden Zahlen.
+   nutzen denselben Rechenkern.
+4. **EK strikt getrennt:** EK und Marge liegen in eigenen Tabellen. Sie werden
+   nur für berechtigte Rollen geladen, nicht bloß in der Oberfläche ausgeblendet.
 
 ## Objekte und Beziehungen
 
 ```mermaid
 erDiagram
     SERVICE_KATEGORIE ||--o{ SERVICE : enthaelt
-    SERVICE ||--o{ PREISKOMPONENTE : hat
+    SERVICE ||--o{ PREISKOMPONENTE : "hat (z. B. MDR pro User / pro Server)"
+    SERVICE ||--o{ BUNDLE_BESTANDTEIL : "ist Bundle aus"
+    BUNDLE_BESTANDTEIL }o--|| SERVICE : "enthält Einzelservice"
+    SERVICE ||--o{ SERVICE_REGEL : "setzt voraus / schließt aus"
+    SERVICE ||--o| DOKUMENT_VORLAGE : "Leistungsschein"
     PREISLISTE ||--o{ PREIS : enthaelt
     PREISKOMPONENTE ||--o{ PREIS : "bepreist in"
-    PREIS ||--o{ PREISSTAFFEL : "optional gestaffelt"
-    SERVICE ||--o{ SERVICE_REGEL : "Abhängigkeit/Mindestmenge"
-    SERVICE ||--o{ TEXTBAUSTEIN : beschrieben_durch
-    SERVICE }o--o{ VERTRAGSDOKUMENT_VORLAGE : erfordert
+    PREISLISTE ||--o{ ONBOARDING_STAFFEL : enthaelt
+    PREISLISTE ||--o{ PARAMETER : "z. B. AE-Satz, S14-Bausteine"
+    PREIS ||--o| EK_KALKULATION : "nur Führung/PM"
 
     KUNDE ||--o{ KALKULATION : hat
     BENUTZER ||--o{ KALKULATION : erstellt
+    KALKULATION ||--o{ STATUS_EREIGNIS : "Projektstatus-Historie"
     KALKULATION ||--|{ KALKULATIONSVERSION : "V1, V2, …"
-    KALKULATIONSVERSION ||--|{ POSITION : enthaelt
     KALKULATIONSVERSION }o--|| PREISLISTE : "berechnet mit"
+    KALKULATIONSVERSION ||--|{ POSITION : enthaelt
+    KALKULATIONSVERSION ||--o| SONDERRECHNER_EINGABE : "S14, S60, Onboarding"
     KALKULATIONSVERSION ||--o{ DOKUMENT : erzeugt
-    KALKULATIONSVERSION ||--o| RABATTFREIGABE : "ggf."
 ```
 
 ## Objektbeschreibungen
 
 | Objekt | Zweck | Wichtige Felder (Entwurf) |
 |--------|-------|---------------------------|
-| **Servicekategorie** | Gruppierung im Katalog | Name, Sortierung |
-| **Service** | Ein verkaufbarer Managed Service | Name, Kurzbeschreibung, Kategorie, aktiv/inaktiv |
-| **Preiskomponente** | Wie ein Service bepreist wird | Einheit (User, Gerät, Server, pauschal), Art (monatlich/einmalig), Mindestmenge |
-| **Preisliste** | Versionierte Sammlung aller Preise | Version, gültig ab, gültig bis, Status (Entwurf/freigegeben) |
-| **Preis** | Verkaufspreis und interner Kostensatz je Komponente und Preisliste | VK, EK/Kostensatz, Service-Level |
-| **Preisstaffel** | Mengenabhängige Preise | Menge ab, Preis |
-| **Serviceregel** | Fachliche Prüfungen | Typ (erfordert, schließt aus, Mindestmenge), Meldungstext |
-| **Textbaustein** | Angebotstexte je Service | Leistungsinhalt, Voraussetzungen, Ausschlüsse; versioniert |
-| **Vertragsdokument-Vorlage** | Word-Vorlage für Vertragsunterlagen | Dokumenttyp, Version, gilt immer / nur bei bestimmten Services |
-| **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner, ggf. HubSpot-ID |
-| **Kalkulation** | Der „Vorgang“ zu einem Kunden | Titel, Kunde, Ersteller, Status, Verlustgrund |
-| **Kalkulationsversion** | Ein konkreter Angebotsstand | Nummer, Laufzeit, Startdatum, Rabatt, Summen (eingefroren), Preislistenversion |
-| **Position** | Ein Service mit Menge in einer Version | Service, Komponente, Menge, Einzelpreis (eingefroren), Rabatt |
-| **Dokument** | Erzeugte Datei (Angebot, Vertragspaket) | Typ, Dateiname, Vorlagenversion, erzeugt am/von |
-| **Rabattfreigabe** | Freigabe über der Rabattgrenze | Angefragt von, freigegeben von, Zeitpunkt, Kommentar |
+| **Servicekategorie** | Gruppierung im Katalog | Name (Nösse Connect, User/Server/Security/Network as a Service, Add-ons, Optionen), Sortierung |
+| **Service** | Verkaufbare Leistung (Einzelservice, Bundle, Connect-Stufe, Option) | Code (S02, B01 …), Service-ID (NOS-…), Bezeichnung, Typ (Connect/Bundle/Einzel/Add-on/Option), Kurzbeschreibung, Vertriebsstatus (verkaufsfähig/auf Anfrage/geparkt/zukünftig) |
+| **Preiskomponente** | Abrechenbare Einheit eines Service | Einheit (Kunde, User, Server, Firewall, Tenant, AD-Umgebung, Switch, AP, Netzwerkgerät, Device, NAS, Client), monatlich/einmalig |
+| **Bundle-Bestandteil** | Welche Einzelservices ein Bundle enthält | Bundle, Einzelservice (z. B. B02 → B01-Inhalt + S05, S06, S07) |
+| **Serviceregel** | Fachliche Prüfungen | Typ (erfordert, schließt aus, genau eine aus Gruppe, nicht verkaufen), Meldungstext |
+| **Preisliste** | Versionierter Preisstand | Version, gültig ab, Status (Entwurf/freigegeben). Start: „Preisstand 15.07.2026“ |
+| **Preis** | VK je Preiskomponente und Preisliste | VK netto |
+| **EK-Kalkulation** | Interne Kosten je Preiskomponente | EK/Lizenz, Aufwand Min./Monat, Overhead, Gesamtkosten, DB, Marge |
+| **Onboarding-Staffel** | Einmalpauschale | Größe (XS–L), AP von/bis, Connect-Stufe, Betrag |
+| **Parameter** | Zentrale Sätze | AE-Satz Ebene 1/2/3, Commitment-Rabatt S60, S14-Bausteine S1/S2/F1–F3, Paketgröße 500 GB, EK-Kostensatz |
+| **Dokument-Vorlage** | Word-Vorlage | Typ (Angebot, Grundvertrag, AVB, SLA, AVV, Leistungsschein), Code, Version, Datei, gültig ab |
+| **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner; später HubSpot-ID |
+| **Kalkulation** | Vorgang zu einem Kunden | Titel, Kunde, Ersteller, **Projektstatus**, Verlustgrund, Neukunde/Bestandskunde |
+| **Status-Ereignis** | Historie des Projektstatus | alter/neuer Status, wer, wann, Kommentar |
+| **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Arbeitsplätze, Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
+| **Position** | Service × Menge | Service, Preiskomponente, Menge, Einzelpreis (eingefroren), Betrag, Hinweis „im Bundle enthalten“ |
+| **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste |
+| **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
-## Statusmodell einer Kalkulation
+## Projektstatus einer Kalkulation (Vorschlag, siehe offene Frage 8.3)
 
 ```mermaid
 stateDiagram-v2
     [*] --> Entwurf
-    Entwurf --> Freigabe_ausstehend: Rabatt über Grenze
-    Freigabe_ausstehend --> Entwurf: abgelehnt
-    Freigabe_ausstehend --> Angebot_erstellt: freigegeben
-    Entwurf --> Angebot_erstellt: Angebot erzeugt
-    Angebot_erstellt --> Entwurf: neue Version
-    Angebot_erstellt --> Gewonnen
-    Angebot_erstellt --> Verloren
-    Angebot_erstellt --> Zurueckgezogen
+    Entwurf --> Angebot_versendet: Angebot erzeugt und versendet
+    Angebot_versendet --> In_Verhandlung
+    Angebot_versendet --> Entwurf: neue Version
+    In_Verhandlung --> Entwurf: neue Version
+    Angebot_versendet --> Gewonnen
+    In_Verhandlung --> Gewonnen
+    Angebot_versendet --> Verloren
+    In_Verhandlung --> Verloren
+    Angebot_versendet --> Zurueckgestellt
+    In_Verhandlung --> Zurueckgestellt
+    Zurueckgestellt --> In_Verhandlung
     Gewonnen --> [*]
     Verloren --> [*]
-    Zurueckgezogen --> [*]
 ```
+
+Der Vertrieb setzt den Status selbst. Jede Änderung wird mit Zeitstempel
+protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
+„Verloren“ ist ein Verlustgrund Pflicht (Auswahlliste plus Freitext).
+
+## Rechenkern: Ablauf einer Berechnung
+
+1. Positionen: `Betrag = RUNDEN(VK × Menge; 2)`
+2. Bundle-Deduplizierung: Einzelservices, die in einem gebuchten Bundle enthalten sind, werden bis zur Bundle-Menge mit 0 € berechnet und gekennzeichnet (Regel R3)
+3. Sonderrechner: S60 (Supportkontingent), S14 (Server Backup) → jeweils eine Position
+4. Summe monatlich; Onboarding aus Staffel (Connect-Stufe × Arbeitsplätze)
+5. Kennzahlen: MRR = Summe monatlich; ARR = 12 × MRR; Wert der Erstlaufzeit = 12 × MRR + Onboarding
+6. Nur für berechtigte Rollen: Kosten, DB und Marge je Position und gesamt
+7. Regelprüfung (R1–R6) → Fehler (blockiert Angebot) oder Hinweis
