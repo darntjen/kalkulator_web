@@ -104,7 +104,7 @@ protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
 
 ## Auflösung des Vertragspakets (Algorithmus)
 
-1. Rahmendokumente in fester Reihenfolge: AVV (sobald vorhanden), Grundvertrag, AVB, Anlage SLA (mit gewählter Connect-Stufe), S01 (gewählte Stufe). Sonderfall nur S41: ohne SLA und S01 (Details offene Frage 10.2).
+1. Rahmendokumente in fester Reihenfolge: AVV (sobald vorhanden), Grundvertrag, AVB, Anlage SLA (mit gewählter Connect-Stufe), S01 (gewählte Stufe). Sonderfall nur S41: ohne S01; Anlage SLA mit den Werten der Stufe Standard. Der Grundvertrag bleibt vorerst unverändert (§ 1 Abs. 2 wird intern abgestimmt, Frage 10.4).
 2. Für jedes gebuchte Bundle (Reihenfolge nach Code): B-Schein, danach rekursiv alle enthaltenen S-Scheine. Verschachtelte Bundles werden aufgelöst, aber nicht selbst beigelegt.
 3. Danach alle einzeln gebuchten S-Scheine (nach Code), sofern nicht bereits durch ein Bundle enthalten.
 4. Sonderpositionen haben keinen Leistungsschein. Sie erscheinen nur im Angebot und in § 3 des Grundvertrags.
