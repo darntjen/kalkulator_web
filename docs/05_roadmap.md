@@ -28,7 +28,8 @@ So kann der Vertrieb früh Rückmeldung geben.
 - [x] Preislogik beschrieben und Referenzkalkulationen entworfen ([07_referenzkalkulationen.md](07_referenzkalkulationen.md))
 - [x] Grundsatzentscheidungen: keine Rabatte, Projektstatus im Kalkulator, HubSpot später, Windows Server, Entra ID
 - [x] Offene Fragen aus Abschnitt 8 geklärt (außer AVV, wird nachgereicht)
-- [ ] Offene Fragen aus Abschnitt 9 klären ([02_offene-fragen.md](02_offene-fragen.md))
+- [x] Offene Fragen aus Abschnitt 9 geklärt
+- [ ] Offene Fragen aus Abschnitt 10 klären ([02_offene-fragen.md](02_offene-fragen.md))
 - [ ] Referenzkalkulationen durch den Fachbereich bestätigen lassen
 - [x] Angebotsvorlage entworfen ([08_angebotsvorlage.md](08_angebotsvorlage.md)); Abnahme des Entwurfs offen
 - [ ] Rollen, Rechte und Kennzahlen final festlegen

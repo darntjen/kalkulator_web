@@ -66,7 +66,7 @@ zentralen Überblick darüber, was kalkuliert, angeboten und abgeschlossen wurde
 | Rolle | Beschreibung | Rechte in der Anwendung (Entwurf) |
 |-------|--------------|-----------------------------------|
 | **Vertrieb** | Erstellt Kalkulationen, Angebote und Vertragsunterlagen, pflegt den Projektstatus | Eigene Kalkulationen anlegen, bearbeiten und ausgeben. **Keine Rabatte, kein Einblick in EK/Marge** |
-| **Vertriebsleitung** | Sieht das Team (Rolle ggf. mit Führungsebene zusammenlegen) | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams |
+| **Vertriebsleitung** | Sieht das Team, gibt Sonderpositionen frei | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams und **Freigabe freier Sonderpositionen** |
 | **Produktmanagement / Service-Owner** | Pflegt Services, Preise, EK und Vorlagen | Pflege von Servicekatalog, Preislisten, EK-Kalkulation sowie Angebots- und Vertragsvorlagen |
 | **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken inkl. Deckungsbeitrag und Marge |
 | **Administration (IT)** | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups |

@@ -18,7 +18,7 @@ Grundlage ist der **Corporate-Design-Styleguide** (SharePoint, Marketing/Booklet
 | Akzent | Orange `#EE7F00`: Linie unter Überschriften, Aufzählungszeichen |
 | Nebentext | Grau `#737373`: Hinweise, Fußzeile |
 | Schrift | Verdana (Office-Standardschrift laut Styleguide) |
-| Logo | **Platzhalter.** Das Logo liegt im ELO (Marketing › Logo) und muss in die Vorlage eingesetzt werden. Bis dahin steht ein Schriftzug „Nösse“ in Petrol mit Claim „IHR IT-UMSORGER.“ |
+| Logo | Nösse-Logo mit Claim „IHR IT-UMSORGER.“ (`templates/assets/noesse-logo.jpg`, aus dem Intranet-Wiki, 292 × 123 px). Auf dem Deckblatt groß, in der Kopfzeile klein. Eine höher aufgelöste Fassung wäre für den Druck besser (offene Frage 10.3) |
 | Format | A4, Ränder 2 cm, Kopfzeile mit Angebotsnummer und Kunde, Fußzeile mit Firmenangaben und „Seite X von Y“ |
 
 ## 2. Aufbau
@@ -63,7 +63,7 @@ wiederholt werden.
 
 ## 4. Offene Punkte zur Vorlage
 
-- Logo aus ELO bereitstellen
+- Logo in höherer Auflösung (optional)
 - Abnahme von Aufbau und Texten (Anschreiben, Leistungsbeschreibungen)
 - Absenderdaten aus Entra (offene Frage 9.6), Standard-Gültigkeit 30 Tage (offene Frage 9.7)
 - Anhang mit vollständigen Leistungsbeschreibungen je Service (wie im AAV-Angebot, Anhang A)? Oder genügt der Verweis auf die Leistungsscheine?

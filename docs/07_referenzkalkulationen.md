@@ -86,7 +86,10 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 
 | Fall | Erwartete Reaktion des Kalkulators |
 |------|------------------------------------|
-| Keine Connect-Stufe gewählt | Fehler: Connect ist Pflicht. Kein Angebot möglich |
+| Keine Connect-Stufe gewählt, andere Services gebucht | Fehler: Connect ist Pflicht. Kein Angebot möglich |
+| Nur S41 gebucht, keine Connect-Stufe | zulässig (einzige Ausnahme) |
+| S41 und B01 gebucht, keine Connect-Stufe | Fehler: Connect ist Pflicht (Ausnahme gilt nur für reine S41-Kalkulationen) |
+| Sonderposition nicht freigegeben | Angebot und Vertragspaket gesperrt, Hinweis „Freigabe durch Vertriebsleitung ausstehend“ |
 | Zwei Connect-Stufen gewählt | Fehler: genau eine Stufe |
 | B01 × 20 und S03 × 20 gewählt | Hinweis: S03 ist in B01 enthalten, wird nicht zusätzlich berechnet |
 | Zukünftigen Service gewählt | nicht auswählbar |
@@ -107,3 +110,14 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 |---------|----------|----------:|
 | S25 einzeln, 30 Clients, 3 Server (mit B01 und B03) | 499 + 30 × 12 + 3 × 69 | 1.066,00 € |
 | B06 + S25-Assets 30 Clients, 3 Server | 1.590 + 30 × 12 + 3 × 69 | 2.157,00 € |
+
+## RK-10 – Cloud Server (S61)
+
+| Eingabe | Rechnung | Monatlich |
+|---------|----------|----------:|
+| EK aus TERRA-Kalkulator 550,00 € | 550,00 ÷ 0,55 | 1.000,00 € |
+| EK aus TERRA-Kalkulator 412,37 € | 412,37 ÷ 0,55 = 749,7636… → gerundet | 749,76 € |
+| S61 ohne S21 | – | Fehler: S21 (zusätzliche Firewall-Instanz) ist Pflicht |
+| S61 ohne Backup-Entscheidung | – | Fehler: S14 buchen oder „Datensicherung durch Kunden“ wählen |
+
+Rundung: kaufmännisch auf 2 Nachkommastellen (zu bestätigen).

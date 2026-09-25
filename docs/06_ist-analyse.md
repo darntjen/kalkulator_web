@@ -214,9 +214,9 @@ Wird ein Einzelservice zusätzlich zu einem Bundle gebucht, das ihn bereits enth
 | Schein | Besonderheit |
 |--------|--------------|
 | S25 Schwachstellenmanagement | Grundservice 499 €/Kundenumgebung + 12 €/Client + 69 €/Server. **Voraussetzung: S01 und ein aktives Bundle B01, B02, B03 oder B04.** In B06 enthalten; die Assetpreise kommen dort zusätzlich hinzu |
-| S41 Strategische IT-Begleitung | Pauschal pro Monat, Preis „[nach Vereinbarung]“ (im AAV-Angebot 350 €). Optional Roadmap-Erstellung 2.400 € einmalig. Laut Leistungsschein ohne Connect buchbar, das widerspricht der S01-Pflicht (offene Frage 9.1). Nicht Teil eines Bundles |
-| S61 Cloud Server (TERRA Cloud) | Buchungsübersicht Ziffer 7.1 (Server Windows/Linux, vCores, RAM, Speicher, IPs, VLANs, Connectoren, Firewall-Appliance, Lizenzen RDS/Office/Exchange/SQL). Gesamtvergütung aus dem TERRA-Kalkulator. **Voraussetzungen:** S01 und **S21 als zusätzliche Firewall-Instanz**. Datensicherung per Ankreuzen: S14 oder Kunde selbst. S11–S13/B03/B04 nur für Windows-Server |
-| B04 / B06 | Bundle-Preis im Schein als „[Preis nach Vereinbarung]“. Wird aus der Kalkulation befüllt (offene Frage 9.4) |
+| S41 Strategische IT-Begleitung | Pauschal pro Monat, Preis „[nach Vereinbarung]“ (im AAV-Angebot 350 €). Optional Roadmap-Erstellung 2.400 € einmalig. Ohne Connect buchbar: **einzige Ausnahme von der S01-Pflicht** (bestätigt). Nicht Teil eines Bundles |
+| S61 Cloud Server (TERRA Cloud) | Buchungsübersicht Ziffer 7.1 (Server Windows/Linux, vCores, RAM, Speicher, IPs, VLANs, Connectoren, Firewall-Appliance, Lizenzen RDS/Office/Exchange/SQL). Gesamtvergütung: Vertrieb erfasst den EK aus dem TERRA-Kalkulator, der Kalkulator rechnet VK = EK ÷ 0,55 (bestätigt). **Voraussetzungen:** S01 und **S21 als zusätzliche Firewall-Instanz**. Datensicherung per Ankreuzen: S14 oder Kunde selbst. S11–S13/B03/B04 nur für Windows-Server |
+| B04 / B06 | Bundle-Preis im Schein als „[Preis nach Vereinbarung]“. Wird aus der Kalkulation befüllt: B06 = 1.590 € zzgl. S25-Assetpreise; B04 = 49,90 €/Server, S14 als eigene Zeile (bestätigt) |
 
 ## 6. Interne Kalkulation (EK, Deckungsbeitrag). Nur für Führung und Controlling
 
@@ -243,8 +243,8 @@ Die vollständige Tabelle aller Einzelservices steht in der Quelldatei. S35 (NAS
 
 | Nr. | Regel | Quelle |
 |-----|-------|--------|
-| R1 | Genau eine Connect-Stufe je Kalkulation (Pflicht) | Vertriebs-Handbuch, Grundvertrag § 1 Abs. 2 |
-| R2 | Alle Bundles, Einzelservices und S60 setzen S01 voraus | LS B01 Ziffer 3 a, Entscheidung 30 |
+| R1 | Genau eine Connect-Stufe je Kalkulation (Pflicht). **Einzige Ausnahme:** Kalkulationen, die ausschließlich S41 enthalten (bestätigt 25.09.2026) | Vertriebs-Handbuch, Grundvertrag § 1 Abs. 2, LS S41 Ziffer 1.2 b |
+| R2 | Alle Bundles, Einzelservices und S60 setzen S01 voraus; Ausnahme S41 | LS B01 Ziffer 3 a, Entscheidung 30 |
 | R3 | Bundle und enthaltener Einzelservice auf derselben Einheit → nur Bundle-Preis | LS B01 Ziffer 3 c |
 | R4 | B04 = B03 + S14 (Server Backup nach Baukasten) | Mastersheet, EK-Kalkulation |
 | R5 | S61-Server → S14 zwingend in der Variante Cloud-Backup, S21 zwingend | S14 Baukasten 6.3.1, 7.2 |
@@ -265,9 +265,9 @@ Die vollständige Tabelle aller Einzelservices steht in der Quelldatei. S35 (NAS
 | I4 | Der S14-Baukasten nennt als Preisuntergrenze sowohl 183 € (Abschnitt 5) als auch 187 € (Abschnitte 7.3 und 10 d) | Richtigen Wert bestätigen |
 | I5 | Die Beispieltabelle in § 3 des Grundvertrags enthält veraltete Daten (S34 Managed WiFi, B05 mit Menge 4) | Die Vorlage muss vor der Automatisierung auf Platzhalter umgestellt werden |
 | I6 | Das Mastersheet nennt für B02 den Preis „54,9“ ohne Formatierung | kosmetisch |
-| I7 | Die AVV ist im Vertragswerk-Ordner nicht vorhanden, wird aber als vorrangige Anlage referenziert | Wird nachgereicht |
-| I8 | Leistungsschein B05 Ziffer 5.1 nennt „199,90 € pro Firewall-Instanz“, Überschrift und Mastersheet sagen „pro Kunde“ | Leistungsschein korrigieren |
-| I9 | Leistungsschein S41 erlaubt die Buchung ohne Connect, laut Vertrieb ist S01 immer Pflicht | Klärung offene Frage 9.1 |
+| I7 | Die AVV ist im Vertragswerk-Ordner nicht vorhanden, wird aber als vorrangige Anlage referenziert | Wird später nachgeliefert; Platz im Vertragspaket vorgesehen |
+| I8 | Leistungsschein B05 Ziffer 5.1 nennt „199,90 € pro Firewall-Instanz“, Überschrift und Mastersheet sagen „pro Kunde“ | Fachbereich klärt; Kalkulator rechnet „pro Kunde“ |
+| I9 | Leistungsschein S41 erlaubt die Buchung ohne Connect | Geklärt: gewollte Ausnahme. Offen: Grundvertrag § 1 Abs. 2 für reine S41-Verträge (Frage 10.2) |
 | I10 | Einheitenbezeichnungen weichen ab: S22 „Tenant“ (Mastersheet) vs. „Mandant“ (B05); S23 „AD-Umgebung“ vs. „AD-Forest“ | kosmetisch, vereinheitlichen |
 
 ## 9. Offene Punkte aus der Analyse

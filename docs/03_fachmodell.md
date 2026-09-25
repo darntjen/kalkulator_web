@@ -65,7 +65,7 @@ erDiagram
 | **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Anzahl User (für Onboarding), Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
 | **Position** | Service × Menge | Service, Preiskomponente, Menge, Einzelpreis (eingefroren), Betrag, Hinweis „im Bundle enthalten“ |
 | **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste; S25: Clients, Server; S61: Buchungsübersicht, TERRA-Wert, Backup-Entscheidung; S41: Roadmap-Erstellung ja/nein |
-| **Sonderposition** | Freie Position | Bezeichnung, Einheit, Menge, Preis, Begründung, Kennzeichen |
+| **Sonderposition** | Freie Position | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), freigegeben von/am, Kommentar |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
 ## Projektstatus einer Kalkulation (bestätigt 25.09.2026)
@@ -99,11 +99,12 @@ protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
 4. Summe monatlich; Onboarding aus Staffel (Connect-Stufe × User; ab 501 User „individuell“)
 5. Kennzahlen: MRR = Summe monatlich; ARR = 12 × MRR; Wert der Erstlaufzeit = 12 × MRR + Onboarding
 6. Nur für berechtigte Rollen: Kosten, DB und Marge je Position und gesamt
-7. Regelprüfung (R1–R6) → Fehler (blockiert Angebot) oder Hinweis
+7. Regelprüfung (R1–R6b) → Fehler (blockiert Angebot) oder Hinweis. Connect-Pflicht entfällt nur, wenn ausschließlich S41 gebucht ist
+8. Nicht freigegebene Sonderpositionen blockieren die Erzeugung von Angebot und Vertragspaket
 
 ## Auflösung des Vertragspakets (Algorithmus)
 
-1. Rahmendokumente in fester Reihenfolge: AVV, Grundvertrag, AVB, Anlage SLA (mit gewählter Connect-Stufe), S01 (gewählte Stufe).
+1. Rahmendokumente in fester Reihenfolge: AVV (sobald vorhanden), Grundvertrag, AVB, Anlage SLA (mit gewählter Connect-Stufe), S01 (gewählte Stufe). Sonderfall nur S41: ohne SLA und S01 (Details offene Frage 10.2).
 2. Für jedes gebuchte Bundle (Reihenfolge nach Code): B-Schein, danach rekursiv alle enthaltenen S-Scheine. Verschachtelte Bundles werden aufgelöst, aber nicht selbst beigelegt.
 3. Danach alle einzeln gebuchten S-Scheine (nach Code), sofern nicht bereits durch ein Bundle enthalten.
 4. Sonderpositionen haben keinen Leistungsschein. Sie erscheinen nur im Angebot und in § 3 des Grundvertrags.
