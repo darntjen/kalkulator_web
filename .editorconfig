@@ -29,6 +29,19 @@ csharp_style_expression_bodied_methods = when_on_single_line:suggestion
 csharp_prefer_braces = true:warning
 dotnet_style_readonly_field = true:warning
 
+# Benennung: Konstanten und static readonly in PascalCase (Regeln mit Modifizierern haben Vorrang)
+dotnet_naming_rule.konstanten_pascal.symbols = konstanten
+dotnet_naming_rule.konstanten_pascal.style = pascal
+dotnet_naming_rule.konstanten_pascal.severity = warning
+dotnet_naming_symbols.konstanten.applicable_kinds = field
+dotnet_naming_symbols.konstanten.required_modifiers = const
+dotnet_naming_rule.statisch_readonly_pascal.symbols = statisch_readonly
+dotnet_naming_rule.statisch_readonly_pascal.style = pascal
+dotnet_naming_rule.statisch_readonly_pascal.severity = warning
+dotnet_naming_symbols.statisch_readonly.applicable_kinds = field
+dotnet_naming_symbols.statisch_readonly.required_modifiers = static, readonly
+dotnet_naming_style.pascal.capitalization = pascal_case
+
 # Benennung: private Felder mit _camelCase
 dotnet_naming_rule.private_fields_underscore.symbols = private_fields
 dotnet_naming_rule.private_fields_underscore.style = underscore_camel
@@ -40,3 +53,7 @@ dotnet_naming_style.underscore_camel.required_prefix = _
 
 # Unnötige usings
 dotnet_diagnostic.IDE0005.severity = warning
+
+# Von „dotnet ef“ erzeugte Migrationen: generierter Code, keine Stilprüfung
+[src/Kalkulator.Infrastructure/Persistenz/Migrationen/*.cs]
+generated_code = true

@@ -1,4 +1,5 @@
 using System.Globalization;
+using Kalkulator.Infrastructure;
 using Kalkulator.Web.Components;
 using Microsoft.AspNetCore.Localization;
 
@@ -8,6 +9,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddHealthChecks();
+
+// Die Verbindungszeichenfolge setzt die interne IT je Umgebung (siehe #2, #8); geöffnet wird erst beim ersten Zugriff.
+builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionString("Kalkulator"));
 
 var app = builder.Build();
 
