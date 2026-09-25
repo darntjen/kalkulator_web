@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Umgebung und Geheimnisse
+.env
+.env.*
+!.env.example
+
+# Erzeugte Dokumente und lokale Daten
+/media/
+/output/
+*.sqlite3
+
+# Office-Sperrdateien
+~$*
+
+# Editor / Betriebssystem
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
