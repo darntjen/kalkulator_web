@@ -1,9 +1,12 @@
 # 10 – Gesamtkonzept: Vom Kundengespräch zum Gesamtangebot
 
-> Status: **Entwurf v2 zur Abstimmung** (29.09.2026)
+> Status: **Freigegeben als Arbeitsstand** (29.09.2026, Dennis Arntjen). Die
+> Bestätigung im Projektmeeting mit André Nösse, Matthias Erhard und Olaf Schmidt
+> steht aus. Offen ist nur noch die Reihenfolge der Phasen (Abschnitt 12).
 >
 > - v1: Erster Entwurf.
 > - v2: Antworten auf die offenen Fragen eingearbeitet, Auswertung von zwei echten Navision-Angeboten ergänzt.
+> - v3: Freigabe mit Änderungen: Navision-Werte sind änderbar, Dienstleistungs-EK je Rolle, Vertrieb sieht die Marge der Transformationsprojekte, stufenweise Inbetriebnahme.
 >
 > Grundlage:
 > - Auftrag von Dennis Arntjen vom 29.09.2026
@@ -122,7 +125,7 @@ flowchart TD
    - Die Anwendung liest Kopf, Positionen und Summen und prüft die Summe.
    - Danach ordnet der Vertrieb die Positionen Kapiteln zu, zum Beispiel „Neue Firewall“ oder „Einrichtung und Migration“, und schreibt Ziel und Nutzen in Kundensprache.
    - Die Einkaufspreise trägt er manuell nach (Abschnitt 6).
-   - **Preise und Mengen ändert der Kalkulator nicht.** Ändert sich etwas, wird in Navision geändert und das PDF neu eingelesen.
+   - Preise, Mengen und Texte **dürfen im Kalkulator geändert werden**. Jede Abweichung vom importierten Navision-Stand wird deutlich gekennzeichnet: an der Position, am Transformationsprojekt und vor dem Erzeugen des Angebots. So ist klar, dass Navision noch nachgezogen werden muss.
 5. **Managed Services kalkulieren:** wie im Clickdummy.
 6. **Verknüpfen und Varianten bilden:** Jeder Baustein wird einer oder mehreren Herausforderungen zugeordnet. Bei Bedarf werden Varianten angelegt, etwa Kauf gegen Leasing oder zwei Ausbaustufen.
 7. **Gesamtangebot erzeugen:** Word-Dokument mit Nummer und Version, archiviert. Die vollständige Positionsliste hängt als Anlage an.
@@ -160,8 +163,8 @@ Kundendaten enthalten.
 | Format | PDF aus Navision. Das Layout ist fest (Antwort vom 29.09.2026) |
 | Werkzeug | PDF-Textextraktion mit Koordinaten in .NET (z. B. PdfPig, Apache-2.0-Lizenz). Die Entscheidung folgt als ADR |
 | Prüfung | Summe der Positionen = Total netto, sonst wird der Import mit Hinweis abgelehnt. Die Kundennummer wird gegen das Kundenprojekt geprüft (Warnung) |
-| Bearbeiten | Kapitel, Art, Sichtbarkeit (einzeln oder zusammengefasst), Kundentexte und EK lassen sich bearbeiten. **Preise und Mengen nicht** |
-| Neue Fassung | Erneuter Import mit derselben Angebotsnummer ersetzt die Positionen. Kapitel, Art und EK werden über Positionsnummer und Artikelnummer übernommen, soweit möglich. Die alte Fassung bleibt einsehbar |
+| Bearbeiten | Alles lässt sich bearbeiten, auch Preise, Mengen und Positionen (Entscheidung 29.09.2026). Der Kalkulator merkt sich den importierten Wert. Jede Abweichung wird als **„abweichend vom Navision-Stand“** gekennzeichnet, mit altem und neuem Wert. Vor dem Erzeugen des Angebots erscheint ein Hinweis mit der Liste der Abweichungen |
+| Neue Fassung | Erneuter Import mit derselben Angebotsnummer ersetzt die Positionen. Vorher zeigt der Kalkulator die Unterschiede zwischen neuem Import und bisherigem Stand, einschließlich der manuellen Abweichungen. Kapitel, Art und EK werden über Positionsnummer und Artikelnummer übernommen, soweit möglich. Die alte Fassung bleibt einsehbar |
 | Testbasis | **Synthetische** Muster-PDFs im selben Layout, ohne echte Kundendaten, im Repository. Echte PDFs nur lokal |
 
 ### 5.3 Art der Position
@@ -184,14 +187,17 @@ Navision kennt die Managed Services mit eigenen Artikelnummern. Die Preise im
 Beispiel stimmen mit dem Katalog überein (z. B. B07 Switch 49,90 €, AP 41,90 €,
 Onboarding Standard XS 900 €). Daraus folgt:
 
-- Jeder Service und jede Preiskomponente im Katalog bekommt die **Navision-Artikelnummer** als Feld. Das kostet wenig und ist die Grundlage für die spätere Übergabe an Navision.
+- Jeder Service und jede Preiskomponente im Katalog bekommt die **Navision-Artikelnummer** als Feld. Das kostet wenig und ist die Grundlage für die spätere Übergabe an Navision. **Die Liste liefert Dennis als Excel** (Entscheidung 29.09.2026).
 - **Führend für Managed Services bleibt der Kalkulator.** Ein Navision-Angebot mit Managed Services wird nicht als Transformationsprojekt eingelesen. Optional kann der Kalkulator es mit der Managed-Services-Kalkulation abgleichen und Abweichungen bei Preisen und Mengen melden.
 - Beobachtung: Navision schreibt beim Onboarding „bis 30 AP“, der Katalog zählt User (Entscheidung 25.09.2026). Das sollte in Navision vereinheitlicht werden.
 
 ## 6. Einkaufspreise, Marge und Forecast
 
-Nur für berechtigte Rollen (Vertriebsleitung, Führung). Einkaufspreise bleiben
-strikt getrennt, wie beim Managed-Services-Katalog.
+Sichtbarkeit (Entscheidung 29.09.2026):
+
+- Der **Vertrieb** sieht EK, DB und Marge **seiner Transformationsprojekte**, weil er die EK selbst pflegt.
+- Die EK und Margen der **Managed Services** bleiben für den Vertrieb verborgen, wie beim Katalog.
+- Vertriebsleitung und Führung sehen alles.
 
 **Einkaufspreise in v1 (Entscheidung 29.09.2026):** Das Navision-PDF enthält
 keine EK. Sie werden **manuell** gepflegt. Wie sie später importiert werden,
@@ -199,7 +205,7 @@ klärt Dennis.
 
 - Standard: EK je Einheit an der Position.
 - Erleichterung: EK als Summe je Kapitel, wenn Einzelwerte fehlen.
-- **Dienstleistung automatisch:** Positionen mit AE-Einheit erhalten den EK aus dem internen Kostensatz des Katalogs (Parameter `EK_KOSTENSATZ_PRO_STUNDE` ÷ 4 je AE). Überschreiben ist möglich.
+- **Dienstleistung automatisch:** Positionen mit AE-Einheit erhalten den EK aus dem **internen Kostensatz der jeweiligen Rolle** (Entscheidung 29.09.2026: eigene Sätze je Rolle), z. B. System Engineer sen. oder IT Consultant. Die Zuordnung Navision-Artikel → Rolle → EK-Satz je Stunde pflegt das Produktmanagement. Der EK je AE ist der Stundensatz ÷ 4. Überschreiben ist möglich. Rollen und Sätze liefert Dennis (Abschnitt 13).
 - Positionen ohne EK werden sichtbar markiert. Die Marge des Projekts gilt dann als „unvollständig“.
 
 | Kennzahl | Berechnung (Vorschlag) |
@@ -211,7 +217,7 @@ klärt Dennis.
 | Deckungsbeitrag Gesamtangebot | DB Transformation + DB Managed Services über die Erstlaufzeit |
 | Marge Gesamtangebot | DB Gesamtangebot ÷ Wert der Erstlaufzeit |
 | **Forecast** | Volumen je erwartetem Abschlussmonat, getrennt nach einmalig und laufend, **gewichtet mit der manuell gepflegten Wahrscheinlichkeit** des Kundenprojekts. Bei Varianten zählt die Variante, die der Vertrieb als wahrscheinlich markiert |
-| Break-even | Noch zu definieren (Feedback F6). Vorschlag: der Monat, ab dem der laufende DB der Managed Services die einmaligen Vorleistungen gedeckt hat |
+| Break-even | **Nicht in v1** (Entscheidung 29.09.2026). Wird definiert, wenn die Marge-Auswertung läuft |
 
 Die Statistik (Modul 4) zeigt diese Kennzahlen über alle Kundenprojekte,
 einschließlich der Analyse- und Workshop-Angebote. Dazu kommen Pipeline,
@@ -270,7 +276,7 @@ enthalten, sind möglich. Die leeren Abschnitte entfallen dann.
 | Rolle | Neu / geändert |
 |-------|----------------|
 | **Consultant** | **Neu.** Sieht Kundenprojekte und Kalkulationen. Lädt Analyseergebnisse hoch. Kalkuliert nicht, erzeugt keine Angebote, sieht keine Einkaufspreise |
-| Vertrieb | Zusätzlich: Kundenprojekte, Kundensituation, Navision-Import, Gesamtangebot, Analyse-/Workshop-Angebote, Forecast. Pflegt EK der Transformationsprojekte, sieht aber keine EK der Managed Services (Frage 13.5) |
+| Vertrieb | Zusätzlich: Kundenprojekte, Kundensituation, Navision-Import, Gesamtangebot, Analyse-/Workshop-Angebote, Forecast. Pflegt EK der Transformationsprojekte und sieht deren Marge. Sieht keine EK und Margen der Managed Services |
 | Vertriebsleitung, Führung | Zusätzlich: Marge und Forecast aller Kundenprojekte |
 
 Die übrigen Rollen bleiben wie in [00_projektueberblick.md](00_projektueberblick.md).
@@ -281,7 +287,7 @@ Die übrigen Rollen bleiben wie in [00_projektueberblick.md](00_projektueberblic
 |-------|-----------|--------|
 | Analyseergebnisse | Upload, manuelle Übernahme | automatische Übernahme aus der Kundenakte |
 | Angebot Analyse/Workshop | Eckdaten, Erstellung per Skill | Erstellung im Kalkulator mit KI (v2) |
-| Navision | PDF-Import (nur lesen), EK manuell | EK-Import. Angebot oder Auftrag an Navision übergeben |
+| Navision | PDF-Import, Werte änderbar mit Kennzeichnung der Abweichung, EK manuell | EK-Import. Angebot oder Auftrag an Navision übergeben |
 | Managed Services | vollständig wie geplant, mit Navision-Artikelnummern | – |
 | Angebot | Word mit Varianten und Anlage, Nummer, Version, Versandvermerk | PDF, Versand aus der Anwendung, KI-gestützte Texte (v2) |
 | Finanzierung | Variante mit Rate (Rechenweg laut Abschnitt 8) | Anbindung an den Leasingpartner |
@@ -308,14 +314,13 @@ Die übrigen Rollen bleiben wie in [00_projektueberblick.md](00_projektueberblic
 - [00_projektueberblick.md](00_projektueberblick.md): Vision, Scope (Transformationsprojekte per Import, Finanzierung), Rolle Consultant
 - [01_anforderungen.md](01_anforderungen.md): neue Abschnitte Kundenprojekt und Kundensituation, Navision-Import, Gesamtangebot mit Varianten, Finanzierung, Forecast, Angebotsart Analyse/Workshop. Anpassung von B-08 und C-01 bis C-07
 - [03_fachmodell.md](03_fachmodell.md): Objekte aus Abschnitt 3
-- [05_roadmap.md](05_roadmap.md): neue Phasen, Vorschlag:
-  1. Phase 2: Managed-Services-Kalkulator
-  2. Phase 3: Kundenprojekt, Kundensituation, Dokumentenablage, Analyse-/Workshop-Angebote
-  3. Phase 4: Navision-Import, EK und Auswertung
-  4. Phase 5: Gesamtangebot mit Varianten und Finanzierung (Word)
-  5. Phase 6: Vertragsunterlagen
-  6. Phase 7: Statistik und Forecast
-  7. Phase 8: Pilot
+- [05_roadmap.md](05_roadmap.md): neue Phasen. **Stufenweise Inbetriebnahme** ist beschlossen (29.09.2026). Die Reihenfolge ist noch zu bestätigen, Vorschlag:
+  1. Phase 2: Managed-Services-Kalkulator (Rechenkern, Oberfläche, Speichern). Kundenprojekt als oberstes Objekt ist im Datenmodell von Anfang an angelegt
+  2. Phase 3: Managed-Services-Angebot (Word) und Vertragspaket → **Inbetriebnahme Stufe 1** (Pilot Managed Services)
+  3. Phase 4: Kundenprojekt, Kundensituation, Dokumentenablage, Analyse-/Workshop-Angebote, Forecast
+  4. Phase 5: Navision-Import, EK und Marge der Transformationsprojekte
+  5. Phase 6: Gesamtangebot mit Varianten und Finanzierung → **Inbetriebnahme Stufe 2**
+  6. Phase 7: Statistik und Auswertungen über alles, Excel-Export
 - [08_angebotsvorlage.md](08_angebotsvorlage.md): Aufbau laut Abschnitt 9, neues Musterangebot
 - neue ADRs: PDF-Import, Dateiablage
 
@@ -331,11 +336,21 @@ Beantwortet am 29.09.2026:
 - Leasing und Finanzierung → gehören dazu
 - Muster-PDFs → zwei Angebote bereitgestellt
 
+Beantwortet bei der Freigabe am 29.09.2026:
+
+- Navision-Werte dürfen im Kalkulator geändert werden, mit Hinweis auf die Abweichung
+- Navision-Artikelnummern für den Katalog liefert Dennis als Excel
+- Dienstleistungs-EK: eigene Sätze je Rolle
+- Break-even nicht in v1
+- Finanzierung zunächst mit manuell eingetragener Rate
+- 13.5: Der Vertrieb sieht die Marge seiner Transformationsprojekte
+- 13.6: Synthetische Muster-PDFs für Tests sind erlaubt
+
 | Nr. | Frage | Warum wichtig |
 |-----|-------|---------------|
 | 13.1 | **Leasing:** Mit welchen Partnern arbeiten wir, und wer rechnet heute die Rate aus (z. B. Fabian)? Gibt es feste Faktoren je Laufzeit, oder kommt jedes Mal ein individuelles Angebot des Partners? | Rechenweg der Finanzierungsvariante |
 | 13.2 | **Finanzierung:** Welche Formen gibt es außer Leasing, z. B. Mietkauf, eigene Vorfinanzierung oder Ratenzahlung über Nösse? | Umfang des Moduls |
 | 13.3 | Welche Positionen dürfen finanziert werden? Nur Hardware und Software oder auch Dienstleistung? | Rechenweg |
 | 13.4 | Soll die Leasingrate im Angebot mit den Managed Services zu **einer** Monatsrate zusammengefasst werden („IT als monatliche Pauschale“)? | Aufbau des Angebots |
-| 13.5 | Der Vertrieb pflegt die EK der Transformationsprojekte und sieht sie damit. Soll er auch die daraus berechnete Marge sehen? Bei Managed Services sieht er sie bisher nicht | Rechtekonzept |
-| 13.6 | Darf ich **synthetische** Muster-PDFs im Navision-Layout mit erfundenen Kunden und Positionen für die automatischen Tests anlegen? | Testbasis ohne echte Kundendaten |
+| 13.7 | **Rollen und interne Stundensätze** für Dienstleistung, z. B. System Engineer, System Engineer sen., IT Consultant, Projektleitung, jeweils mit Navision-Artikelnummer und EK-Satz je Stunde. Gerne in derselben Excel wie die Artikelnummern | EK der Dienstleistung |
+| 13.8 | Reihenfolge der Phasen bestätigen (Abschnitt 12) | Roadmap |
