@@ -36,6 +36,8 @@ Anmeldung, Datenmodell und Katalogpflege (siehe `docs/05_roadmap.md`).
 | [docs/06_ist-analyse.md](docs/06_ist-analyse.md) | Auswertung des SharePoint-Servicekatalogs: Services, Preise, Regeln, Vertragswerk |
 | [docs/07_referenzkalkulationen.md](docs/07_referenzkalkulationen.md) | Beispielrechnungen mit erwarteten Ergebnissen (spätere Abnahmetests) |
 | [docs/08_angebotsvorlage.md](docs/08_angebotsvorlage.md) | Aufbau und Platzhalter der Angebotsvorlage; Musterangebot in `templates/angebot/` |
+| [docs/09_feedback-clickdummy.md](docs/09_feedback-clickdummy.md) | Auswertung des Feedbacks von Geschäftsführung und Geschäftsleitung zum Clickdummy |
+| [docs/10_gesamtkonzept.md](docs/10_gesamtkonzept.md) | Gesamtkonzept: Kundensituation, Navision-Import, Managed Services und Gesamtangebot (Entwurf) |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 
