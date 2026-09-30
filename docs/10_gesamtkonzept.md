@@ -2,7 +2,7 @@
 
 > Status: **Freigegeben als Arbeitsstand** (29.09.2026, Dennis Arntjen). Die
 > Bestätigung im Projektmeeting mit André Nösse, Matthias Erhard und Olaf Schmidt
-> steht aus. Offen ist nur noch die Reihenfolge der Phasen (Abschnitt 12).
+> steht aus. Die Reihenfolge der Phasen ist bestätigt (30.09.2026).
 >
 > - v1: Erster Entwurf.
 > - v2: Antworten auf die offenen Fragen eingearbeitet, Auswertung von zwei echten Navision-Angeboten ergänzt.
@@ -314,7 +314,7 @@ Die übrigen Rollen bleiben wie in [00_projektueberblick.md](00_projektueberblic
 - [00_projektueberblick.md](00_projektueberblick.md): Vision, Scope (Transformationsprojekte per Import, Finanzierung), Rolle Consultant
 - [01_anforderungen.md](01_anforderungen.md): neue Abschnitte Kundenprojekt und Kundensituation, Navision-Import, Gesamtangebot mit Varianten, Finanzierung, Forecast, Angebotsart Analyse/Workshop. Anpassung von B-08 und C-01 bis C-07
 - [03_fachmodell.md](03_fachmodell.md): Objekte aus Abschnitt 3
-- [05_roadmap.md](05_roadmap.md): neue Phasen. **Stufenweise Inbetriebnahme** ist beschlossen (29.09.2026). Die Reihenfolge ist noch zu bestätigen, Vorschlag:
+- [05_roadmap.md](05_roadmap.md): neue Phasen. **Stufenweise Inbetriebnahme** ist beschlossen (29.09.2026), die Reihenfolge bestätigt (30.09.2026):
   1. Phase 2: Managed-Services-Kalkulator (Rechenkern, Oberfläche, Speichern). Kundenprojekt als oberstes Objekt ist im Datenmodell von Anfang an angelegt
   2. Phase 3: Managed-Services-Angebot (Word) und Vertragspaket → **Inbetriebnahme Stufe 1** (Pilot Managed Services)
   3. Phase 4: Kundenprojekt, Kundensituation, Dokumentenablage, Analyse-/Workshop-Angebote, Forecast
@@ -345,6 +345,8 @@ Beantwortet bei der Freigabe am 29.09.2026:
 - Finanzierung zunächst mit manuell eingetragener Rate
 - 13.5: Der Vertrieb sieht die Marge seiner Transformationsprojekte
 - 13.6: Synthetische Muster-PDFs für Tests sind erlaubt
+- 13.8 (30.09.2026): Die Reihenfolge der Phasen ist bestätigt
+- 13.7 (30.09.2026): Rollen, Stundensätze und Artikelnummern kommen später. Bis dahin gelten erfundene Platzhalter, siehe [11_navision-zuordnung.md](11_navision-zuordnung.md)
 
 | Nr. | Frage | Warum wichtig |
 |-----|-------|---------------|
@@ -352,5 +354,4 @@ Beantwortet bei der Freigabe am 29.09.2026:
 | 13.2 | **Finanzierung:** Welche Formen gibt es außer Leasing, z. B. Mietkauf, eigene Vorfinanzierung oder Ratenzahlung über Nösse? | Umfang des Moduls |
 | 13.3 | Welche Positionen dürfen finanziert werden? Nur Hardware und Software oder auch Dienstleistung? | Rechenweg |
 | 13.4 | Soll die Leasingrate im Angebot mit den Managed Services zu **einer** Monatsrate zusammengefasst werden („IT als monatliche Pauschale“)? | Aufbau des Angebots |
-| 13.7 | **Rollen und interne Stundensätze** für Dienstleistung, z. B. System Engineer, System Engineer sen., IT Consultant, Projektleitung, jeweils mit Navision-Artikelnummer und EK-Satz je Stunde. Gerne in derselben Excel wie die Artikelnummern | EK der Dienstleistung |
-| 13.8 | Reihenfolge der Phasen bestätigen (Abschnitt 12) | Roadmap |
+| 13.7 | Endgültige Liste: Navision-Artikelnummern je Managed Service sowie Dienstleistungsrollen mit Artikelnummer und internem Stundensatz (Excel). Bis dahin Platzhalter aus [11_navision-zuordnung.md](11_navision-zuordnung.md) | Katalog, EK der Dienstleistung |

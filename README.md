@@ -10,9 +10,11 @@ Die Anwendung läuft auf einem Webserver **innerhalb unseres Netzwerks**
 
 ## Projektstatus
 
-**Phase 1 – Fundament und Servicekatalog.** Die Planung (Phase 0) ist
-abgeschlossen. Das technische Projektgerüst steht; als Nächstes folgen
-Anmeldung, Datenmodell und Katalogpflege (siehe `docs/05_roadmap.md`).
+**Phase 1 – Fundament und Servicekatalog.** Planung und Gesamtkonzept stehen.
+Projektgerüst und Datenmodell sind fertig; als Nächstes folgen Erstbefüllung,
+Anmeldung und Katalogpflege. Version 1 geht in zwei Stufen in Betrieb:
+zuerst die Managed Services, danach Kundenprojekt, Navision-Import und
+Gesamtangebot (siehe `docs/05_roadmap.md`).
 
 ## Die vier Kernfunktionen
 
@@ -37,7 +39,8 @@ Anmeldung, Datenmodell und Katalogpflege (siehe `docs/05_roadmap.md`).
 | [docs/07_referenzkalkulationen.md](docs/07_referenzkalkulationen.md) | Beispielrechnungen mit erwarteten Ergebnissen (spätere Abnahmetests) |
 | [docs/08_angebotsvorlage.md](docs/08_angebotsvorlage.md) | Aufbau und Platzhalter der Angebotsvorlage; Musterangebot in `templates/angebot/` |
 | [docs/09_feedback-clickdummy.md](docs/09_feedback-clickdummy.md) | Auswertung des Feedbacks von Geschäftsführung und Geschäftsleitung zum Clickdummy |
-| [docs/10_gesamtkonzept.md](docs/10_gesamtkonzept.md) | Gesamtkonzept: Kundensituation, Navision-Import, Managed Services und Gesamtangebot (Entwurf) |
+| [docs/10_gesamtkonzept.md](docs/10_gesamtkonzept.md) | Gesamtkonzept: Kundensituation, Navision-Import, Managed Services und Gesamtangebot (freigegebener Arbeitsstand) |
+| [docs/11_navision-zuordnung.md](docs/11_navision-zuordnung.md) | Navision-Artikelnummern und Dienstleistungsrollen (vorläufig mit Platzhaltern) |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 
