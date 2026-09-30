@@ -63,7 +63,7 @@ public class DatenmodellTests(SqlServerFixture db)
         var s41 = services[daten.Code("S41")].Preiskomponenten.Single();
         Assert.Equal(350m, preisliste.StaffelpreisFuer(s41.Id, 50));
         Assert.Equal(550m, preisliste.StaffelpreisFuer(s41.Id, 51));
-        Assert.Equal(30.38m, preisliste.ParameterWert(ParameterSchluessel.SupportkontingentAeSatz));
+        Assert.Equal(33.75m, preisliste.ParameterWert(ParameterSchluessel.AeSatzEbene2));
         Assert.Equal(0.55m, preisliste.ParameterWert(ParameterSchluessel.CloudServerMargenteiler));
         Assert.Equal(6.10m, Assert.Single(preisliste.EkPositionen).Kosten(60.75m));
     }

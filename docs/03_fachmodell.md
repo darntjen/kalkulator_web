@@ -1,7 +1,9 @@
 # 03 – Fachmodell
 
-> Status: **Entwurf v2** (25.09.2026), abgeleitet aus der SharePoint-Analyse
-> ([06_ist-analyse.md](06_ist-analyse.md)).
+> Status: **Entwurf v3** (30.09.2026), abgeleitet aus der SharePoint-Analyse
+> ([06_ist-analyse.md](06_ist-analyse.md)) und dem Gesamtkonzept
+> ([10_gesamtkonzept.md](10_gesamtkonzept.md)). Neu in v3: Kundenprojekt als
+> oberstes Objekt, Objekte für Stufe 2, Navision-Artikelnummern.
 
 ## Zentrale Designprinzipien
 
@@ -33,11 +35,13 @@ erDiagram
     PREISLISTE ||--o{ ONBOARDING_STAFFEL : enthaelt
     PREISLISTE ||--o{ PARAMETER : "z. B. AE-Satz, S14-Bausteine"
     PREIS ||--o| EK_KALKULATION : "nur Führung/PM"
+    DIENSTLEISTUNGSROLLE ||--o{ EK_SATZ : "Stundensatz, versioniert"
 
-    KUNDE ||--o{ KALKULATION : hat
-    BENUTZER ||--o{ KALKULATION : erstellt
-    KALKULATION ||--o{ STATUS_EREIGNIS : "Projektstatus-Historie"
-    KALKULATION ||--|{ KALKULATIONSVERSION : "V1, V2, …"
+    KUNDE ||--o{ KUNDENPROJEKT : hat
+    BENUTZER ||--o{ KUNDENPROJEKT : verantwortet
+    KUNDENPROJEKT ||--o{ STATUS_EREIGNIS : "Projektstatus-Historie"
+    KUNDENPROJEKT ||--o{ KALKULATION : "Managed Services"
+    KALKULATION ||--|{ KALKULATIONSVERSION : "V1, V2, … (je erzeugtem Angebot)"
     KALKULATIONSVERSION }o--|| PREISLISTE : "berechnet mit"
     KALKULATIONSVERSION ||--|{ POSITION : enthaelt
     KALKULATIONSVERSION ||--o| SONDERRECHNER_EINGABE : "S14, S60, Onboarding"
@@ -50,7 +54,7 @@ erDiagram
 |--------|-------|---------------------------|
 | **Servicekategorie** | Gruppierung im Katalog | Name (Nösse Connect, User/Server/Security/Network as a Service, Add-ons, Optionen), Sortierung |
 | **Service** | Verkaufbare Leistung (Einzelservice, Bundle, Connect-Stufe, Option) | Code (S02, B01 …), Service-ID (NOS-…), Bezeichnung, Typ (Connect/Bundle/Einzel/Add-on/Option), Kurzbeschreibung, Vertriebsstatus (verkaufsfähig/auf Anfrage/geparkt/zukünftig) |
-| **Preiskomponente** | Abrechenbare Einheit eines Service | Einheit (Kunde, User, Server, Firewall, Tenant, AD-Umgebung, Switch, AP, Netzwerkgerät, Device, NAS, Client), monatlich/einmalig |
+| **Preiskomponente** | Abrechenbare Einheit eines Service | Einheit (Kunde, User, Server, Firewall, Tenant, AD-Umgebung, Switch, AP, Netzwerkgerät, Device, NAS, Client), monatlich/einmalig, **Navision-Artikelnummer** |
 | **Bundle-Bestandteil** | Welche Einzelservices ein Bundle enthält | Bundle, Einzelservice (z. B. B02 → B01-Inhalt + S05, S06, S07) |
 | **Serviceregel** | Fachliche Prüfungen | Typ (erfordert, schließt aus, genau eine aus Gruppe, nicht verkaufen), Meldungstext |
 | **Preisliste** | Versionierter Preisstand | Version, gültig ab, Status (Entwurf/freigegeben). Start: „Preisstand 15.07.2026“ |
@@ -58,17 +62,19 @@ erDiagram
 | **EK-Kalkulation** | Interne Kosten je Preiskomponente | EK/Lizenz, Aufwand Min./Monat, Overhead, Gesamtkosten, DB, Marge |
 | **Onboarding-Staffel** | Einmalpauschale | Größe (XS–L), AP von/bis, Connect-Stufe, Betrag |
 | **Parameter** | Zentrale Sätze | AE-Satz Ebene 1/2/3, Commitment-Rabatt S60, S14-Bausteine S1/S2/F1–F3, Paketgröße 500 GB, EK-Kostensatz |
+| **Dienstleistungsrolle** | Rolle für Projektdienstleistung (Stufe 2) | Bezeichnung, Navision-Artikelnummer, interner Stundensatz (EK, nur berechtigte Rollen), gültig ab |
 | **Dokument-Vorlage** | Word-Vorlage | Typ (Angebot, Grundvertrag, AVB, SLA, AVV, Leistungsschein), Code, Version, Datei, gültig ab |
-| **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner; später HubSpot-ID |
-| **Kalkulation** | Vorgang zu einem Kunden | Titel, Kunde, Ersteller, **Projektstatus**, Verlustgrund, Neukunde/Bestandskunde |
-| **Status-Ereignis** | Historie des Projektstatus | alter/neuer Status, wer, wann, Kommentar |
+| **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner, **Navision-Kundennummer**; später HubSpot-ID |
+| **Kundenprojekt** | Oberstes Objekt: alles, was einem Kunden zu einem Vorhaben angeboten wird | Titel, Kunde, verantwortlicher Vertrieb, **Projektstatus**, Verlustgrund, Neukunde/Bestandskunde, Forecast (Wahrscheinlichkeit %, erwarteter Abschlussmonat) |
+| **Kalkulation** | Managed-Services-Kalkulation innerhalb eines Kundenprojekts | Titel, Ersteller; mehrere je Kundenprojekt möglich (Varianten) |
+| **Status-Ereignis** | Historie des Projektstatus (am Kundenprojekt) | alter/neuer Status, wer, wann, Kommentar |
 | **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Anzahl User (für Onboarding), Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
 | **Position** | Service × Menge | Service, Preiskomponente, Menge, Einzelpreis (eingefroren), Betrag, Hinweis „im Bundle enthalten“ |
 | **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste; S25: Clients, Server; S61: Buchungsübersicht, TERRA-Wert, Backup-Entscheidung; S41: Roadmap-Erstellung ja/nein |
 | **Sonderposition** | Freie Position | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), freigegeben von/am, Kommentar |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
-## Projektstatus einer Kalkulation (bestätigt 25.09.2026)
+## Projektstatus eines Kundenprojekts (bestätigt 25.09.2026, am Kundenprojekt seit 29.09.2026)
 
 ```mermaid
 stateDiagram-v2
@@ -90,6 +96,43 @@ stateDiagram-v2
 Der Vertrieb setzt den Status selbst. Jede Änderung wird mit Zeitstempel
 protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
 „Verloren“ ist ein Verlustgrund Pflicht (Auswahlliste plus Freitext).
+
+## Objekte für Stufe 2 (Gesamtkonzept)
+
+Ab Stufe 2 kommen folgende Objekte hinzu. Das Kundenprojekt ist bereits ab Stufe 1
+im Datenmodell angelegt, damit später kein Umbau nötig ist.
+
+```mermaid
+erDiagram
+    KUNDENPROJEKT ||--o{ DOKUMENT_ABLAGE : "Analysen, Workshop, Gespräche"
+    KUNDENPROJEKT ||--o{ HERAUSFORDERUNG : Kundensituation
+    KUNDENPROJEKT ||--o{ ANALYSE_WORKSHOP_ANGEBOT : "nur Eckdaten"
+    KUNDENPROJEKT ||--o{ TRANSFORMATIONSPROJEKT : "aus Navision-PDF"
+    KUNDENPROJEKT ||--o{ GESAMTANGEBOT : "Version 1, 2, …"
+    TRANSFORMATIONSPROJEKT ||--o{ NAVISION_IMPORT : "Fassungen"
+    TRANSFORMATIONSPROJEKT ||--o{ KAPITEL : gliedert
+    TRANSFORMATIONSPROJEKT ||--|{ ERP_POSITION : enthaelt
+    KAPITEL ||--o{ ERP_POSITION : ordnet
+    GESAMTANGEBOT ||--|{ VARIANTE : "A, B, …"
+    VARIANTE }o--o{ TRANSFORMATIONSPROJEKT : enthaelt
+    VARIANTE }o--o| KALKULATION : enthaelt
+    VARIANTE ||--o| FINANZIERUNG : "optional"
+    HERAUSFORDERUNG }o--o{ TRANSFORMATIONSPROJEKT : "gelöst durch"
+    HERAUSFORDERUNG }o--o{ KALKULATION : "gelöst durch"
+```
+
+| Objekt | Zweck | Wichtige Felder (Entwurf) |
+|--------|-------|---------------------------|
+| **Dokumentenablage** | Hochgeladene Unterlagen | Art (Analyse, Workshop, Standortgespräch, Recherche, Angebot Analyse/Workshop, Sonstiges), Datei, hochgeladen von/am |
+| **Herausforderung** | Baustein der Kundensituation | Dimension (kaufmännisch/organisatorisch/technisch), Titel, Beschreibung, Auswirkung, Priorität, Quelle |
+| **Analyse-/Workshop-Angebot** | Eckdaten für die Pipeline | Angebotsnummer, Datum, Paketpreis, Status, Dokument |
+| **Transformationsprojekt** | Vorhaben aus der Roadmap, kalkuliert in Navision | Titel, Ziel und Nutzen, Navision-Angebotsnummer, Umsetzungszeitraum |
+| **Navision-Import** | Eine eingelesene Fassung des PDFs | Datei, Kopfdaten (Belegdatum, Kundennummer, Referenz, Ansprechpartner), Total netto, eingelesen von/am |
+| **Kapitel** | Gliederung für die Kundenansicht | Titel, Beschreibung, Reihenfolge, EK-Summe (optional) |
+| **ERP-Position** | Zeile des Navision-Angebots | Pos., Artikelnummer, Bezeichnung, Langtext, Menge, Einheit, VK, Betrag, **importierte Werte** (für die Kennzeichnung von Abweichungen), Art, Alternativposition ja/nein, Zeitraum, Sichtbarkeit, EK je Einheit, EK-Herkunft (manuell/Rolle) |
+| **Gesamtangebot** | Erzeugtes Kundenangebot | Nummer, Version, Gültigkeit, eingefrorene Summen, Datei, erzeugt von/am, versendet am |
+| **Variante** | Wahlmöglichkeit | Bezeichnung, wahrscheinlich ja/nein, Summen |
+| **Finanzierung** | Leasing/Finanzierung einer Variante | Art, Partner, Laufzeit, Rate (v1 manuell), finanzierte Bausteine |
 
 ## Rechenkern: Ablauf einer Berechnung
 
