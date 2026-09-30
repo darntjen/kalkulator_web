@@ -46,7 +46,14 @@ public class Preisliste
     {
         var entwurf = new Preisliste { Bezeichnung = bezeichnung, GueltigAb = gueltigAb, VorgaengerId = Id };
         entwurf.Preise.AddRange(Preise.Select(p => new Preis { PreiskomponenteId = p.PreiskomponenteId, VkNetto = p.VkNetto }));
-        entwurf.Staffeln.AddRange(Staffeln.Select(s => new Preisstaffel { PreiskomponenteId = s.PreiskomponenteId, AbMenge = s.AbMenge, VkNetto = s.VkNetto }));
+        entwurf.Staffeln.AddRange(Staffeln.Select(s => new Preisstaffel
+        {
+            PreiskomponenteId = s.PreiskomponenteId,
+            AbMenge = s.AbMenge,
+            VkNetto = s.VkNetto,
+            Bezeichnung = s.Bezeichnung,
+            NavisionArtikelnummer = s.NavisionArtikelnummer,
+        }));
         entwurf.Parameter.AddRange(Parameter.Select(p => new Parameter { Schluessel = p.Schluessel, Wert = p.Wert, Beschreibung = p.Beschreibung }));
         entwurf.EkPositionen.AddRange(EkPositionen.Select(e => e.Kopie()));
         return entwurf;

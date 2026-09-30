@@ -77,6 +77,21 @@ dotnet ef migrations add <Name> --project src/Kalkulator.Infrastructure --output
 KALKULATOR_DB="<Verbindungszeichenfolge>" dotnet ef database update --project src/Kalkulator.Infrastructure
 ```
 
+### Erstbefüllung des Katalogs
+
+Ein leerer Katalog wird aus `src/Kalkulator.Infrastructure/Erstbefuellung/katalog.json` befüllt.
+Quellen sind Mastersheet, Servicekatalog-Index, EK-Kalkulation und S14-Baukasten. Der Befehl spielt
+zuerst die Migrationen ein, legt dann alle Services, Preise, Staffeln, Parameter, EK-Werte, Regeln
+und Vorlagen an und beendet sich:
+
+```bash
+dotnet run --project src/Kalkulator.Web -- --erstbefuellung
+```
+
+Die Preisliste „Preisstand 15.07.2026“ entsteht als **Entwurf** und muss vom Produktmanagement
+freigegeben werden. Enthält der Katalog schon Services, passiert nichts. Navision-Artikelnummern
+mit `9999…` sind Platzhalter (siehe `docs/11_navision-zuordnung.md`).
+
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
 

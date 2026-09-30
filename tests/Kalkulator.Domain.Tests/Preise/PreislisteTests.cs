@@ -10,7 +10,7 @@ public class PreislisteTests
     {
         var liste = new Preisliste { Id = 1, Bezeichnung = "Preisstand 2026-07-15", GueltigAb = new DateOnly(2026, 7, 15) };
         liste.Preise.Add(new Preis { PreiskomponenteId = 10, VkNetto = 31.90m });
-        liste.Staffeln.Add(new Preisstaffel { PreiskomponenteId = 20, AbMenge = 1, VkNetto = 350m });
+        liste.Staffeln.Add(new Preisstaffel { PreiskomponenteId = 20, AbMenge = 1, VkNetto = 350m, Bezeichnung = "bis 50 Mitarbeitende", NavisionArtikelnummer = "99990071" });
         liste.Staffeln.Add(new Preisstaffel { PreiskomponenteId = 20, AbMenge = 51, VkNetto = 550m });
         liste.Parameter.Add(new Parameter { Schluessel = ParameterSchluessel.AeSatzEbene2, Wert = 33.75m });
         liste.EkPositionen.Add(new EkPosition { PreiskomponenteId = 10, EkLizenz = 3.59m, AufwandMinuten = 1, Overhead = 1.50m });
@@ -62,6 +62,8 @@ public class PreislisteTests
         Assert.Equal(33.90m, entwurf.PreisFuer(10));
         Assert.Equal(31.90m, original.PreisFuer(10));
         Assert.Equal(2, entwurf.Staffeln.Count);
+        Assert.Equal("bis 50 Mitarbeitende", entwurf.Staffeln[0].Bezeichnung);
+        Assert.Equal("99990071", entwurf.Staffeln[0].NavisionArtikelnummer);
         Assert.Equal(33.75m, entwurf.ParameterWert(ParameterSchluessel.AeSatzEbene2));
         Assert.Single(entwurf.EkPositionen);
         Assert.NotSame(original.EkPositionen[0], entwurf.EkPositionen[0]);

@@ -15,4 +15,10 @@ public class Preisstaffel
 
     /// <summary><c>null</c> = individuell kalkulieren (Projektkalkulation).</summary>
     public decimal? VkNetto { get; set; }
+
+    /// <summary>Name der Stufe für Angebot und Vertrag, z. B. „XS (bis 30 User)“.</summary>
+    public string? Bezeichnung { get; set; }
+
+    /// <summary>Navision-Artikel dieser Stufe, z. B. je Onboarding-Größe und Connect-Stufe.</summary>
+    public string? NavisionArtikelnummer { get; set; }
 }

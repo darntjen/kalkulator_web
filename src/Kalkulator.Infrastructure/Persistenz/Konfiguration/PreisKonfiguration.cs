@@ -40,6 +40,8 @@ internal sealed class PreisstaffelKonfiguration : IEntityTypeConfiguration<Preis
     {
         builder.ToTable("Preisstaffeln", "preise");
         builder.Property(s => s.VkNetto).HasPrecision(12, 2);
+        builder.Property(s => s.Bezeichnung).HasMaxLength(100);
+        builder.Property(s => s.NavisionArtikelnummer).HasMaxLength(20);
         builder.HasIndex(s => new { s.PreislisteId, s.PreiskomponenteId, s.AbMenge }).IsUnique();
         builder.HasOne(s => s.Preiskomponente).WithMany().HasForeignKey(s => s.PreiskomponenteId).OnDelete(DeleteBehavior.Restrict);
         builder.ToTable(t => t.HasCheckConstraint("CK_Preisstaffeln_AbMenge", "[AbMenge] >= 0"));

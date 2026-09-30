@@ -100,7 +100,7 @@
 | 8.8 🟠 | **Statistik-Rechte:** Wer sieht was? | Vertrieb: eigene Kalkulationen und eigene Kennzahlen; Führung: alles inkl. DB/Marge; Produktmanagement: Katalog, Preise, EK || ✅ Übernommen (25.09.2026) |
 | 8.9 | **Onboarding-Grenze und Bezugsgröße** | – | ✅ Individuell ab **501**; es zählen die **User** |
 | 8.10 | **Bundles im Vertragspaket** | – | ✅ B-Scheine sind Bundles aus S-Scheinen. Hinter jeden B-Schein gehören die in ihm aufgeführten S-Scheine; ein in einem B-Schein genanntes Bundle (z. B. B01 in B02) wird **nicht** als eigener B-Schein beigelegt, sondern in seine S-Scheine aufgelöst. S01 ist immer zu beauftragen; die gewählte Stufe muss im Vertrag sichtbar sein |
-| 8.11 🟠 | **S14-Preisuntergrenze:** 183 € oder 187 €? (Der Baukasten nennt beide Werte) | – | |
+| 8.11 | **S14-Preisuntergrenze:** 183 € oder 187 €? (Der Baukasten nennt beide Werte) | – | ✅ **187,00 €** je Monat (bestätigt 25.09.2026); Parameter `S14_PREISUNTERGRENZE` |
 | 8.12 🟢 | **Katalogpflege:** Soll die Anwendung nach dem Go-live die maßgebliche Preisquelle sein? Das Mastersheet würde dann aus der Anwendung exportiert | Ja, sonst laufen zwei Preislisten auseinander || ✅ Übernommen (25.09.2026) |
 | 8.13 🟢 | **Vorher/Nachher-Vergleich** für Bestandskunden-Migration in v1? | Ja (geringer Aufwand, hoher Nutzen) || ✅ Übernommen (25.09.2026) |
 
