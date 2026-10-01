@@ -1,0 +1,281 @@
+@page "/projekte/{Id:int}"
+@rendermode InteractiveServer
+@inject KundenprojektDienst Dienst
+@inject NavigationManager Navigation
+
+<PageTitle>@(_projekt?.Kunde?.Firma ?? "Kundenprojekt") · Managed-Services-Kalkulator</PageTitle>
+
+@if (_ladefehler is not null)
+{
+    <h1>Kundenprojekt</h1>
+    <p class="meldung fehler">@_ladefehler</p>
+}
+else if (_projekt is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    <div class="ansicht-kopf">
+        <div>
+            <h1>@_projekt.Kunde!.Firma</h1>
+            <p class="unterzeile">@_projekt.Titel · <StatusPille Status="_projekt.Status" /></p>
+        </div>
+        <a class="knopf zweit" href="projekte">Zur Übersicht</a>
+    </div>
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    <div class="spalten">
+        <div class="stapel">
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Kalkulationen</h2>
+                    @if (_darfBearbeiten)
+                    {
+                        <form class="aktionen" @onsubmit="NeueKalkulationAsync">
+                            <input type="text" aria-label="Titel der neuen Kalkulation" placeholder="Titel, z. B. Variante A" @bind="_neueKalkulation" />
+                            <button class="knopf klein" type="submit">Neue Kalkulation</button>
+                        </form>
+                    }
+                </div>
+                @if (_projekt.Kalkulationen.Count == 0)
+                {
+                    <div class="karte-inhalt"><p class="unterzeile">Noch keine Kalkulation angelegt.</p></div>
+                }
+                else
+                {
+                    <div class="tab-rahmen">
+                        <table class="liste">
+                            <thead>
+                                <tr>
+                                    <th>Titel</th>
+                                    <th>Forecast</th>
+                                    <th class="num">Versionen</th>
+                                    <th class="num">Sonderpositionen offen</th>
+                                    <th>Angelegt</th>
+                                    @if (_darfBearbeiten)
+                                    {
+                                        <th></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var k in _projekt.Kalkulationen.OrderBy(k => k.ErstelltAm).ThenBy(k => k.Id))
+                                {
+                                    <tr>
+                                        <td><a href="kalkulationen/@k.Id">@k.Titel</a></td>
+                                        <td>@if (k.FuerForecast) { <span class="markiert" title="Diese Variante zählt im Forecast">★ zählt</span> }</td>
+                                        <td class="num">@(k.Versionen.Count == 0 ? "–" : string.Join(", ", k.Versionen.OrderBy(v => v.Nummer).Select(v => v.Bezeichnung)))</td>
+                                        <td class="num">@k.Sonderpositionen.Count(s => s.Status != Freigabestatus.Freigegeben)</td>
+                                        <td>@Texte.Zeitpunkt(k.ErstelltAm)<br /><span class="unterzeile">@k.ErstelltVon</span></td>
+                                        @if (_darfBearbeiten)
+                                        {
+                                            <td>
+                                                <div class="aktionen">
+                                                    <button class="knopf zweit klein" type="button" @onclick="() => DuplizierenAsync(k)">Duplizieren</button>
+                                                    @if (!k.FuerForecast)
+                                                    {
+                                                        <button class="knopf zweit klein" type="button" @onclick="() => FuerForecastAsync(k)">Für Forecast</button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+
+            <section class="karte">
+                <div class="karte-kopf"><h2>Statusverlauf</h2></div>
+                <div class="karte-inhalt">
+                    <ol class="verlauf">
+                        @foreach (var e in _projekt.StatusEreignisse.OrderBy(e => e.Zeitpunkt).ThenBy(e => e.Id))
+                        {
+                            <li>
+                                <strong>@Texte.Status(e.Neu)</strong> · @Texte.Zeitpunkt(e.Zeitpunkt) · @e.Benutzer
+                                @if (e.Verlustgrund is { } grund)
+                                {
+                                    <span> · Grund: @Texte.Verlustgrund(grund)</span>
+                                }
+                                @if (e.Kommentar is not null)
+                                {
+                                    <br /><span class="unterzeile">„@e.Kommentar“</span>
+                                }
+                            </li>
+                        }
+                    </ol>
+                </div>
+            </section>
+        </div>
+
+        <div class="stapel">
+            <section class="karte">
+                <div class="karte-kopf"><h2>Kunde</h2></div>
+                <div class="karte-inhalt">
+                    <dl class="daten">
+                        <dt>Anschrift</dt>
+                        <dd>@(Anschrift ?? "–")</dd>
+                        <dt>Ansprechpartner</dt>
+                        <dd>@(_projekt.Kunde.Ansprechpartner ?? "–")</dd>
+                        <dt>Navision-Nr.</dt>
+                        <dd>@(_projekt.Kunde.NavisionKundennummer ?? "–")</dd>
+                        <dt>Kundenart</dt>
+                        <dd>@(_projekt.Bestandskunde ? "Bestandskunde" : "Neukunde")</dd>
+                        <dt>Verantwortlich</dt>
+                        <dd>@_projekt.Verantwortlich</dd>
+                    </dl>
+                </div>
+            </section>
+
+            <section class="karte">
+                <div class="karte-kopf"><h2>Forecast</h2></div>
+                <div class="karte-inhalt">
+                    @if (_darfBearbeiten)
+                    {
+                        <form class="stapel" @onsubmit="ForecastAsync">
+                            <div class="feld"><label for="wahrscheinlichkeit">Abschlusswahrscheinlichkeit (%)</label><input id="wahrscheinlichkeit" type="number" min="0" max="100" step="5" @bind="_wahrscheinlichkeit" /></div>
+                            <div class="feld"><label for="monat">Erwarteter Abschlussmonat</label><input id="monat" type="month" @bind="_monat" @bind:format="yyyy-MM" /></div>
+                            <div class="aktionen"><button class="knopf klein" type="submit">Forecast speichern</button></div>
+                        </form>
+                    }
+                    else
+                    {
+                        <dl class="daten">
+                            <dt>Wahrscheinlichkeit</dt>
+                            <dd>@(_projekt.Wahrscheinlichkeit is { } w ? $"{w} %" : "–")</dd>
+                            <dt>Abschluss</dt>
+                            <dd>@Texte.Monat(_projekt.ErwarteterAbschlussmonat)</dd>
+                        </dl>
+                    }
+                </div>
+            </section>
+
+            @if (_darfBearbeiten && Moegliche.Count > 0)
+            {
+                <section class="karte">
+                    <div class="karte-kopf"><h2>Status ändern</h2></div>
+                    <div class="karte-inhalt">
+                        <form class="stapel" @onsubmit="StatusAsync">
+                            <div class="feld">
+                                <label for="status">Neuer Status</label>
+                                <select id="status" @bind="_neuerStatus">
+                                    <option value="">Bitte wählen</option>
+                                    @foreach (var s in Moegliche)
+                                    {
+                                        <option value="@s">@Texte.Status(s)</option>
+                                    }
+                                </select>
+                            </div>
+                            @if (_neuerStatus == ProjektStatus.Verloren)
+                            {
+                                <div class="feld">
+                                    <label for="grund">Verlustgrund *</label>
+                                    <select id="grund" @bind="_verlustgrund">
+                                        <option value="">Bitte wählen</option>
+                                        @foreach (var g in Enum.GetValues<Verlustgrund>())
+                                        {
+                                            <option value="@g">@Texte.Verlustgrund(g)</option>
+                                        }
+                                    </select>
+                                </div>
+                            }
+                            <div class="feld"><label for="kommentar">Kommentar</label><textarea id="kommentar" rows="2" @bind="_kommentar"></textarea></div>
+                            <div class="aktionen"><button class="knopf klein" type="submit" disabled="@(_neuerStatus is null)">Status setzen</button></div>
+                        </form>
+                    </div>
+                </section>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Kundenprojekt? _projekt;
+    private bool _darfBearbeiten;
+    private string? _ladefehler, _meldung, _neueKalkulation, _kommentar;
+    private bool _meldungIstFehler;
+    private int? _wahrscheinlichkeit;
+    private DateTime? _monat;
+    private ProjektStatus? _neuerStatus;
+    private Verlustgrund? _verlustgrund;
+
+    private IReadOnlyList<ProjektStatus> Moegliche =>
+        _projekt is null ? [] : [.. Enum.GetValues<ProjektStatus>().Where(_projekt.KannWechselnZu)];
+
+    private string? Anschrift => _projekt?.Kunde is { } k && (k.Strasse ?? k.Ort) is not null
+        ? string.Join(", ", new[] { k.Strasse, $"{k.Postleitzahl} {k.Ort}".Trim() }.Where(t => !string.IsNullOrWhiteSpace(t)))
+        : null;
+
+    protected override Task OnParametersSetAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _projekt = await Dienst.LadeAsync(Id);
+            if (_projekt is null)
+            {
+                _ladefehler = "Dieses Kundenprojekt gibt es nicht.";
+                return;
+            }
+
+            _darfBearbeiten = Dienst.Recht.DarfBearbeiten(_projekt);
+            _wahrscheinlichkeit = _projekt.Wahrscheinlichkeit;
+            _monat = _projekt.ErwarteterAbschlussmonat?.ToDateTime(TimeOnly.MinValue);
+        }
+        catch (KeinZugriffException e)
+        {
+            _ladefehler = e.Message;
+        }
+    }
+
+    private Task NeueKalkulationAsync() => AusfuehrenAsync(async () =>
+    {
+        var id = await Dienst.NeueKalkulationAsync(Id, string.IsNullOrWhiteSpace(_neueKalkulation) ? $"Variante {(char)('A' + _projekt!.Kalkulationen.Count)}" : _neueKalkulation);
+        Navigation.NavigateTo($"kalkulationen/{id}");
+    }, null);
+
+    private Task DuplizierenAsync(Kalkulation k) =>
+        AusfuehrenAsync(() => Dienst.DuplizierenAsync(k.Id, $"{k.Titel} (Kopie)"), $"„{k.Titel}“ wurde dupliziert. Sonderpositionen brauchen in der Kopie eine neue Freigabe.");
+
+    private Task FuerForecastAsync(Kalkulation k) =>
+        AusfuehrenAsync(() => Dienst.FuerForecastMarkierenAsync(k.Id), $"„{k.Titel}“ zählt jetzt im Forecast.");
+
+    private Task ForecastAsync() =>
+        AusfuehrenAsync(() => Dienst.SetzeForecastAsync(Id, _wahrscheinlichkeit, _monat is { } m ? DateOnly.FromDateTime(m) : null), "Forecast gespeichert.");
+
+    private Task StatusAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.SetzeStatusAsync(Id, _neuerStatus!.Value, _kommentar, _neuerStatus == ProjektStatus.Verloren ? _verlustgrund : null);
+        _neuerStatus = null;
+        _verlustgrund = null;
+        _kommentar = null;
+    }, "Status gesetzt.");
+
+    /// <summary>Führt eine Aktion aus, zeigt Erfolg oder die fachliche Fehlermeldung und lädt das Projekt neu.</summary>
+    private async Task AusfuehrenAsync(Func<Task> aktion, string? erfolg)
+    {
+        try
+        {
+            await aktion();
+            (_meldung, _meldungIstFehler) = (erfolg, false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            (_meldung, _meldungIstFehler) = (e is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException
+                ? "Jemand anderes hat das Projekt gerade geändert. Die Ansicht ist jetzt aktuell, bitte noch einmal versuchen."
+                : e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

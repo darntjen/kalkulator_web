@@ -57,6 +57,14 @@ dotnet run --project src/Kalkulator.Web
 Die Anwendung ist danach unter der in der Konsole angezeigten Adresse erreichbar
 (Standard: `http://localhost:5226`). Der Health-Check liegt unter `/health`.
 
+### Anmeldung bis zur Einrichtung von Entra ID
+
+Bis die Anmeldung über Entra ID steht (Issue #4), ist man in der **Entwicklungsumgebung** automatisch
+als Testbenutzer angemeldet und wählt die Rolle oben rechts (Vertrieb, Consultant, Vertriebsleitung,
+Produktmanagement, Führung, Admin). Die Rechte prüft die Anwendung serverseitig nach der Rechtematrix
+in `docs/00_projektueberblick.md`. In allen anderen Umgebungen ist die Anwendung bis dahin gesperrt;
+nur der Health-Check antwortet.
+
 Vor einem Push prüfen, ob der Code-Stil passt (das prüft auch die CI):
 
 ```bash

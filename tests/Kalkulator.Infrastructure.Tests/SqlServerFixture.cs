@@ -29,10 +29,10 @@ public sealed class SqlServerFixture : IAsyncLifetime
     /// Kontext auf eine eigene, noch nicht migrierte Datenbank im selben Container,
     /// z. B. für Tests, die einen leeren Katalog brauchen.
     /// </summary>
-    public KalkulatorDbContext NeuerKontextAufDatenbank(string datenbank)
+    public KalkulatorDbContext NeuerKontextAufDatenbank(string datenbank, IBenutzerKontext? benutzer = null)
     {
         var verbindung = new SqlConnectionStringBuilder(_container.GetConnectionString()) { InitialCatalog = datenbank };
-        return Kontext(verbindung.ConnectionString, null, null);
+        return Kontext(verbindung.ConnectionString, benutzer, null);
     }
 
     private static KalkulatorDbContext Kontext(string verbindung, IBenutzerKontext? benutzer, TimeProvider? zeit)

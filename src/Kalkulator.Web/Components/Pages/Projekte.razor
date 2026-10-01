@@ -1,0 +1,92 @@
+@page "/projekte"
+@rendermode InteractiveServer
+@inject KundenprojektDienst Dienst
+
+<PageTitle>Kundenprojekte · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Kundenprojekte</h1>
+        <p class="unterzeile">@(Dienst.Recht.SiehtAlleProjekte ? "Alle Kundenprojekte" : "Deine Kundenprojekte")</p>
+    </div>
+    <div class="aktionen">
+        <input type="search" placeholder="Firma, Titel oder Kundennummer" aria-label="Suche"
+               @bind="_suche" @bind:event="oninput" @bind:after="LadeAsync" />
+        @if (Dienst.Recht.DarfKalkulieren)
+        {
+            <a class="knopf" href="projekte/neu">Neues Kundenprojekt</a>
+        }
+    </div>
+</div>
+
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else if (_projekte is null)
+{
+    <p>Lade …</p>
+}
+else if (_projekte.Count == 0)
+{
+    <p class="hinweis">@(string.IsNullOrWhiteSpace(_suche) ? "Noch keine Kundenprojekte angelegt." : "Keine Treffer.")</p>
+}
+else
+{
+    <div class="tab-rahmen">
+        <table class="liste">
+            <thead>
+                <tr>
+                    <th>Kunde</th>
+                    <th>Vorhaben</th>
+                    <th>Status</th>
+                    <th class="num">Wahrscheinlichkeit</th>
+                    <th>Abschluss erwartet</th>
+                    <th class="num">Kalkulationen</th>
+                    @if (Dienst.Recht.SiehtAlleProjekte)
+                    {
+                        <th>Verantwortlich</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in _projekte)
+                {
+                    <tr>
+                        <td><a href="projekte/@p.Id">@p.Firma</a></td>
+                        <td>@p.Titel</td>
+                        <td><StatusPille Status="p.Status" /></td>
+                        <td class="num">@(p.Wahrscheinlichkeit is { } w ? $"{w} %" : "–")</td>
+                        <td>@Texte.Monat(p.ErwarteterAbschlussmonat)</td>
+                        <td class="num">@p.Kalkulationen</td>
+                        @if (Dienst.Recht.SiehtAlleProjekte)
+                        {
+                            <td>@p.Verantwortlich</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ProjektZeile>? _projekte;
+    private string? _suche;
+    private string? _fehler;
+
+    protected override Task OnInitializedAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _projekte = await Dienst.ListeAsync(_suche);
+            _fehler = null;
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+}

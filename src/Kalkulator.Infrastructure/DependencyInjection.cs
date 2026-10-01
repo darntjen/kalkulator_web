@@ -1,3 +1,4 @@
+using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
@@ -13,8 +14,11 @@ public static class DependencyInjection
     {
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IBenutzerKontext, SystemBenutzer>();
-        services.AddDbContext<KalkulatorDbContext>(options => options.UseSqlServer(verbindungszeichenfolge));
+        // Fabrik je Anfrage bzw. Blazor-Verbindung, weil der Kontext den angemeldeten Benutzer braucht;
+        // die Dienste erzeugen daraus kurzlebige Kontexte. Der Kontext selbst bleibt zusätzlich als Scoped-Dienst abrufbar.
+        services.AddDbContextFactory<KalkulatorDbContext>(options => options.UseSqlServer(verbindungszeichenfolge), ServiceLifetime.Scoped);
         services.AddScoped<RechenkernLader>();
+        services.AddScoped<KundenprojektDienst>();
         return services;
     }
 }
