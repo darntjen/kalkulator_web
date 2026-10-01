@@ -20,5 +20,11 @@ public class Preiskomponente
     /// <summary>Gibt an, ob und wonach der Preis gestaffelt ist (siehe <see cref="Preise.Preisstaffel"/>).</summary>
     public StaffelBezug StaffelBezug { get; set; }
 
+    /// <summary>
+    /// Artikelnummer in Navision (A-14). Bei gestaffelten Komponenten steht sie je Stufe an der
+    /// <see cref="Preise.Preisstaffel"/>, weil Navision z. B. je Onboarding-Größe einen eigenen Artikel führt.
+    /// </summary>
+    public string? NavisionArtikelnummer { get; set; }
+
     public int Sortierung { get; set; }
 }

@@ -1,0 +1,1634 @@
+{
+  "$kommentar": "Erstbefüllung des Katalogs. Quellen: Mastersheet Servicekatalog V1.0, Servicekatalog-Index V1.0, Kalkulation EK und Deckungsbeitrag V1.0, S14-Baukasten V5.7 (Stand 15.07./23.09.2026). Navision-Artikelnummern mit 9999… sind Platzhalter (docs/11_navision-zuordnung.md).",
+  "preisliste": {
+    "bezeichnung": "Preisstand 15.07.2026",
+    "gueltigAb": "2026-07-15"
+  },
+  "parameter": [
+    {
+      "schluessel": "AE_SATZ_EBENE_1",
+      "wert": 23.75,
+      "beschreibung": "Service-Request-Satz Ebene 1 je AE (15 Min.)"
+    },
+    {
+      "schluessel": "AE_SATZ_EBENE_2",
+      "wert": 33.75,
+      "beschreibung": "Service-Request-Satz Ebene 2 je AE (15 Min.), zugleich Ad-hoc-Satz S60"
+    },
+    {
+      "schluessel": "AE_SATZ_EBENE_3",
+      "wert": 42.5,
+      "beschreibung": "Service-Request-Satz Ebene 3 je AE (15 Min.)"
+    },
+    {
+      "schluessel": "S60_BLOCKGROESSE_AE",
+      "wert": 2,
+      "beschreibung": "S60: Kontingent wird auf Blöcke dieser Größe aufgerundet"
+    },
+    {
+      "schluessel": "S60_AE_PRO_ANFRAGE",
+      "wert": 2,
+      "beschreibung": "S60: Erfahrungswert AE je Anfrage"
+    },
+    {
+      "schluessel": "S14_PAKETGROESSE_GB",
+      "wert": 500,
+      "beschreibung": "S14: nativ geschützte GB je Cloud-Backup-Paket"
+    },
+    {
+      "schluessel": "S14_PREISUNTERGRENZE",
+      "wert": 187,
+      "beschreibung": "S14: Preisuntergrenze je Monat (bestätigt 25.09.2026)"
+    },
+    {
+      "schluessel": "S61_MARGENTEILER",
+      "wert": 0.55,
+      "beschreibung": "S61: VK = EK ÷ Margenteiler (45 % Marge)"
+    },
+    {
+      "schluessel": "VK_VERRECHNUNGSSATZ_PRO_STUNDE",
+      "wert": 135,
+      "beschreibung": "VK-Verrechnungssatz Dienstleistung je Stunde"
+    },
+    {
+      "schluessel": "EK_KOSTENSATZ_PRO_STUNDE",
+      "wert": 60.75,
+      "beschreibung": "Interner Vollkostensatz je produktiver Stunde (45 % vom VK)"
+    }
+  ],
+  "dokumentVorlagen": [
+    {
+      "typ": "Grundvertrag",
+      "code": "GRUNDVERTRAG",
+      "bezeichnung": "Grundvertrag",
+      "version": "1.0",
+      "dateiname": "Rahmenvertrag 01 - Grundvertrag V1.0.docx"
+    },
+    {
+      "typ": "Avb",
+      "code": "AVB",
+      "bezeichnung": "AVB Cloud und Managed Services",
+      "version": "1.0",
+      "dateiname": "Rahmenvertrag 02 - AVB Cloud und Managed Services V1.0.docx"
+    },
+    {
+      "typ": "Sla",
+      "code": "SLA",
+      "bezeichnung": "Anlage SLA",
+      "version": "2.0",
+      "dateiname": "Rahmenvertrag 03 - Anlage SLA V2.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B01",
+      "bezeichnung": "Bundle B01 - User as a Service Standard",
+      "version": "1.0",
+      "dateiname": "Bundle B01 - User as a Service Standard V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B02",
+      "bezeichnung": "Bundle B02 - User as a Service Premium",
+      "version": "1.0",
+      "dateiname": "Bundle B02 - User as a Service Premium V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B03",
+      "bezeichnung": "Bundle B03 - Server as a Service Standard",
+      "version": "1.0",
+      "dateiname": "Bundle B03 - Server as a Service Standard V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B04",
+      "bezeichnung": "Bundle B04 - Server as a Service Premium",
+      "version": "1.0",
+      "dateiname": "Bundle B04 - Server as a Service Premium V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B05",
+      "bezeichnung": "Bundle B05 - Security as a Service Standard",
+      "version": "1.0",
+      "dateiname": "Bundle B05 - Security as a Service Standard V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B06",
+      "bezeichnung": "Bundle B06 - Security as a Service Premium",
+      "version": "1.0",
+      "dateiname": "Bundle B06 - Security as a Service Premium V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "B07",
+      "bezeichnung": "Bundle B07 - Network as a Service Standard",
+      "version": "1.0",
+      "dateiname": "Bundle B07 - Network as a Service Standard V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S01",
+      "bezeichnung": "Leistungsschein S01 - Noesse Connect",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S01 - Noesse Connect V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S02",
+      "bezeichnung": "Leistungsschein S02 - Endpoint Protection (User)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S02 - Endpoint Protection (User) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S03",
+      "bezeichnung": "Leistungsschein S03 - Patch Management (User)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S03 - Patch Management (User) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S04",
+      "bezeichnung": "Leistungsschein S04 - Monitoring (User)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S04 - Monitoring (User) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S05",
+      "bezeichnung": "Leistungsschein S05 - M365 Backup (User)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S05 - M365 Backup (User) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S06",
+      "bezeichnung": "Leistungsschein S06 - E-Mail Security und Archivierung",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S06 - E-Mail Security und Archivierung V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S07",
+      "bezeichnung": "Leistungsschein S07 - Sichere Authentifizierung",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S07 - Sichere Authentifizierung V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S11",
+      "bezeichnung": "Leistungsschein S11 - Endpoint Protection (Server)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S11 - Endpoint Protection (Server) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S12",
+      "bezeichnung": "Leistungsschein S12 - Patch Management (Server)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S12 - Patch Management (Server) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S13",
+      "bezeichnung": "Leistungsschein S13 - Monitoring (Server)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S13 - Monitoring (Server) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S21",
+      "bezeichnung": "Leistungsschein S21 - Firewall Betrieb und Regelwerksmanagement",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S21 - Firewall Betrieb und Regelwerksmanagement V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S22",
+      "bezeichnung": "Leistungsschein S22 - M365 Tenant Baseline Management und Audit",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S22 - M365 Tenant Baseline Management und Audit V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S23",
+      "bezeichnung": "Leistungsschein S23 - AD Baseline und Security Management",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S23 - AD Baseline und Security Management V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S24",
+      "bezeichnung": "Leistungsschein S24 - ITSB Security Manager",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S24 - ITSB Security Manager V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S25",
+      "bezeichnung": "Leistungsschein S25 - Schwachstellenmanagement",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S25 - Schwachstellenmanagement V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S31",
+      "bezeichnung": "Leistungsschein S31 - Managed Detection and Response (MDR)",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S31 - Managed Detection and Response (MDR) V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S32",
+      "bezeichnung": "Leistungsschein S32 - Security Awareness Training",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S32 - Security Awareness Training V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S33",
+      "bezeichnung": "Leistungsschein S33 - Mobile Device Management",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S33 - Mobile Device Management V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S35",
+      "bezeichnung": "Leistungsschein S35 - NAS",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S35 - NAS V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S41",
+      "bezeichnung": "Leistungsschein S41 - Strategische IT-Begleitung",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S41 - Strategische IT-Begleitung V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S51",
+      "bezeichnung": "Leistungsschein S51 - Switch",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S51 - Switch V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S52",
+      "bezeichnung": "Leistungsschein S52 - WiFi",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S52 - WiFi V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S53",
+      "bezeichnung": "Leistungsschein S53 - Network Monitoring",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S53 - Network Monitoring V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S60",
+      "bezeichnung": "Leistungsschein S60 - Supportkontingent",
+      "version": "1.0",
+      "dateiname": "Leistungsschein S60 - Supportkontingent V1.0.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S14",
+      "bezeichnung": "Leistungsschein S14 - Server Backup (Sonderfall mit Baukasten)",
+      "version": "5.7",
+      "dateiname": "Vorlage Leistungsschein S14 V5.7.docx"
+    },
+    {
+      "typ": "Leistungsschein",
+      "code": "S61",
+      "bezeichnung": "Leistungsschein S61 - Cloud Server-Bereitstellung (TERRA Cloud)",
+      "version": "1.0",
+      "dateiname": null
+    }
+  ],
+  "kategorien": [
+    {
+      "name": "Nösse Connect",
+      "services": [
+        {
+          "code": "S01-STD",
+          "serviceNummer": "NOS-CON-BAS-01-STD",
+          "bezeichnung": "Nösse Connect Standard",
+          "typ": "Connect",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Basisplattform; SLA P1 4h/P2 8h; Service Desk Pool",
+          "leistungsschein": "S01",
+          "preiskomponenten": [
+            {
+              "code": "S01-STD",
+              "bezeichnung": "Nösse Connect Standard",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252949",
+              "vkNetto": 249.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "aufwandMinuten": 75
+              }
+            },
+            {
+              "code": "S01-STD-ONB",
+              "bezeichnung": "Onboarding-Pauschale Standard",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Einmalig",
+              "staffelBezug": "User",
+              "sortierung": 2,
+              "staffeln": [
+                {
+                  "abMenge": 1,
+                  "vkNetto": 900,
+                  "bezeichnung": "XS (bis 30 User)",
+                  "navisionArtikelnummer": "98010691"
+                },
+                {
+                  "abMenge": 31,
+                  "vkNetto": 1400,
+                  "bezeichnung": "S (31–100 User)",
+                  "navisionArtikelnummer": "99990111"
+                },
+                {
+                  "abMenge": 101,
+                  "vkNetto": 2000,
+                  "bezeichnung": "M (101–250 User)",
+                  "navisionArtikelnummer": "99990121"
+                },
+                {
+                  "abMenge": 251,
+                  "vkNetto": 2800,
+                  "bezeichnung": "L (251–500 User)",
+                  "navisionArtikelnummer": "99990131"
+                },
+                {
+                  "abMenge": 501,
+                  "vkNetto": null,
+                  "bezeichnung": "ab 501 User: individuelle Projektkalkulation"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "S01-PRM",
+          "serviceNummer": "NOS-CON-BAS-01-PRM",
+          "bezeichnung": "Nösse Connect Premium",
+          "typ": "Connect",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "SLA P1 2h/P2 4h; Pool priorisiert; Onboarding-Meeting 60 Min.",
+          "leistungsschein": "S01",
+          "preiskomponenten": [
+            {
+              "code": "S01-PRM",
+              "bezeichnung": "Nösse Connect Premium",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990002",
+              "vkNetto": 699.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 5,
+                "aufwandMinuten": 240
+              }
+            },
+            {
+              "code": "S01-PRM-ONB",
+              "bezeichnung": "Onboarding-Pauschale Premium",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Einmalig",
+              "staffelBezug": "User",
+              "sortierung": 2,
+              "staffeln": [
+                {
+                  "abMenge": 1,
+                  "vkNetto": 1200,
+                  "bezeichnung": "XS (bis 30 User)",
+                  "navisionArtikelnummer": "99990102"
+                },
+                {
+                  "abMenge": 31,
+                  "vkNetto": 2000,
+                  "bezeichnung": "S (31–100 User)",
+                  "navisionArtikelnummer": "99990112"
+                },
+                {
+                  "abMenge": 101,
+                  "vkNetto": 2800,
+                  "bezeichnung": "M (101–250 User)",
+                  "navisionArtikelnummer": "99990122"
+                },
+                {
+                  "abMenge": 251,
+                  "vkNetto": 3800,
+                  "bezeichnung": "L (251–500 User)",
+                  "navisionArtikelnummer": "99990132"
+                },
+                {
+                  "abMenge": 501,
+                  "vkNetto": null,
+                  "bezeichnung": "ab 501 User: individuelle Projektkalkulation"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "S01-ENT",
+          "serviceNummer": "NOS-CON-BAS-01-ENT",
+          "bezeichnung": "Nösse Connect Enterprise",
+          "typ": "Connect",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "SLA P1 1h/P2 2h; dedizierter Service Manager; Notfall 24/7",
+          "leistungsschein": "S01",
+          "preiskomponenten": [
+            {
+              "code": "S01-ENT",
+              "bezeichnung": "Nösse Connect Enterprise",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990003",
+              "vkNetto": 1790.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 10,
+                "aufwandMinuten": 470
+              }
+            },
+            {
+              "code": "S01-ENT-ONB",
+              "bezeichnung": "Onboarding-Pauschale Enterprise",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Einmalig",
+              "staffelBezug": "User",
+              "sortierung": 2,
+              "staffeln": [
+                {
+                  "abMenge": 1,
+                  "vkNetto": 2200,
+                  "bezeichnung": "XS (bis 30 User)",
+                  "navisionArtikelnummer": "99990103"
+                },
+                {
+                  "abMenge": 31,
+                  "vkNetto": 3000,
+                  "bezeichnung": "S (31–100 User)",
+                  "navisionArtikelnummer": "99990113"
+                },
+                {
+                  "abMenge": 101,
+                  "vkNetto": 4200,
+                  "bezeichnung": "M (101–250 User)",
+                  "navisionArtikelnummer": "99990123"
+                },
+                {
+                  "abMenge": 251,
+                  "vkNetto": 5500,
+                  "bezeichnung": "L (251–500 User)",
+                  "navisionArtikelnummer": "99990133"
+                },
+                {
+                  "abMenge": 501,
+                  "vkNetto": null,
+                  "bezeichnung": "ab 501 User: individuelle Projektkalkulation"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User as a Service",
+      "services": [
+        {
+          "code": "B01",
+          "serviceNummer": "NOS-USR-BND-01-STD",
+          "bezeichnung": "User as a Service Standard",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Basisbetrieb & Absicherung aller Arbeitsplätze",
+          "leistungsschein": "B01",
+          "preiskomponenten": [
+            {
+              "code": "B01",
+              "bezeichnung": "User as a Service Standard",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990011",
+              "vkNetto": 31.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true,
+                "kostenKorrektur": -1.5,
+                "anmerkung": "RMM-Lizenz nur einmal je Gerät (−1,50 €)"
+              }
+            }
+          ],
+          "bestandteile": [
+            "S02",
+            "S03",
+            "S04"
+          ]
+        },
+        {
+          "code": "B02",
+          "serviceNummer": "NOS-USR-BND-02-PRM",
+          "bezeichnung": "User as a Service Premium",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Erweiterter User-Schutz inkl. Backup, Mail-Security, Auth",
+          "leistungsschein": "B02",
+          "preiskomponenten": [
+            {
+              "code": "B02",
+              "bezeichnung": "User as a Service Premium",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252954",
+              "vkNetto": 54.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true
+              }
+            }
+          ],
+          "bestandteile": [
+            "B01",
+            "S05",
+            "S06",
+            "S07"
+          ]
+        },
+        {
+          "code": "S02",
+          "serviceNummer": "NOS-USR-SVC-02-XDR",
+          "bezeichnung": "Endpoint Protection (XDR) & Richtlinienmanagement",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Endpoint-Schutz (XDR) inkl. Richtlinienbetrieb",
+          "leistungsschein": "S02",
+          "preiskomponenten": [
+            {
+              "code": "S02",
+              "bezeichnung": "Endpoint Protection (XDR) & Richtlinienmanagement",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252951",
+              "vkNetto": 14.9,
+              "ek": {
+                "ekLizenz": 3.59,
+                "overhead": 1.5,
+                "aufwandMinuten": 1
+              }
+            }
+          ]
+        },
+        {
+          "code": "S03",
+          "serviceNummer": "NOS-USR-SVC-03-PAT",
+          "bezeichnung": "Patch Management",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Patchen inkl. Compliance (RMM: NinjaOne; trägt RMM-Lizenz 1,50 €/Gerät)",
+          "leistungsschein": "S03",
+          "preiskomponenten": [
+            {
+              "code": "S03",
+              "bezeichnung": "Patch Management",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252952",
+              "vkNetto": 14.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 1.5,
+                "aufwandMinuten": 2,
+                "anmerkung": "RMM NinjaOne – trägt die Lizenz je Gerät"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S04",
+          "serviceNummer": "NOS-USR-SVC-04-MON",
+          "bezeichnung": "Monitoring",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Monitoring/Alarmierung (RMM: NinjaOne; Lizenz nur ohne S03 auf demselben Gerät)",
+          "leistungsschein": "S04",
+          "preiskomponenten": [
+            {
+              "code": "S04",
+              "bezeichnung": "Monitoring",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252953",
+              "vkNetto": 7.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 1.5,
+                "aufwandMinuten": 1,
+                "anmerkung": "Standalone mit RMM-Lizenz 1,50 €"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S05",
+          "serviceNummer": "NOS-USR-SVC-05-MBU",
+          "bezeichnung": "M365 Backup",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Sicherung von Microsoft 365 Daten inkl. Wiederherstellung",
+          "leistungsschein": "S05",
+          "preiskomponenten": [
+            {
+              "code": "S05",
+              "bezeichnung": "M365 Backup",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252955",
+              "vkNetto": 9.9,
+              "ek": {
+                "ekLizenz": 2.24,
+                "overhead": 1.5,
+                "aufwandMinuten": 1,
+                "anmerkung": "EK Hornetsecurity 365 Total Protection Plan 3"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S06",
+          "serviceNummer": "NOS-USR-SVC-06-MES",
+          "bezeichnung": "E-Mail Security & Archivierung",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "E-Mail-Schutz und Archivierung",
+          "leistungsschein": "S06",
+          "preiskomponenten": [
+            {
+              "code": "S06",
+              "bezeichnung": "E-Mail Security & Archivierung",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252956",
+              "vkNetto": 12.9,
+              "ek": {
+                "ekLizenz": 3.36,
+                "overhead": 1.5,
+                "aufwandMinuten": 1,
+                "anmerkung": "EK Hornetsecurity"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S07",
+          "serviceNummer": "NOS-USR-SVC-07-AUT",
+          "bezeichnung": "Sicheres Authentifizieren",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Sichere Anmeldung (MFA/Conditional Access)",
+          "leistungsschein": "S07",
+          "preiskomponenten": [
+            {
+              "code": "S07",
+              "bezeichnung": "Sicheres Authentifizieren",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252957",
+              "vkNetto": 8.0,
+              "ek": {
+                "ekLizenz": 0.83,
+                "overhead": 1.5,
+                "aufwandMinuten": 0.5,
+                "anmerkung": "EK HW-Security-Key auf 36 Monate verteilt"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Server as a Service",
+      "services": [
+        {
+          "code": "B03",
+          "serviceNummer": "NOS-SRV-BND-03-STD",
+          "bezeichnung": "Server as a Service Standard",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Basisbetrieb & Absicherung der Server",
+          "leistungsschein": "B03",
+          "preiskomponenten": [
+            {
+              "code": "B03",
+              "bezeichnung": "Server as a Service Standard",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252958",
+              "vkNetto": 49.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true,
+                "kostenKorrektur": -1.5,
+                "anmerkung": "RMM-Lizenz nur einmal je Gerät (−1,50 €)"
+              }
+            }
+          ],
+          "bestandteile": [
+            "S11",
+            "S12",
+            "S13"
+          ]
+        },
+        {
+          "code": "B04",
+          "serviceNummer": "NOS-SRV-BND-04-PRM",
+          "bezeichnung": "Server as a Service Premium",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Erweiterter Serverbetrieb inkl. Server Backup (S14 als eigene Zeile nach Baukasten)",
+          "leistungsschein": "B04",
+          "preiskomponenten": [
+            {
+              "code": "B04",
+              "bezeichnung": "Server as a Service Premium",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990021",
+              "vkNetto": 49.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true,
+                "anmerkung": "B03 + S14; Kosten unvollständig, solange S14 keinen EK hat"
+              }
+            }
+          ],
+          "bestandteile": [
+            "B03",
+            "S14"
+          ]
+        },
+        {
+          "code": "S11",
+          "serviceNummer": "NOS-SRV-SVC-11-XDR",
+          "bezeichnung": "Endpoint Protection (XDR) & Richtlinienmanagement",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Endpoint-Schutz (XDR) inkl. Richtlinienbetrieb",
+          "leistungsschein": "S11",
+          "preiskomponenten": [
+            {
+              "code": "S11",
+              "bezeichnung": "Endpoint Protection (XDR) & Richtlinienmanagement",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252959",
+              "vkNetto": 19.9,
+              "ek": {
+                "ekLizenz": 6.01,
+                "overhead": 2.5,
+                "aufwandMinuten": 1
+              }
+            }
+          ]
+        },
+        {
+          "code": "S12",
+          "serviceNummer": "NOS-SRV-SVC-12-PAT",
+          "bezeichnung": "Patch Management",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Patchen inkl. Compliance (RMM: NinjaOne; trägt RMM-Lizenz 1,50 €/Gerät)",
+          "leistungsschein": "S12",
+          "preiskomponenten": [
+            {
+              "code": "S12",
+              "bezeichnung": "Patch Management",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252960",
+              "vkNetto": 19.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2.5,
+                "aufwandMinuten": 2,
+                "anmerkung": "RMM NinjaOne – trägt die Lizenz je Gerät"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S13",
+          "serviceNummer": "NOS-SRV-SVC-13-MON",
+          "bezeichnung": "Monitoring",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Monitoring/Alarmierung (RMM: NinjaOne; ohne Backup-Kontrolle; Lizenz nur ohne S12)",
+          "leistungsschein": "S13",
+          "preiskomponenten": [
+            {
+              "code": "S13",
+              "bezeichnung": "Monitoring",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252961",
+              "vkNetto": 19.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2.5,
+                "aufwandMinuten": 2,
+                "anmerkung": "Standalone mit RMM-Lizenz 1,50 €"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S14",
+          "serviceNummer": "NOS-SRV-SVC-14-BCK",
+          "bezeichnung": "Server Backup",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Server Backup nach Baukasten V5.7; Cloud = TERRA Cloud Backup (georedundant)",
+          "leistungsschein": "S14",
+          "preiskomponenten": [
+            {
+              "code": "S14-GRUND",
+              "bezeichnung": "Grundpauschale Backup-Betrieb (S1)",
+              "einheit": "Backupumgebung",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990031",
+              "vkNetto": 99.0
+            },
+            {
+              "code": "S14-SERVER",
+              "bezeichnung": "Gesicherter Server (S2)",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 2,
+              "navisionArtikelnummer": "99990032",
+              "vkNetto": 15.0
+            },
+            {
+              "code": "S14-PAKET",
+              "bezeichnung": "Cloud-Backup-Paket bis 500 GB nativ geschützt (F1)",
+              "einheit": "Paket",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 3,
+              "navisionArtikelnummer": "99990033",
+              "vkNetto": 69.0
+            },
+            {
+              "code": "S14-OBJEKT",
+              "bezeichnung": "Objektspeicher (Object Lock) je TB belegt (F2)",
+              "einheit": "Terabyte",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 4,
+              "navisionArtikelnummer": "99990034",
+              "vkNetto": 17.9
+            },
+            {
+              "code": "S14-LIZENZ",
+              "bezeichnung": "Backup-Software-Lizenz als MSP-Miete (F3)",
+              "einheit": "Instanz",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 5,
+              "navisionArtikelnummer": "99990035",
+              "vkNetto": 19.6
+            },
+            {
+              "code": "S14-IMPORT",
+              "bezeichnung": "Initialimport/Datenexport (F4, auf Anfrage)",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Einmalig",
+              "staffelBezug": "Keine",
+              "sortierung": 6
+            }
+          ]
+        },
+        {
+          "code": "S61",
+          "bezeichnung": "Cloud Server-Bereitstellung (TERRA Cloud)",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Server in der TERRA Cloud; VK = EK aus dem TERRA-Kalkulator ÷ 0,55",
+          "leistungsschein": "S61",
+          "preiskomponenten": [
+            {
+              "code": "S61",
+              "bezeichnung": "Cloud Server-Bereitstellung",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990091"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Security as a Service",
+      "services": [
+        {
+          "code": "B05",
+          "serviceNummer": "NOS-SEC-BND-05-STD",
+          "bezeichnung": "Security as a Service Standard",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Security-Baseline Firewall, M365, AD",
+          "leistungsschein": "B05",
+          "preiskomponenten": [
+            {
+              "code": "B05",
+              "bezeichnung": "Security as a Service Standard",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252964",
+              "vkNetto": 199.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true
+              }
+            }
+          ],
+          "bestandteile": [
+            "S21",
+            "S22",
+            "S23"
+          ]
+        },
+        {
+          "code": "B06",
+          "serviceNummer": "NOS-SEC-BND-06-PRM",
+          "bezeichnung": "Security as a Service Premium",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Security Premium inkl. ISB & Schwachstellenmanagement; S25-Assetpreise kommen zusätzlich hinzu",
+          "leistungsschein": "B06",
+          "preiskomponenten": [
+            {
+              "code": "B06",
+              "bezeichnung": "Security as a Service Premium",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990041",
+              "vkNetto": 1590.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0,
+                "ausBestandteilen": true
+              }
+            }
+          ],
+          "bestandteile": [
+            "B05",
+            "S24",
+            "S25"
+          ]
+        },
+        {
+          "code": "S21",
+          "serviceNummer": "NOS-SEC-SVC-21-FWL",
+          "bezeichnung": "Firewall Betrieb & Regelwerksmanagement",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Firewall Betrieb inkl. Regelwerksmanagement",
+          "leistungsschein": "S21",
+          "preiskomponenten": [
+            {
+              "code": "S21",
+              "bezeichnung": "Firewall Betrieb & Regelwerksmanagement",
+              "einheit": "Firewall",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252965",
+              "vkNetto": 129.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 5,
+                "aufwandMinuten": 35,
+                "anmerkung": "Aufwand 15 Betrieb + 20 Regelwerksaudit (umgelegt)"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S22",
+          "serviceNummer": "NOS-SEC-SVC-22-MTS",
+          "bezeichnung": "M365 Tenant Baseline Management & Audit",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "M365 Baseline, Audit, Härtung",
+          "leistungsschein": "S22",
+          "preiskomponenten": [
+            {
+              "code": "S22",
+              "bezeichnung": "M365 Tenant Baseline Management & Audit",
+              "einheit": "Tenant",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252966",
+              "vkNetto": 49.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 6,
+                "aufwandMinuten": 12
+              }
+            }
+          ]
+        },
+        {
+          "code": "S23",
+          "serviceNummer": "NOS-SEC-SVC-23-ADS",
+          "bezeichnung": "AD Baseline & Security Management",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "AD Baseline & Security Management",
+          "leistungsschein": "S23",
+          "preiskomponenten": [
+            {
+              "code": "S23",
+              "bezeichnung": "AD Baseline & Security Management",
+              "einheit": "AdUmgebung",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252967",
+              "vkNetto": 49.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 6,
+                "aufwandMinuten": 12
+              }
+            }
+          ]
+        },
+        {
+          "code": "S24",
+          "serviceNummer": "NOS-SEC-SVC-24-ISM",
+          "bezeichnung": "ITSB Security Manager",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Steuerung Informationssicherheit; 5 Std./Monat inkl.",
+          "leistungsschein": "S24",
+          "preiskomponenten": [
+            {
+              "code": "S24",
+              "bezeichnung": "ITSB Security Manager",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990042",
+              "vkNetto": 1190.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 50,
+                "aufwandMinuten": 300,
+                "anmerkung": "5 Std./Monat + 0,5 MT ITQ/Jahr; realer Aufwand zu validieren"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S25",
+          "serviceNummer": "NOS-SEC-SVC-25-VUL",
+          "bezeichnung": "Schwachstellenmanagement",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Scans, Bewertung, Maßnahmensteuerung",
+          "leistungsschein": "S25",
+          "preiskomponenten": [
+            {
+              "code": "S25",
+              "bezeichnung": "Schwachstellenmanagement Grundservice",
+              "einheit": "Kunde",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990043",
+              "vkNetto": 499.0,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 60,
+                "aufwandMinuten": 150
+              }
+            },
+            {
+              "code": "S25-CLIENT",
+              "bezeichnung": "Schwachstellenmanagement je Client",
+              "einheit": "Client",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 2,
+              "navisionArtikelnummer": "99990044",
+              "vkNetto": 12.0,
+              "ek": {
+                "ekLizenz": 4.99,
+                "overhead": 0,
+                "anmerkung": "Näherungswert laut EK-Kalkulation (~4,99 €)"
+              }
+            },
+            {
+              "code": "S25-SERVER",
+              "bezeichnung": "Schwachstellenmanagement je Server",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 3,
+              "navisionArtikelnummer": "99990045",
+              "vkNetto": 69.0,
+              "ek": {
+                "ekLizenz": 26.99,
+                "overhead": 0,
+                "anmerkung": "Näherungswert laut EK-Kalkulation (~26,99 €)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Network as a Service",
+      "services": [
+        {
+          "code": "B07",
+          "serviceNummer": "NOS-NET-BND-07-STD",
+          "bezeichnung": "Network as a Service",
+          "typ": "Bundle",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Netzwerk-Bundle je Switch bzw. Access Point",
+          "leistungsschein": "B07",
+          "preiskomponenten": [
+            {
+              "code": "B07-SWI",
+              "bezeichnung": "Network as a Service je Switch",
+              "einheit": "Switch",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "98252991",
+              "vkNetto": 49.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2.5,
+                "aufwandMinuten": 14,
+                "anmerkung": "S51 + S53, NinjaOne-Lizenz je Gerät nur einmal"
+              }
+            },
+            {
+              "code": "B07-WIF",
+              "bezeichnung": "Network as a Service je Access Point",
+              "einheit": "AccessPoint",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 2,
+              "navisionArtikelnummer": "98252992",
+              "vkNetto": 41.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2.5,
+                "aufwandMinuten": 11,
+                "anmerkung": "S52 + S53, NinjaOne-Lizenz je Gerät nur einmal"
+              }
+            }
+          ],
+          "bestandteile": [
+            "S51",
+            "S52",
+            "S53"
+          ]
+        },
+        {
+          "code": "S51",
+          "serviceNummer": "NOS-NET-SVC-51-SWI",
+          "bezeichnung": "Switch",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Betrieb/Überwachung Switching",
+          "leistungsschein": "S51",
+          "preiskomponenten": [
+            {
+              "code": "S51",
+              "bezeichnung": "Switch",
+              "einheit": "Switch",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990051",
+              "vkNetto": 44.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2,
+                "aufwandMinuten": 12,
+                "anmerkung": "Omada Cloud Controller self-hosted; EK = NinjaOne je Gerät"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S52",
+          "serviceNummer": "NOS-NET-SVC-52-WIF",
+          "bezeichnung": "WiFi",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Betrieb/Überwachung WLAN",
+          "leistungsschein": "S52",
+          "preiskomponenten": [
+            {
+              "code": "S52",
+              "bezeichnung": "WiFi",
+              "einheit": "AccessPoint",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990052",
+              "vkNetto": 35.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 2,
+                "aufwandMinuten": 9,
+                "anmerkung": "Omada Cloud Controller self-hosted; EK = NinjaOne je Gerät"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S53",
+          "serviceNummer": "NOS-NET-SVC-53-MON",
+          "bezeichnung": "Network Monitoring",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Monitoring der Netzwerkinfrastruktur",
+          "leistungsschein": "S53",
+          "preiskomponenten": [
+            {
+              "code": "S53",
+              "bezeichnung": "Network Monitoring",
+              "einheit": "Netzwerkgeraet",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990053",
+              "vkNetto": 9.9,
+              "ek": {
+                "ekLizenz": 1.5,
+                "overhead": 0.5,
+                "aufwandMinuten": 2,
+                "anmerkung": "SNMP-Anbindung an NinjaOne"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Add-ons",
+      "services": [
+        {
+          "code": "S31",
+          "serviceNummer": "NOS-ADD-SVC-31-MDR",
+          "bezeichnung": "Managed Detection and Response (MDR)",
+          "typ": "AddOn",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "MDR – Erkennung & Reaktion auf Incidents",
+          "leistungsschein": "S31",
+          "preiskomponenten": [
+            {
+              "code": "S31-USER",
+              "bezeichnung": "MDR je User",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990061",
+              "vkNetto": 49.0,
+              "ek": {
+                "ekLizenz": 11.66,
+                "overhead": 0,
+                "betriebFix": 20,
+                "anmerkung": "EK Sophos MDR + Serviceaufwand 20 €"
+              }
+            },
+            {
+              "code": "S31-SERVER",
+              "bezeichnung": "MDR je Server",
+              "einheit": "Server",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 2,
+              "navisionArtikelnummer": "99990062",
+              "vkNetto": 79.0,
+              "ek": {
+                "ekLizenz": 18.77,
+                "overhead": 0,
+                "betriebFix": 30,
+                "anmerkung": "EK Sophos MDR + Serviceaufwand 30 €"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S32",
+          "serviceNummer": "NOS-ADD-SVC-32-AWR",
+          "bezeichnung": "Security Awareness Training",
+          "typ": "AddOn",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Awareness-Schulungen & Kampagnen",
+          "leistungsschein": "S32",
+          "preiskomponenten": [
+            {
+              "code": "S32",
+              "bezeichnung": "Security Awareness Training",
+              "einheit": "User",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990063",
+              "vkNetto": 11.9,
+              "ek": {
+                "ekLizenz": 2.0,
+                "overhead": 0,
+                "betriebFix": 1.2,
+                "anmerkung": "EK Hornetsecurity 2 € + Aufwand 1,20 €"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S33",
+          "serviceNummer": "NOS-ADD-SVC-33-MDM",
+          "bezeichnung": "Mobile Device Management (MDM)",
+          "typ": "AddOn",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "MDM – Verwaltung & Absicherung mobiler Geräte",
+          "leistungsschein": "S33",
+          "preiskomponenten": [
+            {
+              "code": "S33",
+              "bezeichnung": "Mobile Device Management",
+              "einheit": "Device",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990064",
+              "vkNetto": 19.9,
+              "ek": {
+                "ekLizenz": 0,
+                "overhead": 0.83,
+                "aufwandMinuten": 4,
+                "anmerkung": "Intune 0 €; Overhead = Lifecycle-Anteil"
+              }
+            }
+          ]
+        },
+        {
+          "code": "S35",
+          "serviceNummer": "NOS-ADD-SVC-35-NAS",
+          "bezeichnung": "NAS",
+          "typ": "AddOn",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Betrieb, Überwachung & Härtung von NAS-Systemen; ohne Backup-Datenlogik",
+          "leistungsschein": "S35",
+          "preiskomponenten": [
+            {
+              "code": "S35",
+              "bezeichnung": "NAS",
+              "einheit": "Nas",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990065",
+              "vkNetto": 49.9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Optionen",
+      "services": [
+        {
+          "code": "S41",
+          "bezeichnung": "Strategische IT-Begleitung",
+          "typ": "Option",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Pauschal je Monat nach Anzahl Mitarbeitende; optional Roadmap-Erstellung",
+          "leistungsschein": "S41",
+          "preiskomponenten": [
+            {
+              "code": "S41",
+              "bezeichnung": "Strategische IT-Begleitung",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Mitarbeitende",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990071",
+              "staffeln": [
+                {
+                  "abMenge": 1,
+                  "vkNetto": 350.0,
+                  "bezeichnung": "bis 50 Mitarbeitende"
+                },
+                {
+                  "abMenge": 51,
+                  "vkNetto": 550.0,
+                  "bezeichnung": "ab 51 Mitarbeitenden"
+                }
+              ]
+            },
+            {
+              "code": "S41-ROADMAP",
+              "bezeichnung": "Roadmap-Erstellung",
+              "einheit": "Pauschal",
+              "abrechnungsart": "Einmalig",
+              "staffelBezug": "Keine",
+              "sortierung": 2,
+              "navisionArtikelnummer": "99990072",
+              "vkNetto": 2400.0
+            }
+          ]
+        },
+        {
+          "code": "S60",
+          "serviceNummer": "NOS-SUP-OPT-60-KON",
+          "bezeichnung": "Supportkontingent",
+          "typ": "Option",
+          "vertriebsstatus": "Verkaufsfaehig",
+          "kurzbeschreibung": "Monatliches Kontingent an Abrechnungseinheiten (1 AE = 15 Min.) mit 10 % Commitment-Rabatt",
+          "leistungsschein": "S60",
+          "preiskomponenten": [
+            {
+              "code": "S60",
+              "bezeichnung": "Supportkontingent je AE",
+              "einheit": "Abrechnungseinheit",
+              "abrechnungsart": "Monatlich",
+              "staffelBezug": "Keine",
+              "sortierung": 1,
+              "navisionArtikelnummer": "99990081",
+              "vkNetto": 30.38
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Zukünftige Services",
+      "services": [
+        {
+          "code": "Z-DOC",
+          "serviceNummer": "NOS-ADD-SVC-00-DOC",
+          "bezeichnung": "Fortlaufende IT-Dokumentation & Inventarisierung",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Zukuenftig",
+          "kurzbeschreibung": "Toolset/Kalkulation ungewiss",
+          "preiskomponenten": []
+        },
+        {
+          "code": "Z-NAC",
+          "serviceNummer": "NOS-ADD-SVC-00-NAC",
+          "bezeichnung": "NAC (Network Access Control)",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Zukuenftig",
+          "kurzbeschreibung": "Toolset/Kalkulation ungewiss",
+          "preiskomponenten": []
+        },
+        {
+          "code": "Z-PEN",
+          "serviceNummer": "NOS-ADD-SVC-00-PEN",
+          "bezeichnung": "Pentesting",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Zukuenftig",
+          "kurzbeschreibung": "Toolset/Kalkulation ungewiss",
+          "preiskomponenten": []
+        },
+        {
+          "code": "Z-BKC",
+          "serviceNummer": "NOS-SRV-SVC-00-BKC",
+          "bezeichnung": "Backupkonzept",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Zukuenftig",
+          "kurzbeschreibung": "Vorprojekt zu Server Backup (S14)",
+          "preiskomponenten": []
+        },
+        {
+          "code": "Z-CMP",
+          "serviceNummer": "NOS-SEC-SVC-00-CMP",
+          "bezeichnung": "Grounded Compliance & Site Audit",
+          "typ": "Einzelservice",
+          "vertriebsstatus": "Zukuenftig",
+          "kurzbeschreibung": "Compliance-/Standort-Audit",
+          "preiskomponenten": []
+        }
+      ]
+    }
+  ],
+  "regeln": [
+    {
+      "service": "S01-STD",
+      "typ": "SchliesstAus",
+      "meldung": "Je Kalkulation ist genau eine Nösse-Connect-Stufe möglich.",
+      "ziele": [
+        "S01-PRM",
+        "S01-ENT"
+      ]
+    },
+    {
+      "service": "S01-PRM",
+      "typ": "SchliesstAus",
+      "meldung": "Je Kalkulation ist genau eine Nösse-Connect-Stufe möglich.",
+      "ziele": [
+        "S01-STD",
+        "S01-ENT"
+      ]
+    },
+    {
+      "service": "S01-ENT",
+      "typ": "SchliesstAus",
+      "meldung": "Je Kalkulation ist genau eine Nösse-Connect-Stufe möglich.",
+      "ziele": [
+        "S01-STD",
+        "S01-PRM"
+      ]
+    },
+    {
+      "service": "S25",
+      "typ": "ErfordertEinenVon",
+      "meldung": "Schwachstellenmanagement (S25) setzt ein aktives Bundle B01, B02, B03 oder B04 voraus.",
+      "ziele": [
+        "B01",
+        "B02",
+        "B03",
+        "B04"
+      ]
+    },
+    {
+      "service": "S61",
+      "typ": "ErfordertAlle",
+      "meldung": "Cloud Server (S61) benötigt Firewall Betrieb (S21) als zusätzliche Firewall-Instanz.",
+      "ziele": [
+        "S21"
+      ]
+    }
+  ]
+}

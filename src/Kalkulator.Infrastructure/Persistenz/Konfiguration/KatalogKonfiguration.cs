@@ -47,6 +47,7 @@ internal sealed class PreiskomponenteKonfiguration : IEntityTypeConfiguration<Pr
         builder.Property(p => p.Einheit).HasConversion<string>().HasMaxLength(30);
         builder.Property(p => p.Abrechnungsart).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.StaffelBezug).HasConversion<string>().HasMaxLength(20);
+        builder.Property(p => p.NavisionArtikelnummer).HasMaxLength(20);
     }
 }
 

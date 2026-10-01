@@ -262,7 +262,7 @@ Die vollständige Tabelle aller Einzelservices steht in der Quelldatei. S35 (NAS
 | I1 | Das Mastersheet führt S14/B04 als „auf Anfrage“, der S14-Baukasten V5.7 hat eine feste Preislogik | Klären, ob der Baukasten maßgeblich ist |
 | I2 | Der Vertriebskalkulator führt S25 nur mit 499 €/Kunde. Das Mastersheet nennt zusätzlich 12 €/Client und 69 €/Server | Assetabhängige Komponente fehlt im Excel |
 | I3 | Das Mastersheet sagt „Standard-Onboarding bis ~60–70 AP; größere Umgebungen individuell“. Die Staffel reicht dagegen bis 500 AP | Grenze für „individuell“ klären |
-| I4 | Der S14-Baukasten nennt als Preisuntergrenze sowohl 183 € (Abschnitt 5) als auch 187 € (Abschnitte 7.3 und 10 d) | Richtigen Wert bestätigen |
+| I4 | Der S14-Baukasten nennt als Preisuntergrenze sowohl 183 € (Abschnitt 5) als auch 187 € (Abschnitte 7.3 und 10 d) | ✅ Geklärt: **187 €** gilt (25.09.2026) |
 | I5 | Die Beispieltabelle in § 3 des Grundvertrags enthält veraltete Daten (S34 Managed WiFi, B05 mit Menge 4) | Die Vorlage muss vor der Automatisierung auf Platzhalter umgestellt werden |
 | I6 | Das Mastersheet nennt für B02 den Preis „54,9“ ohne Formatierung | kosmetisch |
 | I7 | Die AVV ist im Vertragswerk-Ordner nicht vorhanden, wird aber als vorrangige Anlage referenziert | Wird später nachgeliefert; Platz im Vertragspaket vorgesehen |

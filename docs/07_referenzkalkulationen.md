@@ -74,7 +74,7 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 
 | Profil | Variante | Rechnung | Monatlich |
 |--------|----------|----------|----------:|
-| 1 Server, 200 GB | Cloud | 99 + 15 + 1 × 69 | 183,00 € |
+| 1 Server, 200 GB | Cloud | 99 + 15 + 1 × 69 = 183 → **Preisuntergrenze** | 187,00 € |
 | 3 Server, 400 GB | Cloud | 99 + 3 × 15 + 1 × 69 | 213,00 € |
 | 5 Server, 1 TB | Cloud | 99 + 5 × 15 + 2 × 69 | 312,00 € |
 | 8 Server, 2 TB | Cloud | 99 + 8 × 15 + 4 × 69 | 495,00 € |
