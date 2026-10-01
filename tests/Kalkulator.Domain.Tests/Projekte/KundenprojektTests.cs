@@ -163,7 +163,7 @@ public class KalkulationTests
     }
 
     [Fact]
-    public void Duplizieren_kopiert_den_Arbeitsstand_in_eine_neue_Variante_ohne_Versionen()
+    public void Duplizieren_kopiert_den_Arbeitsstand_ohne_Versionen_und_Sonderpositionen_brauchen_neue_Freigabe()
     {
         var original = NeueKalkulation();
         original.Vertragsbeginn = new DateOnly(2027, 1, 1);
@@ -176,7 +176,11 @@ public class KalkulationTests
         Assert.False(kopie.FuerForecast);
         Assert.Equal(original.Vertragsbeginn, kopie.Vertragsbeginn);
         Assert.Equal(original.VollstaendigeEingabe().Positionen, kopie.VollstaendigeEingabe().Positionen);
-        Assert.Equal(Freigabestatus.Freigegeben, Assert.Single(kopie.Sonderpositionen).Status);
+        var sonder = Assert.Single(kopie.Sonderpositionen);
+        Assert.Equal(Freigabestatus.Offen, sonder.Status);
+        Assert.Null(sonder.EntschiedenVon);
+        Assert.Equal(("Sonderreport", 50m), (sonder.Bezeichnung, sonder.Preis));
+        Assert.Equal(Freigabestatus.Freigegeben, original.Sonderpositionen[0].Status);
         Assert.NotSame(original.Sonderpositionen[0], kopie.Sonderpositionen[0]);
         Assert.Empty(kopie.Versionen);
     }

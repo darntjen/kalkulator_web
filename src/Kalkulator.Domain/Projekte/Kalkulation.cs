@@ -108,7 +108,7 @@ public class Kalkulation
 
     /// <summary>
     /// Kopiert den Arbeitsstand in eine neue Kalkulation desselben Kundenprojekts (B-08), z. B. als Variante.
-    /// Versionen werden nicht kopiert. Freigaben unveränderter Sonderpositionen bleiben erhalten.
+    /// Versionen werden nicht kopiert. Sonderpositionen brauchen in der Kopie eine neue Freigabe (Entscheidung 02.10.2026).
     /// </summary>
     public Kalkulation Duplizieren(string titel, string benutzer, DateTimeOffset zeitpunkt)
     {

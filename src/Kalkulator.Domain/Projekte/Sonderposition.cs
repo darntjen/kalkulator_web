@@ -75,14 +75,11 @@ public class Sonderposition
     public SonderpositionEingabe AlsEingabe() =>
         new(Bezeichnung, Einheit, Menge, Preis, Begruendung, Einmalig, Status == Freigabestatus.Freigegeben);
 
+    /// <summary>Kopie mit gleichem Inhalt; die Freigabe ist wieder offen.</summary>
     internal Sonderposition Kopie()
     {
         var kopie = new Sonderposition { Reihenfolge = Reihenfolge };
         kopie.Aendern(Bezeichnung, Einheit, Menge, Preis, Begruendung, Einmalig);
-        kopie.Status = Status;
-        kopie.EntschiedenVon = EntschiedenVon;
-        kopie.EntschiedenAm = EntschiedenAm;
-        kopie.Kommentar = Kommentar;
         return kopie;
     }
 }

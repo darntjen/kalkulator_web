@@ -12,7 +12,7 @@ public enum ProjektStatus
 }
 
 /// <summary>
-/// Auswahlliste für „Verloren“ (B-09). Die Werte sind ein Vorschlag; Details stehen im Freitext.
+/// Auswahlliste für „Verloren“ (B-09, bestätigt 02.10.2026); Details stehen im Freitext.
 /// </summary>
 public enum Verlustgrund
 {
