@@ -1,7 +1,7 @@
 using Kalkulator.Domain.Katalog;
 using Kalkulator.Domain.Preise;
 
-namespace Kalkulator.Domain.Kalkulation;
+namespace Kalkulator.Domain.Berechnung;
 
 /// <summary>Codes, an denen der Rechenkern Sonderfälle erkennt (docs/06_ist-analyse.md, Abschnitte 3–7).</summary>
 public static class KatalogCodes
@@ -44,6 +44,9 @@ public sealed class Rechenkern
             .ToDictionary(x => x.Komponente, x => x.Service);
         _komponenten = _serviceZuKomponente.Keys.ToDictionary(k => k.Code);
     }
+
+    /// <summary>Preisliste, mit der dieser Rechenkern rechnet.</summary>
+    public Preisliste Preisliste => _preisliste;
 
     public KalkulationsErgebnis Berechne(KalkulationsEingabe eingabe)
     {
@@ -438,6 +441,13 @@ public sealed class Rechenkern
 
             var vorhanden = _direkt.Concat(enthalten).Select(s => s.Code).ToHashSet();
 
+            // Für S61 zählt nur, was zusätzlich berechnet wird: Der Cloud Server braucht immer eine eigene
+            // Firewall-Instanz S21, auch wenn B05 gebucht ist (Entscheidung 01.10.2026).
+            var berechnet = _positionen
+                .Where(p => p.Position.Herkunft == PositionsHerkunft.Katalog && p.Position.BerechneteMenge > 0)
+                .Select(p => p.Position.ServiceCode!)
+                .ToHashSet();
+
             // R1: genau eine Connect-Stufe; einzige Ausnahme sind reine S41-Kalkulationen.
             var connect = _direkt.Count(s => s.Typ == ServiceTyp.Connect);
             if (connect == 0 && _direkt.Any(s => s.Code != KatalogCodes.StrategischeBegleitung))
@@ -452,10 +462,11 @@ public sealed class Rechenkern
                 foreach (var regel in service.Regeln)
                 {
                     var ziele = regel.Ziele.Select(z => z.ZielService?.Code ?? ZielCode(z.ZielServiceId)).ToList();
+                    var erfuellt = service.Code == KatalogCodes.CloudServer ? berechnet : vorhanden;
                     var verletzt = regel.Typ switch
                     {
-                        RegelTyp.ErfordertAlle => !ziele.All(vorhanden.Contains),
-                        RegelTyp.ErfordertEinenVon => !ziele.Any(vorhanden.Contains),
+                        RegelTyp.ErfordertAlle => !ziele.All(erfuellt.Contains),
+                        RegelTyp.ErfordertEinenVon => !ziele.Any(erfuellt.Contains),
                         RegelTyp.SchliesstAus => _direkt.Any(s => ziele.Contains(s.Code)),
                         _ => false,
                     };

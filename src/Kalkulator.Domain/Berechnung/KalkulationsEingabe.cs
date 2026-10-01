@@ -1,4 +1,4 @@
-namespace Kalkulator.Domain.Kalkulation;
+namespace Kalkulator.Domain.Berechnung;
 
 /// <summary>
 /// Alles, was der Vertrieb für eine Managed-Services-Kalkulation erfasst. Die Eingabe ist unabhängig von

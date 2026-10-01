@@ -1,6 +1,8 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kalkulator.Domain.Katalog;
 using Kalkulator.Domain.Preise;
+using Kalkulator.Domain.Projekte;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using PreisParameter = Kalkulator.Domain.Preise.Parameter;
@@ -23,6 +25,10 @@ public class KalkulatorDbContext(
     public DbSet<Preisstaffel> Preisstaffeln => Set<Preisstaffel>();
     public DbSet<PreisParameter> Parameter => Set<PreisParameter>();
     public DbSet<EkPosition> EkPositionen => Set<EkPosition>();
+    public DbSet<Kunde> Kunden => Set<Kunde>();
+    public DbSet<Kundenprojekt> Kundenprojekte => Set<Kundenprojekt>();
+    public DbSet<Kalkulation> Kalkulationen => Set<Kalkulation>();
+    public DbSet<Kalkulationsversion> Kalkulationsversionen => Set<Kalkulationsversion>();
     public DbSet<AenderungsEintrag> Aenderungsprotokoll => Set<AenderungsEintrag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
@@ -33,11 +39,12 @@ public class KalkulatorDbContext(
 
     /// <summary>
     /// Speichert Änderungen und schreibt in derselben Transaktion das Änderungsprotokoll (A-08, F-09).
-    /// Änderungen an freigegebenen Preislisten werden abgewiesen (ADR-0005).
+    /// Änderungen an freigegebenen Preislisten und eingefrorenen Kalkulationsversionen werden abgewiesen (ADR-0005).
     /// </summary>
     public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
     {
         await PruefeFreigegebenePreislistenAsync(cancellationToken);
+        PruefeEingefroreneVersionen();
         var protokoll = ErfasseAenderungen();
 
         var eigeneTransaktion = Database.CurrentTransaction is null
@@ -98,6 +105,19 @@ public class KalkulatorDbContext(
         }
     }
 
+    /// <summary>Eingefrorene Versionen, ihre Positionen und Kosten dürfen nur angelegt werden.</summary>
+    private void PruefeEingefroreneVersionen()
+    {
+        var geaendert = ChangeTracker.Entries()
+            .FirstOrDefault(e => e.State is EntityState.Modified or EntityState.Deleted
+                && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten);
+        if (geaendert is not null)
+        {
+            throw new InvalidOperationException(
+                $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Kalkulationsversionen sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
+        }
+    }
+
     private static PreislistenStatus? GespeicherterStatus(EntityEntry<Preisliste> eintrag) =>
         eintrag.State == EntityState.Added
             ? null
@@ -128,12 +148,15 @@ public class KalkulatorDbContext(
                 _ => "Geändert",
             }, e.State == EntityState.Modified ? GeaenderteWerte(e) : null))];
 
+    // Aufzählungen als Text, damit das Protokoll ohne Nachschlagen lesbar ist (z. B. „AngebotVersendet“ statt 2).
+    private static readonly JsonSerializerOptions ProtokollJson = new() { Converters = { new JsonStringEnumConverter() } };
+
     private static string GeaenderteWerte(EntityEntry eintrag)
     {
         var aenderungen = eintrag.Properties
             .Where(p => p.IsModified && !Equals(p.OriginalValue, p.CurrentValue))
             .ToDictionary(p => p.Metadata.Name, p => new { Alt = p.OriginalValue, Neu = p.CurrentValue });
-        return JsonSerializer.Serialize(aenderungen);
+        return JsonSerializer.Serialize(aenderungen, ProtokollJson);
     }
 
     // Wird nach dem ersten Speichern aufgerufen, damit neu angelegte Datensätze ihre Schlüssel schon haben.

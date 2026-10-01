@@ -118,6 +118,7 @@ Kontrollfall aus dem Vertriebs-Handbuch: 6 Anfragen × 2 AE = 12 AE → **364,56
 | EK aus TERRA-Kalkulator 550,00 € | 550,00 ÷ 0,55 | 1.000,00 € |
 | EK aus TERRA-Kalkulator 412,37 € | 412,37 ÷ 0,55 = 749,7636… → gerundet | 749,76 € |
 | S61 ohne S21 | – | Fehler: S21 (zusätzliche Firewall-Instanz) ist Pflicht |
+| S61 mit B05, ohne eigene S21 | – | Fehler: S21 ist auch neben B05 Pflicht |
 | S61 ohne Backup-Entscheidung | – | Fehler: S14 buchen oder „Datensicherung durch Kunden“ wählen |
 
 Rundung: kaufmännisch auf 2 Nachkommastellen (zu bestätigen).
@@ -146,6 +147,6 @@ Annahmen bei der Umsetzung, die das Produktmanagement bestätigen sollte:
 3. **Regeln für Bundle-Bestandteile.** Ein Service, der über ein gebuchtes Bundle geliefert wird, wird nicht erneut
    gegen seine Katalogregeln geprüft; es gelten die Voraussetzungen des Bundles (z. B. S25-Assets zu B06).
 4. **Bundle-Bestandteile erfüllen Voraussetzungen.** Verlangt eine Regel einen Service, zählt er auch dann als
-   vorhanden, wenn er in einem gebuchten Bundle steckt. Damit erfüllt z. B. die Firewall aus B05 die Pflicht zu S21
-   bei S61. Ob für S61 immer eine *zusätzliche* Firewall-Instanz nötig ist, ist noch zu klären.
+   vorhanden, wenn er in einem gebuchten Bundle steckt. **Ausnahme S61** (entschieden 01.10.2026): Der Cloud Server
+   braucht immer eine zusätzliche, eigens berechnete Firewall-Instanz S21, auch wenn B05 gebucht ist.
 5. **Rundung.** Jede Zeile wird kaufmännisch auf den Cent gerundet; Summen entstehen aus den gerundeten Zeilen.

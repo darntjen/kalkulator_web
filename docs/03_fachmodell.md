@@ -66,12 +66,12 @@ erDiagram
 | **Dokument-Vorlage** | Word-Vorlage | Typ (Angebot, Grundvertrag, AVB, SLA, AVV, Leistungsschein), Code, Version, Datei, gültig ab |
 | **Kunde** | Minimaler Kundendatensatz | Firma, Anschrift, Ansprechpartner, **Navision-Kundennummer**; später HubSpot-ID |
 | **Kundenprojekt** | Oberstes Objekt: alles, was einem Kunden zu einem Vorhaben angeboten wird | Titel, Kunde, verantwortlicher Vertrieb, **Projektstatus**, Verlustgrund, Neukunde/Bestandskunde, Forecast (Wahrscheinlichkeit %, erwarteter Abschlussmonat) |
-| **Kalkulation** | Managed-Services-Kalkulation innerhalb eines Kundenprojekts | Titel, Ersteller; mehrere je Kundenprojekt möglich (Varianten) |
+| **Kalkulation** | Managed-Services-Kalkulation innerhalb eines Kundenprojekts | Titel, Ersteller, Vertragsbeginn, **ein bearbeitbarer Arbeitsstand** (Eingabe als JSON), Kennzeichen „zählt im Forecast“ (genau eine je Projekt); mehrere je Kundenprojekt möglich (Varianten) |
 | **Status-Ereignis** | Historie des Projektstatus (am Kundenprojekt) | alter/neuer Status, wer, wann, Kommentar |
-| **Kalkulationsversion** | Konkreter Angebotsstand | Nummer, Connect-Stufe, Anzahl User (für Onboarding), Vertragsbeginn, Summen (eingefroren), Preislistenversion, Alt-Monatspreis (Vorher/Nachher) |
-| **Position** | Service × Menge | Service, Preiskomponente, Menge, Einzelpreis (eingefroren), Betrag, Hinweis „im Bundle enthalten“ |
+| **Kalkulationsversion** | Konkreter Angebotsstand, entsteht erst beim Erzeugen eines Angebots aus dem Arbeitsstand (Entscheidung 01.10.2026); unveränderlich | Nummer (V1, V2 …), vollständige Eingabe (inkl. Anzahl User, Alt-Monatspreis, Sonderpositionen), Vertragsbeginn, Summen (eingefroren), Preislistenversion, erstellt von/am. Die Connect-Stufe ergibt sich aus den Positionen |
+| **Position** | Eingefrorene Ergebniszeile einer Version | Komponenten- und Service-Code, Bezeichnung, Menge, berechnete Menge, Einzelpreis, Betrag, Abrechnungsart, Herkunft (Katalog, Onboarding, Sonderrechner, Sonderposition), Hinweis „im Bundle enthalten“. Kosten je Zeile liegen getrennt im Schema `intern` |
 | **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste; S25: Clients, Server; S61: Buchungsübersicht, TERRA-Wert, Backup-Entscheidung; S41: Roadmap-Erstellung ja/nein |
-| **Sonderposition** | Freie Position | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), freigegeben von/am, Kommentar |
+| **Sonderposition** | Freie Position im Arbeitsstand | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), entschieden von/am, Kommentar (bei Ablehnung Pflicht). Jede inhaltliche Änderung setzt die Freigabe auf „offen“ zurück, ebenso das Duplizieren der Kalkulation (Entscheidung 02.10.2026) |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
 ## Projektstatus eines Kundenprojekts (bestätigt 25.09.2026, am Kundenprojekt seit 29.09.2026)
@@ -96,6 +96,10 @@ stateDiagram-v2
 Der Vertrieb setzt den Status selbst. Jede Änderung wird mit Zeitstempel
 protokolliert, das ist Grundlage für Pipeline- und Trendstatistiken. Bei
 „Verloren“ ist ein Verlustgrund Pflicht (Auswahlliste plus Freitext).
+Auswahlliste (bestätigt 02.10.2026): Preis, Wettbewerber, kein Bedarf,
+falscher Zeitpunkt, interne Lösung, keine Rückmeldung, Sonstiges.
+Gewonnen und Verloren sind endgültig; aus dem Entwurf geht es nur zum
+versendeten Angebot.
 
 ## Objekte für Stufe 2 (Gesamtkonzept)
 

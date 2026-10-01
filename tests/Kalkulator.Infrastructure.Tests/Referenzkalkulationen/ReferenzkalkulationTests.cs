@@ -1,4 +1,4 @@
-using Kalkulator.Domain.Kalkulation;
+using Kalkulator.Domain.Berechnung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 
 namespace Kalkulator.Infrastructure.Tests.Referenzkalkulationen;
@@ -304,6 +304,25 @@ public class ReferenzkalkulationTests
         });
 
         FehlerEnthaelt(ergebnis, "S21");
+    }
+
+    [Fact]
+    public void RK10_Cloud_Server_braucht_S21_auch_neben_B05()
+    {
+        var nurB05 = Rechne(new KalkulationsEingabe
+        {
+            Positionen = [P("S01-STD"), P("B05")],
+            CloudServer = new CloudServerEingabe(550m, CloudBackup.Kunde),
+        });
+        var mitS21 = Rechne(new KalkulationsEingabe
+        {
+            Positionen = [P("S01-STD"), P("B05"), P("S21")],
+            CloudServer = new CloudServerEingabe(550m, CloudBackup.Kunde),
+        });
+
+        FehlerEnthaelt(nurB05, "S21");
+        OhneFehler(mitS21);
+        Assert.Equal(129.90m, Assert.Single(mitS21.Positionen, p => p.Code == "S21").Betrag);
     }
 
     [Fact]
