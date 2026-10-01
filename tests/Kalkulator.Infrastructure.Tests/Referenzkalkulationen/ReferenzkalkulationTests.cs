@@ -1,4 +1,4 @@
-using Kalkulator.Domain.Kalkulation;
+using Kalkulator.Domain.Berechnung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 
 namespace Kalkulator.Infrastructure.Tests.Referenzkalkulationen;

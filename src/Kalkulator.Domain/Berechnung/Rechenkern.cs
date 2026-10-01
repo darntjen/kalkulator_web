@@ -1,7 +1,7 @@
 using Kalkulator.Domain.Katalog;
 using Kalkulator.Domain.Preise;
 
-namespace Kalkulator.Domain.Kalkulation;
+namespace Kalkulator.Domain.Berechnung;
 
 /// <summary>Codes, an denen der Rechenkern Sonderfälle erkennt (docs/06_ist-analyse.md, Abschnitte 3–7).</summary>
 public static class KatalogCodes
@@ -44,6 +44,9 @@ public sealed class Rechenkern
             .ToDictionary(x => x.Komponente, x => x.Service);
         _komponenten = _serviceZuKomponente.Keys.ToDictionary(k => k.Code);
     }
+
+    /// <summary>Preisliste, mit der dieser Rechenkern rechnet.</summary>
+    public Preisliste Preisliste => _preisliste;
 
     public KalkulationsErgebnis Berechne(KalkulationsEingabe eingabe)
     {

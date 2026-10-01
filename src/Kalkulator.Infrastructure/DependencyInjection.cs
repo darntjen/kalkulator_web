@@ -1,3 +1,4 @@
+using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ public static class DependencyInjection
         services.TryAddSingleton(TimeProvider.System);
         services.TryAddScoped<IBenutzerKontext, SystemBenutzer>();
         services.AddDbContext<KalkulatorDbContext>(options => options.UseSqlServer(verbindungszeichenfolge));
+        services.AddScoped<RechenkernLader>();
         return services;
     }
 }

@@ -1,6 +1,6 @@
 using Kalkulator.Domain.Katalog;
 
-namespace Kalkulator.Domain.Kalkulation;
+namespace Kalkulator.Domain.Berechnung;
 
 /// <summary>Woher eine Ergebniszeile stammt; wichtig für Angebot, Vertrag und Statistik.</summary>
 public enum PositionsHerkunft
