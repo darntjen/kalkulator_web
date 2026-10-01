@@ -2,6 +2,7 @@ using System.Globalization;
 using Kalkulator.Infrastructure;
 using Kalkulator.Infrastructure.Erstbefuellung;
 using Kalkulator.Infrastructure.Persistenz;
+using Kalkulator.Web.Anmeldung;
 using Kalkulator.Web.Components;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,9 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddHealthChecks();
+
+// Vor der Infrastruktur, damit der angemeldete Benutzer den Systembenutzer ersetzt.
+builder.Services.AddKalkulatorAnmeldung(builder.Environment);
 
 // Die Verbindungszeichenfolge setzt die interne IT je Umgebung (siehe #2, #8); geöffnet wird erst beim ersten Zugriff.
 builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionString("Kalkulator"));
@@ -49,9 +53,12 @@ if (!app.Environment.IsDevelopment())
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health").AllowAnonymous();
+app.MapEntwicklungsRollenwechsel();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

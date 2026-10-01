@@ -1,4 +1,6 @@
 @inherits LayoutComponentBase
+@inject IWebHostEnvironment Umgebung
+@inject NavigationManager Navigation
 
 <div class="app-shell">
     <header class="app-header">
@@ -7,7 +9,33 @@
             <span class="app-title">Managed-Services-Kalkulator</span>
         </a>
         <NavMenu />
+        <AuthorizeView>
+            <Authorized>
+                <div class="app-benutzer">
+                    <span class="app-benutzername">@context.User.Identity?.Name</span>
+                    @if (Umgebung.IsDevelopment())
+                    {
+                        <form method="get" action="@Kalkulator.Web.Anmeldung.Anmeldung.RollenPfad" class="rollenwahl">
+                            <input type="hidden" name="zurueck" value="@AktuellerPfad" />
+                            <label for="rolle">Rolle (Test)</label>
+                            <select id="rolle" name="rolle" onchange="this.form.submit()">
+                                @foreach (var rolle in Rollen.Alle)
+                                {
+                                    <option value="@rolle" selected="@context.User.IsInRole(rolle)">@rolle</option>
+                                }
+                            </select>
+                            <noscript><button type="submit">Wechseln</button></noscript>
+                        </form>
+                    }
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </header>
+
+    @if (Umgebung.IsDevelopment())
+    {
+        <div class="app-testband">Testbetrieb: Die Anmeldung über Entra ID folgt mit Issue #4. Die Rolle ist hier frei wählbar.</div>
+    }
 
     <main class="app-main">
         @Body
@@ -23,3 +51,7 @@
     <a href="." class="reload">Neu laden</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private string AktuellerPfad => "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+}

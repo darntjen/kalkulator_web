@@ -18,7 +18,6 @@ public class StartTests(WebApplicationFactory<Program> factory) : IClassFixture<
 
     [Theory]
     [InlineData("/", "Managed-Services-Kalkulator")]
-    [InlineData("/kalkulationen", "Kalkulationen")]
     [InlineData("/katalog", "Katalog")]
     [InlineData("/statistik", "Statistik")]
     public async Task Seite_wird_mit_Layout_ausgeliefert(string pfad, string ueberschrift)

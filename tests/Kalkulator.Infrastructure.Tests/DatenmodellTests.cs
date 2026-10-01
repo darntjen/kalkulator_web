@@ -212,6 +212,8 @@ public class DatenmodellTests(SqlServerFixture db)
     private sealed class FesterBenutzer(string name) : Persistenz.IBenutzerKontext
     {
         public string Name => name;
+
+        public bool IstInRolle(string rolle) => false;
     }
 
     private sealed class FesteZeit(DateTimeOffset zeitpunkt) : TimeProvider

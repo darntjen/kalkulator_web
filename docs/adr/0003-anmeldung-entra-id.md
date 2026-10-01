@@ -20,3 +20,11 @@ Die Nutzer melden sich mit ihren Firmenkonten an. Die Firma nutzt Microsoft Entr
 - Die interne IT legt die App-Registrierung an und pflegt die Gruppenzuordnung.
 - Die Anwendung benötigt vom Server aus Zugriff auf `login.microsoftonline.com`.
 - Personalwechsel wirken sich ohne Pflege in der Anwendung direkt auf die Rechte aus.
+
+## Übergang bis zur Einrichtung (Stand 02.10.2026)
+
+Die App-Registrierung steht noch aus (#2, #4). Bis dahin meldet die Anwendung in der Entwicklungsumgebung einen
+Testbenutzer an, dessen Rolle frei wählbar ist; außerhalb der Entwicklung ist sie gesperrt. Rollen und Rechte sind
+bereits als Rechtematrix im Code umgesetzt (`Berechtigung`); mit #4 wird nur die Anmeldung über OpenID Connect
+eingesteckt.
+

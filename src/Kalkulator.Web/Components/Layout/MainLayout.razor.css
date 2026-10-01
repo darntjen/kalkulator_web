@@ -69,3 +69,25 @@
         right: 0.75rem;
         top: 0.5rem;
     }
+
+.app-benutzer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--grau);
+}
+
+.rollenwahl {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.app-testband {
+    padding: 0.35rem 2rem;
+    background: var(--petrol-hell);
+    color: var(--grau);
+    font-size: 0.75rem;
+}

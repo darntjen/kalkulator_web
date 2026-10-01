@@ -1,0 +1,78 @@
+@page "/projekte/neu"
+@rendermode InteractiveServer
+@inject KundenprojektDienst Dienst
+@inject NavigationManager Navigation
+
+<PageTitle>Neues Kundenprojekt · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Neues Kundenprojekt</h1>
+        <p class="unterzeile">Kunde und Vorhaben erfassen. Verantwortlich bist du.</p>
+    </div>
+</div>
+
+@if (!Dienst.Recht.DarfKalkulieren)
+{
+    <p class="meldung fehler">Kundenprojekte legen Vertrieb und Vertriebsleitung an.</p>
+}
+else
+{
+    <form class="stapel" @onsubmit="AnlegenAsync">
+        <section class="karte">
+            <div class="karte-kopf"><h2>Kunde</h2></div>
+            <div class="karte-inhalt felder">
+                <div class="feld breit"><label for="firma">Firma *</label><input id="firma" type="text" @bind="_firma" required /></div>
+                <div class="feld"><label for="strasse">Straße</label><input id="strasse" type="text" @bind="_strasse" /></div>
+                <div class="feld"><label for="plz">PLZ</label><input id="plz" type="text" @bind="_plz" /></div>
+                <div class="feld"><label for="ort">Ort</label><input id="ort" type="text" @bind="_ort" /></div>
+                <div class="feld"><label for="ansprechpartner">Ansprechpartner</label><input id="ansprechpartner" type="text" @bind="_ansprechpartner" /></div>
+                <div class="feld"><label for="navision">Navision-Kundennummer</label><input id="navision" type="text" @bind="_navision" /></div>
+            </div>
+        </section>
+        <section class="karte">
+            <div class="karte-kopf"><h2>Vorhaben und Forecast</h2></div>
+            <div class="karte-inhalt felder">
+                <div class="feld breit"><label for="titel">Titel *</label><input id="titel" type="text" @bind="_titel" required placeholder="z. B. Managed Services ab 2027" /></div>
+                <div class="feld"><label for="wahrscheinlichkeit">Abschlusswahrscheinlichkeit (%)</label><input id="wahrscheinlichkeit" type="number" min="0" max="100" step="5" @bind="_wahrscheinlichkeit" /></div>
+                <div class="feld"><label for="monat">Erwarteter Abschlussmonat</label><input id="monat" type="month" @bind="_monat" @bind:format="yyyy-MM" /></div>
+                <div class="feld"><span class="etikett">Kundenart</span><label class="schalter"><input type="checkbox" @bind="_bestandskunde" /> Bestandskunde</label></div>
+            </div>
+        </section>
+        @if (_fehler is not null)
+        {
+            <p class="meldung fehler">@_fehler</p>
+        }
+        <div class="aktionen">
+            <button class="knopf" type="submit" disabled="@_speichert">Anlegen</button>
+            <a class="knopf zweit" href="projekte">Abbrechen</a>
+        </div>
+    </form>
+}
+
+@code {
+    private string? _firma, _strasse, _plz, _ort, _ansprechpartner, _navision, _titel, _fehler;
+    private int? _wahrscheinlichkeit;
+    private DateTime? _monat;
+    private bool _bestandskunde, _speichert;
+
+    private async Task AnlegenAsync()
+    {
+        _speichert = true;
+        try
+        {
+            var id = await Dienst.AnlegenAsync(new NeuesKundenprojekt(
+                _firma ?? "", _strasse, _plz, _ort, _ansprechpartner, _navision, _titel ?? "", _bestandskunde,
+                _wahrscheinlichkeit, _monat is { } m ? DateOnly.FromDateTime(m) : null));
+            Navigation.NavigateTo($"projekte/{id}");
+        }
+        catch (Exception e) when (e is ArgumentException or KeinZugriffException)
+        {
+            _fehler = e.Message;
+        }
+        finally
+        {
+            _speichert = false;
+        }
+    }
+}
