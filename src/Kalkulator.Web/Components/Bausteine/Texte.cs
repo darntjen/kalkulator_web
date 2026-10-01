@@ -31,6 +31,31 @@ public static class Texte
         _ => grund.ToString(),
     };
 
+    public static string Einheit(Domain.Katalog.Einheit einheit) => einheit switch
+    {
+        Domain.Katalog.Einheit.Pauschal => "pauschal",
+        Domain.Katalog.Einheit.AdUmgebung => "je AD-Umgebung",
+        Domain.Katalog.Einheit.AccessPoint => "je Access Point",
+        Domain.Katalog.Einheit.Netzwerkgeraet => "je Netzwerkgerät",
+        Domain.Katalog.Einheit.Nas => "je NAS",
+        Domain.Katalog.Einheit.Abrechnungseinheit => "je AE",
+        Domain.Katalog.Einheit.Backupumgebung => "je Backupumgebung",
+        Domain.Katalog.Einheit.Terabyte => "je TB",
+        _ => "je " + einheit,
+    };
+
+    public static string Freigabe(Freigabestatus status) => status switch
+    {
+        Freigabestatus.Offen => "Freigabe offen",
+        Freigabestatus.Freigegeben => "Freigegeben",
+        Freigabestatus.Abgelehnt => "Abgelehnt",
+        _ => status.ToString(),
+    };
+
+    public static string Menge(decimal menge) => menge.ToString("#,##0.##", Deutsch);
+
+    public static string Prozent(decimal anteil) => (anteil * 100).ToString("0.0", Deutsch) + " %";
+
     public static string Monat(DateOnly? monat) => monat?.ToString("MMMM yyyy", Deutsch) ?? "–";
 
     public static string Zeitpunkt(DateTimeOffset zeitpunkt) =>

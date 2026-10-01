@@ -49,6 +49,14 @@ public class Kalkulation
         return position;
     }
 
+    public void SonderpositionEntfernen(Sonderposition position)
+    {
+        if (!Sonderpositionen.Remove(position))
+        {
+            throw new ArgumentException("Die Sonderposition gehört nicht zu dieser Kalkulation.", nameof(position));
+        }
+    }
+
     /// <summary>Arbeitsstand mit allen Sonderpositionen, so wie ihn der Rechenkern braucht.</summary>
     public KalkulationsEingabe VollstaendigeEingabe() =>
         Eingabe with { Sonderpositionen = [.. Sonderpositionen.OrderBy(s => s.Reihenfolge).Select(s => s.AlsEingabe())] };

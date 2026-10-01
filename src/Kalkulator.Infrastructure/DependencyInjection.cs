@@ -19,6 +19,7 @@ public static class DependencyInjection
         services.AddDbContextFactory<KalkulatorDbContext>(options => options.UseSqlServer(verbindungszeichenfolge), ServiceLifetime.Scoped);
         services.AddScoped<RechenkernLader>();
         services.AddScoped<KundenprojektDienst>();
+        services.AddScoped<KalkulationsDienst>();
         return services;
     }
 }
