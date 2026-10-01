@@ -10,7 +10,8 @@ Die Nutzer melden sich mit ihren Firmenkonten an. Die Firma nutzt Microsoft Entr
 ## Entscheidung
 
 - Anmeldung per **OpenID Connect** über eine **App-Registrierung** in Entra ID (Microsoft.Identity.Web)
-- Rollen als **App-Rollen** der App-Registrierung: `Vertrieb`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin`. Die Zuweisung erfolgt über Entra-Gruppen durch die interne IT
+- Rollen als **App-Rollen** der App-Registrierung: `Vertrieb`, `Consultant`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin`. Die Zuweisung erfolgt über Entra-Gruppen durch die interne IT
+  (`Consultant` ergänzt am 2026-10-01 mit dem Gesamtkonzept v3, siehe `docs/10_gesamtkonzept.md`)
 - Absenderdaten für Angebote (Name, Funktion, Telefon, E-Mail) werden aus dem Entra-Profil gelesen (vorbehaltlich offener Frage 9.6)
 - Kein lokales Benutzerkonto außer einem dokumentierten Notfallzugang für die Administration
 

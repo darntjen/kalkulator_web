@@ -129,3 +129,23 @@ Rundung: kaufmännisch auf 2 Nachkommastellen (zu bestätigen).
 | 35 | nein | 350,00 € | – |
 | 50 | nein | 350,00 € | – |
 | 51 | ja | 550,00 € | 2.400,00 € |
+
+## Umsetzung im Rechenkern (Phase 2, Issue #12)
+
+Die Referenzkalkulationen RK-01 bis RK-07 und RK-09 bis RK-11 laufen als automatisierte Tests
+(`tests/Kalkulator.Infrastructure.Tests/Referenzkalkulationen/`) gegen den Katalog der Erstbefüllung.
+RK-08 (Vertragspaket) folgt mit Phase 3.
+
+Annahmen bei der Umsetzung, die das Produktmanagement bestätigen sollte:
+
+1. **Bundle-Abzug nur bei gleicher Einheit.** Ein Bundle deckt einen Bestandteil nur ab, wenn beide in derselben
+   Einheit abgerechnet werden (z. B. je User). Leistungen in anderer Einheit bleiben berechnet, etwa S53 neben B07
+   (RK-03).
+2. **Untergrenze S14 gilt für beide Varianten.** Die Preisuntergrenze von 187,00 € greift bei Cloud-Backup und bei
+   Objektspeicher.
+3. **Regeln für Bundle-Bestandteile.** Ein Service, der über ein gebuchtes Bundle geliefert wird, wird nicht erneut
+   gegen seine Katalogregeln geprüft; es gelten die Voraussetzungen des Bundles (z. B. S25-Assets zu B06).
+4. **Bundle-Bestandteile erfüllen Voraussetzungen.** Verlangt eine Regel einen Service, zählt er auch dann als
+   vorhanden, wenn er in einem gebuchten Bundle steckt. Damit erfüllt z. B. die Firewall aus B05 die Pflicht zu S21
+   bei S61. Ob für S61 immer eine *zusätzliche* Firewall-Instanz nötig ist, ist noch zu klären.
+5. **Rundung.** Jede Zeile wird kaufmännisch auf den Cent gerundet; Summen entstehen aus den gerundeten Zeilen.

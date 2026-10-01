@@ -1,3 +1,5 @@
+using Kalkulator.Domain.Katalog;
+
 namespace Kalkulator.Domain.Preise;
 
 public enum PreislistenStatus
@@ -75,6 +77,26 @@ public class Preisliste
 
         return stufe?.VkNetto;
     }
+
+    /// <summary>
+    /// Verkaufspreis einer Komponente ohne Staffel. Vergleicht über die Referenz und, sobald gespeichert, über die Id,
+    /// damit auch ein noch nicht gespeicherter Katalog (z. B. in Tests) berechnet werden kann.
+    /// </summary>
+    public decimal? PreisFuer(Preiskomponente komponente) =>
+        Preise.SingleOrDefault(p => Gehoert(p.Preiskomponente, p.PreiskomponenteId, komponente))?.VkNetto;
+
+    /// <inheritdoc cref="StaffelpreisFuer(int, int)"/>
+    public decimal? StaffelpreisFuer(Preiskomponente komponente, int menge) =>
+        StaffelstufeFuer(komponente, menge)?.VkNetto;
+
+    /// <summary>Gültige Staffelstufe für eine Menge (mit Bezeichnung und Navision-Artikel), oder <c>null</c>.</summary>
+    public Preisstaffel? StaffelstufeFuer(Preiskomponente komponente, int menge) =>
+        Staffeln
+            .Where(s => Gehoert(s.Preiskomponente, s.PreiskomponenteId, komponente) && s.AbMenge <= menge)
+            .MaxBy(s => s.AbMenge);
+
+    private static bool Gehoert(Preiskomponente? referenz, int id, Preiskomponente komponente) =>
+        ReferenceEquals(referenz, komponente) || (komponente.Id != 0 && id == komponente.Id);
 
     public decimal ParameterWert(string schluessel) =>
         Parameter.SingleOrDefault(p => p.Schluessel == schluessel)?.Wert

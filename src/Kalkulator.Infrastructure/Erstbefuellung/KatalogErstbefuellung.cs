@@ -8,6 +8,9 @@ using PreisParameter = Kalkulator.Domain.Preise.Parameter;
 
 namespace Kalkulator.Infrastructure.Erstbefuellung;
 
+/// <summary>Katalog aus der Befüllungsdatei, noch nicht gespeichert.</summary>
+public sealed record ErzeugterKatalog(List<Service> Services, List<DokumentVorlage> Vorlagen, Preisliste Preisliste);
+
 /// <summary>Ergebnis eines Laufs der Erstbefüllung.</summary>
 public sealed record ErstbefuellungsErgebnis(bool Ausgefuehrt, int Services, int Preiskomponenten, string Meldung);
 
@@ -33,6 +36,23 @@ public static class KatalogErstbefuellung
             return new ErstbefuellungsErgebnis(false, 0, 0, "Der Katalog enthält bereits Services. Die Erstbefüllung wurde übersprungen.");
         }
 
+        var (services, vorlagen, preisliste) = ErzeugeKatalog();
+        kontext.DokumentVorlagen.AddRange(vorlagen);
+        kontext.Services.AddRange(services);
+        kontext.Preislisten.Add(preisliste);
+        await kontext.SaveChangesAsync(abbruch);
+
+        var komponenten = services.Sum(s => s.Preiskomponenten.Count);
+        return new ErstbefuellungsErgebnis(true, services.Count, komponenten,
+            $"Katalog angelegt: {services.Count} Services, {komponenten} Preiskomponenten, Preisliste „{preisliste.Bezeichnung}“ als Entwurf.");
+    }
+
+    /// <summary>
+    /// Baut den Katalog aus <c>katalog.json</c> als nicht gespeicherte Objekte auf, z. B. für die Referenzkalkulationen
+    /// in den Tests. Navigationen (Service, Bestandteile, Regelziele, Preislisten-Einträge) sind gesetzt.
+    /// </summary>
+    public static ErzeugterKatalog ErzeugeKatalog()
+    {
         var daten = LadeDaten();
         var preisliste = new Preisliste { Bezeichnung = daten.Preisliste.Bezeichnung, GueltigAb = daten.Preisliste.GueltigAb };
         preisliste.Parameter.AddRange(daten.Parameter.Select(p => new PreisParameter { Schluessel = p.Schluessel, Wert = p.Wert, Beschreibung = p.Beschreibung }));
@@ -64,7 +84,9 @@ public static class KatalogErstbefuellung
                 };
                 foreach (var k in s.Preiskomponenten)
                 {
-                    service.Preiskomponenten.Add(Komponente(k, preisliste));
+                    var komponente = Komponente(k, preisliste);
+                    komponente.Service = service;
+                    service.Preiskomponenten.Add(komponente);
                 }
 
                 services.Add(service.Code, service);
@@ -83,14 +105,7 @@ public static class KatalogErstbefuellung
             services[r.Service].Regeln.Add(regel);
         }
 
-        kontext.DokumentVorlagen.AddRange(vorlagen.Values);
-        kontext.Services.AddRange(services.Values);
-        kontext.Preislisten.Add(preisliste);
-        await kontext.SaveChangesAsync(abbruch);
-
-        var komponenten = services.Values.Sum(s => s.Preiskomponenten.Count);
-        return new ErstbefuellungsErgebnis(true, services.Count, komponenten,
-            $"Katalog angelegt: {services.Count} Services, {komponenten} Preiskomponenten, Preisliste „{preisliste.Bezeichnung}“ als Entwurf.");
+        return new ErzeugterKatalog([.. services.Values], [.. vorlagen.Values], preisliste);
     }
 
     private static Preiskomponente Komponente(KomponentenDaten k, Preisliste preisliste)
