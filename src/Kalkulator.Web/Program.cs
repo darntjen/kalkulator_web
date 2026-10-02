@@ -1,5 +1,6 @@
 using System.Globalization;
 using Kalkulator.Infrastructure;
+using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Web.Anmeldung;
@@ -23,6 +24,16 @@ builder.Services.AddKalkulatorAnmeldung(builder.Environment);
 
 // Die Verbindungszeichenfolge setzt die interne IT je Umgebung (siehe #2, #8); geöffnet wird erst beim ersten Zugriff.
 builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionString("Kalkulator"));
+
+// Angebotsvorlage und Textbausteine liegen beim Programm (templates/angebot wird mitkopiert); der Ordner ist umstellbar (C-02).
+builder.Services.Configure<AngebotsEinstellungen>(builder.Configuration.GetSection("Angebot"));
+builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
+{
+    if (string.IsNullOrWhiteSpace(e.Vorlagenordner))
+    {
+        e.Vorlagenordner = Path.Combine(AppContext.BaseDirectory, "Vorlagen", "angebot");
+    }
+});
 
 var app = builder.Build();
 
@@ -59,6 +70,24 @@ app.UseAntiforgery();
 
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapEntwicklungsRollenwechsel();
+
+// Archiviertes Angebot herunterladen (C-07); Rechte prüft der Dienst wie in der Oberfläche.
+app.MapGet("/angebote/{id:int}/datei", async (int id, AngebotsDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, inhalt) = await dienst.DateiAsync(id, abbruch);
+        return Results.File(inhalt, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

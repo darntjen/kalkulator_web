@@ -30,6 +30,19 @@ public class Kalkulation
 
     public int LetzteVersionsnummer { get; private set; }
 
+    /// <summary>Wird mit dem ersten Angebot vergeben und gilt für alle weiteren Versionen dieser Kalkulation.</summary>
+    public string? Angebotsnummer { get; private set; }
+
+    public void VergebeAngebotsnummer(string nummer)
+    {
+        if (Angebotsnummer is not null)
+        {
+            throw new InvalidOperationException($"Die Kalkulation hat bereits die Angebotsnummer {Angebotsnummer}.");
+        }
+
+        Angebotsnummer = nummer;
+    }
+
     public byte[] Zeilenversion { get; private set; } = [];
 
     public List<Sonderposition> Sonderpositionen { get; } = [];

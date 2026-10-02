@@ -1,0 +1,44 @@
+{
+  "$kommentar": "Textbausteine für das Managed-Services-Angebot (C-04). Ohne Eintrag gilt die Kurzbeschreibung aus dem Katalog; bei Bundles sind die enthaltenen Services automatisch aufgeführt. In Texten von S60 werden {menge} (AE je Monat) und {stunden} ersetzt. SLA-Werte nach Anlage SLA V2.0 (09/2026); ein Strich bedeutet: Zeile entfällt in dieser Stufe.",
+  "connect": {
+    "kurztext": "garantierte Reaktionszeiten, Serviceportal, feste Ansprechpartner",
+    "sla": [
+      { "parameter": "Servicezeit Bearbeitung", "Standard": "Mo–Fr, 08:00–17:00 Uhr", "Premium": "Mo–Fr, 08:00–17:00 Uhr", "Enterprise": "Mo–Fr, 08:00–17:00 Uhr" },
+      { "parameter": "Notfallerreichbarkeit (P1)", "Standard": "–", "Premium": "–", "Enterprise": "Hotline 24/7, Rückruf innerhalb von 2 Stunden" },
+      { "parameter": "Ticketannahme online (Portal)", "Standard": "24 Stunden / 7 Tage", "Premium": "24 Stunden / 7 Tage", "Enterprise": "24 Stunden / 7 Tage" },
+      { "parameter": "Reaktionszeit P1 (kritisch)", "Standard": "4 Stunden", "Premium": "2 Stunden", "Enterprise": "1 Stunde" },
+      { "parameter": "Reaktionszeit P2 (hoch)", "Standard": "8 Stunden", "Premium": "4 Stunden", "Enterprise": "2 Stunden" },
+      { "parameter": "Reaktionszeit P3 (mittel)", "Standard": "2 Werktage", "Premium": "1 Werktag", "Enterprise": "4 Stunden" },
+      { "parameter": "Reaktionszeit P4 (niedrig / Service Request)", "Standard": "5 Werktage", "Premium": "3 Werktage", "Enterprise": "2 Werktage" }
+    ]
+  },
+  "leistungen": {
+    "B02": {
+      "beschreibung": "Umfassender, sicherer Betrieb aller Benutzerarbeitsplätze einschließlich der Microsoft-365-Benutzerumgebung.",
+      "nichtEnthalten": "Managed Detection and Response, Security Awareness Training, Schwachstellenmanagement und Mobile Device Management (separat buchbar)."
+    },
+    "B03": {
+      "beschreibung": "Stabiler und sicherer technischer Basisbetrieb der vereinbarten Server.",
+      "nichtEnthalten": "Server Backup (S14), Firewall-Betrieb und weitergehende Sicherheitsleistungen."
+    },
+    "B05": {
+      "beschreibung": "Zentraler Sicherheitsbetrieb Ihrer wichtigsten Identitäts- und Netzwerkkomponenten."
+    },
+    "S31": {
+      "beschreibung": "Fortlaufende Erkennung von und Reaktion auf Sicherheitsvorfälle rund um die Uhr durch spezialisierte Analysten.",
+      "enthalten": [ "24/7-Überwachung und Bewertung sicherheitsrelevanter Ereignisse", "Aktive Reaktion auf erkannte Bedrohungen" ]
+    },
+    "S32": {
+      "beschreibung": "Schulungen und Phishing-Simulationen, die Ihre Mitarbeitenden für Angriffe sensibilisieren.",
+      "enthalten": [ "Regelmäßige Phishing-Simulationen", "E-Learning-Module und Auswertung" ]
+    },
+    "S60": {
+      "beschreibung": "Planbare, vergünstigte Supportzeit für Service Requests. Betrieb und Störungsbehebung sind ohnehin inklusive.",
+      "enthalten": [
+        "{menge} Abrechnungseinheiten ({stunden} Stunden) pro Monat zum Vorzugssatz (10 % unter Standardsatz)",
+        "Übertrag nicht genutzter Einheiten innerhalb des Kalenderjahres",
+        "Verbrauch über das Kontingent hinaus zum Standardsatz"
+      ]
+    }
+  }
+}

@@ -36,6 +36,7 @@ public static class Anmeldung
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         services.AddCascadingAuthenticationState();
+        services.AddHttpContextAccessor();
         services.AddScoped<IBenutzerKontext, AngemeldeterBenutzer>();
         return services;
     }
@@ -88,8 +89,8 @@ public sealed class GesperrteAnmeldung(IOptionsMonitor<AuthenticationSchemeOptio
     protected override Task<AuthenticateResult> HandleAuthenticateAsync() => Task.FromResult(AuthenticateResult.NoResult());
 }
 
-/// <summary>Der angemeldete Benutzer der aktuellen Anfrage bzw. Blazor-Verbindung.</summary>
-public sealed class AngemeldeterBenutzer(AuthenticationStateProvider anmeldestatus) : IBenutzerKontext
+/// <summary>Der angemeldete Benutzer der aktuellen Blazor-Verbindung bzw. HTTP-Anfrage (z. B. Dokument-Download).</summary>
+public sealed class AngemeldeterBenutzer(AuthenticationStateProvider anmeldestatus, IHttpContextAccessor http) : IBenutzerKontext
 {
     private ClaimsPrincipal? _benutzer;
 
@@ -98,7 +99,8 @@ public sealed class AngemeldeterBenutzer(AuthenticationStateProvider anmeldestat
     public bool IstInRolle(string rolle) => Benutzer.IsInRole(rolle);
 
     // Der Status steht in Blazor beim Aufbau der Verbindung bzw. beim Vorrendern fest; die Aufgabe ist dann abgeschlossen.
-    // Außerhalb (z. B. bei der Erstbefüllung) gibt es keinen Status und damit keinen Benutzer.
+    // Bei reinen HTTP-Endpunkten gibt es ihn nicht, dort gilt der Benutzer der Anfrage. Außerhalb von beidem
+    // (z. B. bei der Erstbefüllung) gibt es keinen Benutzer.
     private ClaimsPrincipal Benutzer => _benutzer ??= Lese();
 
     private ClaimsPrincipal Lese()
@@ -109,7 +111,7 @@ public sealed class AngemeldeterBenutzer(AuthenticationStateProvider anmeldestat
         }
         catch (InvalidOperationException)
         {
-            return new ClaimsPrincipal(new ClaimsIdentity());
+            return http.HttpContext?.User ?? new ClaimsPrincipal(new ClaimsIdentity());
         }
     }
 }

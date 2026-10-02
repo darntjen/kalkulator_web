@@ -6,6 +6,12 @@
     <ProjectReference Include="..\Kalkulator.Documents\Kalkulator.Documents.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Angebotsvorlage und Textbausteine werden mit dem Programm ausgeliefert (docs/08_angebotsvorlage.md). -->
+    <None Include="..\..\templates\angebot\Angebotsvorlage.docx;..\..\templates\angebot\textbausteine.json"
+          Link="Vorlagen\angebot\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>

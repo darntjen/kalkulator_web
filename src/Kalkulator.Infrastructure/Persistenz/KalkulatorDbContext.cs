@@ -29,6 +29,8 @@ public class KalkulatorDbContext(
     public DbSet<Kundenprojekt> Kundenprojekte => Set<Kundenprojekt>();
     public DbSet<Kalkulation> Kalkulationen => Set<Kalkulation>();
     public DbSet<Kalkulationsversion> Kalkulationsversionen => Set<Kalkulationsversion>();
+    public DbSet<Angebot> Angebote => Set<Angebot>();
+    public DbSet<Nummernkreis> Nummernkreise => Set<Nummernkreis>();
     public DbSet<AenderungsEintrag> Aenderungsprotokoll => Set<AenderungsEintrag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder) =>
@@ -105,16 +107,20 @@ public class KalkulatorDbContext(
         }
     }
 
-    /// <summary>Eingefrorene Versionen, ihre Positionen und Kosten dürfen nur angelegt werden.</summary>
+    /// <summary>
+    /// Eingefrorene Versionen, ihre Positionen und Kosten sowie archivierte Angebotsdokumente dürfen nur angelegt werden;
+    /// an einem Angebot ist nur der Versandvermerk änderbar.
+    /// </summary>
     private void PruefeEingefroreneVersionen()
     {
         var geaendert = ChangeTracker.Entries()
-            .FirstOrDefault(e => e.State is EntityState.Modified or EntityState.Deleted
-                && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten);
+            .FirstOrDefault(e => (e.State is EntityState.Modified or EntityState.Deleted
+                    && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei)
+                || (e.State == EntityState.Deleted && e.Entity is Angebot));
         if (geaendert is not null)
         {
             throw new InvalidOperationException(
-                $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Kalkulationsversionen sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
+                $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Angebotsstände und archivierte Angebote sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
         }
     }
 

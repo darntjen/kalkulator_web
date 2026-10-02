@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Kalkulator.Domain\Kalkulator.Domain.csproj" />
+    <ProjectReference Include="..\Kalkulator.Documents\Kalkulator.Documents.csproj" />
   </ItemGroup>
 
   <ItemGroup>
