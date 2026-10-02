@@ -5,6 +5,7 @@
 @using Kalkulator.Infrastructure.Berechnung
 @using Kalkulator.Web.Components.Editor
 @inject KalkulationsDienst Dienst
+@inject AngebotsDienst Angebote
 
 <PageTitle>@(_zustand?.Titel ?? "Kalkulation") · Managed-Services-Kalkulator</PageTitle>
 
@@ -235,6 +236,71 @@ else
                     </form>
                 }
             </section>
+
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Angebote</h2>
+                    @if (_daten.Kalkulation.Angebotsnummer is { } nummer)
+                    {
+                        <span class="unterzeile">Angebotsnummer @nummer</span>
+                    }
+                </div>
+                @if (_angebote.Count > 0)
+                {
+                    <div class="tab-rahmen">
+                        <table class="liste">
+                            <thead><tr><th>Version</th><th>Datum</th><th>Gültig bis</th><th>Erstellt von</th><th>Versendet</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var a in _angebote)
+                                {
+                                    <tr>
+                                        <td><strong>@a.Nummer</strong> @a.Version</td>
+                                        <td>@a.Datum.ToString("dd.MM.yyyy")</td>
+                                        <td>@a.GueltigBis.ToString("dd.MM.yyyy")</td>
+                                        <td>@a.ErstelltVon</td>
+                                        <td>
+                                            @if (a.VersendetAm is { } versendet)
+                                            {
+                                                @versendet.ToString("dd.MM.yyyy")
+                                            }
+                                            else if (_daten.DarfBearbeiten)
+                                            {
+                                                <button class="knopf zweit klein" type="button" @onclick="() => VersendetAsync(a)">Als versendet markieren</button>
+                                            }
+                                            else
+                                            {
+                                                <span class="unterzeile">–</span>
+                                            }
+                                        </td>
+                                        <td><a class="knopf zweit klein" href="angebote/@a.Id/datei" download>Word herunterladen</a></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                @if (_daten.DarfBearbeiten)
+                {
+                    <form class="karte-inhalt felder" @onsubmit="AngebotErzeugenAsync">
+                        <div class="feld breit">
+                            <label for="freitext">Ausgangssituation des Kunden (optional, erscheint im Anschreiben)</label>
+                            <textarea id="freitext" rows="3" @bind="_freitext" placeholder="z. B. „Sie haben uns geschildert, dass …“"></textarea>
+                        </div>
+                        <div class="feld"><label for="gueltig">Gültig bis</label><input id="gueltig" type="date" @bind="_gueltigBis" /></div>
+                        <div class="aktionen breit">
+                            <button class="knopf" type="submit" disabled="@(SperrgrundAngebot is not null || _erzeugt)">Angebot erzeugen</button>
+                            @if (SperrgrundAngebot is { } grund)
+                            {
+                                <span class="unterzeile">@grund</span>
+                            }
+                            else
+                            {
+                                <span class="unterzeile">Friert den gespeicherten Stand als @($"V{_daten.Kalkulation.LetzteVersionsnummer + 1}") ein und erzeugt das Word-Angebot.</span>
+                            }
+                        </div>
+                    </form>
+                }
+            </section>
         </div>
 
         <aside class="zusammenfassung karte">
@@ -357,6 +423,7 @@ else
             _zeilenversion = k.Zeilenversion;
             _geaendert = false;
             Berechne();
+            await LadeAngeboteAsync();
         }
         catch (Exception e) when (e is KeinZugriffException or InvalidOperationException)
         {
@@ -459,4 +526,59 @@ else
     }
 
     private void Zeige(string text, bool fehler) => (_meldung, _meldungIstFehler) = (text, fehler);
+
+    private IReadOnlyList<AngebotsZeile> _angebote = [];
+    private string? _freitext;
+    private DateTime? _gueltigBis;
+    private bool _erzeugt;
+
+    /// <summary>Warum gerade kein Angebot erzeugt werden kann; <c>null</c>, wenn es geht.</summary>
+    private string? SperrgrundAngebot =>
+        !_katalog!.PreislisteFreigegeben ? "Angebote entstehen erst mit einer freigegebenen Preisliste."
+        : _geaendert ? "Bitte zuerst speichern; das Angebot zeigt den gespeicherten Stand."
+        : _ergebnis!.HatFehler ? "Die Kalkulation enthält noch Fehler (siehe Ergebnis)."
+        : null;
+
+    private async Task LadeAngeboteAsync()
+    {
+        _angebote = await Angebote.ListeAsync(Id);
+        _gueltigBis ??= Angebote.Heute.AddDays(Angebote.GueltigkeitTage).ToDateTime(TimeOnly.MinValue);
+    }
+
+    private async Task AngebotErzeugenAsync()
+    {
+        _erzeugt = true;
+        try
+        {
+            await Angebote.ErzeugenAsync(Id, _freitext, _gueltigBis is { } g ? DateOnly.FromDateTime(g) : null);
+            var neu = await Dienst.LadeAsync(Id);
+            _daten = neu;
+            _zeilenversion = neu!.Kalkulation.Zeilenversion;
+            _freitext = null;
+            await LadeAngeboteAsync();
+            Zeige($"Angebot {_angebote[0].Nummer} {_angebote[0].Version} erzeugt.", false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or FileNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+        finally
+        {
+            _erzeugt = false;
+        }
+    }
+
+    private async Task VersendetAsync(AngebotsZeile angebot)
+    {
+        try
+        {
+            await Angebote.AlsVersendetMarkierenAsync(angebot.Id, Angebote.Heute);
+            await LadeAngeboteAsync();
+            Zeige($"{angebot.Nummer} {angebot.Version} als versendet markiert. Der Projektstatus steht auf „Angebot versendet“.", false);
+        }
+        catch (Exception e) when (e is InvalidOperationException or KeyNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+    }
 }

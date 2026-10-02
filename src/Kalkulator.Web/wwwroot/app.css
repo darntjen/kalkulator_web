@@ -608,3 +608,13 @@ details.bereich {
 .freigabe-Offen { background: var(--warn-bg); color: var(--warn); }
 .freigabe-Freigegeben { background: var(--gut-bg); color: var(--gut); }
 .freigabe-Abgelehnt { background: var(--kritisch-bg); color: var(--kritisch); }
+
+.aktionen.breit {
+    grid-column: 1 / -1;
+}
+
+textarea {
+    font: inherit;
+    width: 100%;
+    box-sizing: border-box;
+}
