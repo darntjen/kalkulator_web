@@ -1,11 +1,462 @@
 @page "/kalkulationen/{Id:int}"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Berechnung
+@using Kalkulator.Domain.Katalog
+@using Kalkulator.Infrastructure.Berechnung
+@using Kalkulator.Web.Components.Editor
+@inject KalkulationsDienst Dienst
 
-<PageTitle>Kalkulation · Managed-Services-Kalkulator</PageTitle>
+<PageTitle>@(_zustand?.Titel ?? "Kalkulation") · Managed-Services-Kalkulator</PageTitle>
 
-<h1>Kalkulation</h1>
+@if (_ladefehler is not null)
+{
+    <h1>Kalkulation</h1>
+    <p class="meldung fehler">@_ladefehler</p>
+}
+else if (_daten is null || _zustand is null || _katalog is null || _ergebnis is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    <div class="ansicht-kopf">
+        <div>
+            <h1>@_zustand.Titel</h1>
+            <p class="unterzeile">
+                <a href="projekte/@_daten.Projekt.Id">@_daten.Projekt.Kunde!.Firma</a> · @_daten.Projekt.Titel
+                · Preisliste „@_katalog.Preisliste.Bezeichnung“
+                @if (!_katalog.PreislisteFreigegeben)
+                {
+                    <span class="pille st-VertragErstellt" title="Ein Angebotsstand lässt sich erst mit einer freigegebenen Preisliste einfrieren.">Entwurf</span>
+                }
+            </p>
+        </div>
+        @if (_daten.DarfBearbeiten)
+        {
+            <div class="aktionen">
+                @if (_geaendert)
+                {
+                    <span class="markiert">Ungespeicherte Änderungen</span>
+                }
+                <button class="knopf" type="button" @onclick="SpeichernAsync" disabled="@(!_geaendert || _speichert)">Speichern</button>
+            </div>
+        }
+    </div>
 
-<p class="hinweis">Der Kalkulationseditor mit Live-Berechnung folgt im nächsten Schritt (Issue #12).</p>
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    <div class="kalk">
+        <div class="stapel">
+            <fieldset class="karte" disabled="@(!_daten.DarfBearbeiten)">
+                <div class="karte-kopf"><h2>Rahmendaten</h2></div>
+                <div class="karte-inhalt felder">
+                    <div class="feld breit"><label for="titel">Titel</label><input id="titel" type="text" @bind="_zustand.Titel" @bind:after="Geaendert" /></div>
+                    <div class="feld"><label for="user">Anzahl User</label><input id="user" type="number" min="0" @bind="_zustand.AnzahlUser" @bind:after="Geaendert" /></div>
+                    <div class="feld"><label for="ma">Anzahl Mitarbeitende</label><input id="ma" type="number" min="0" @bind="_zustand.AnzahlMitarbeitende" @bind:after="Geaendert" /></div>
+                    <div class="feld"><label for="beginn">Vertragsbeginn</label><input id="beginn" type="date" @bind="_zustand.Vertragsbeginn" @bind:after="Geaendert" /></div>
+                    <div class="feld"><label for="bisher">Bisheriger Monatspreis (€)</label><input id="bisher" type="number" min="0" step="0.01" @bind="_zustand.BisherigerMonatspreis" @bind:after="Geaendert" /></div>
+                </div>
+            </fieldset>
+
+            <fieldset class="karte" disabled="@(!_daten.DarfBearbeiten)">
+                <div class="karte-kopf"><h2>Nösse Connect</h2><span class="unterzeile">genau eine Stufe, Pflicht außer bei reiner S41-Kalkulation</span></div>
+                <div class="karte-inhalt stufen">
+                    @foreach (var stufe in _connect)
+                    {
+                        <button type="button" class="stufe" aria-pressed="@(_zustand.ConnectCode == stufe.Code ? "true" : "false")" @onclick="() => WaehleConnect(stufe.Code)">
+                            <strong>@stufe.Bezeichnung</strong>
+                            <span class="preis">@(stufe.Preis is { } p ? Texte.Euro(p) + " / Monat" : stufe.PreisHinweis)</span>
+                        </button>
+                    }
+                </div>
+            </fieldset>
+
+            @foreach (var gruppe in _gruppen)
+            {
+                var gebucht = gruppe.Zeilen.Count(z => _zustand.Menge(z.Code) != 0);
+                <details class="bereich" open="@(gebucht > 0)">
+                    <summary>@gruppe.Name <span class="summe">@(gebucht == 0 ? "" : $"{gebucht} gebucht")</span></summary>
+                    <fieldset class="bereich-zeilen" disabled="@(!_daten.DarfBearbeiten)">
+                        @foreach (var zeile in gruppe.Zeilen)
+                        {
+                            <div class="zeile">
+                                <span class="code">@zeile.Code</span>
+                                <span class="name">@zeile.Bezeichnung <small>@Texte.Einheit(zeile.Einheit)@(zeile.Abrechnungsart == Abrechnungsart.Einmalig ? " · einmalig" : "")</small></span>
+                                <span class="preis">@(zeile.Preis is { } p ? Texte.Euro(p) : zeile.PreisHinweis)</span>
+                                <input type="number" min="0" aria-label="Menge @zeile.Code" value="@_zustand.Menge(zeile.Code)"
+                                       @onchange="e => SetzeMenge(zeile.Code, e.Value)" />
+                            </div>
+                        }
+                    </fieldset>
+                </details>
+            }
+
+            <fieldset class="karte" disabled="@(!_daten.DarfBearbeiten)">
+                <div class="karte-kopf"><h2>Sonderrechner</h2></div>
+                <div class="rechner">
+                    <label class="schalter"><input type="checkbox" @bind="_zustand.MitSupportkontingent" @bind:after="Geaendert" /> <strong>S60 Supportkontingent</strong></label>
+                    @if (_zustand.MitSupportkontingent)
+                    {
+                        <div class="felder">
+                            <div class="feld"><label for="anfragen">Anfragen je Monat</label><input id="anfragen" type="number" min="0" @bind="_zustand.AnfragenProMonat" @bind:after="Geaendert" /></div>
+                            <div class="feld"><label for="ae">Ø AE je Anfrage</label><input id="ae" type="number" min="0" step="0.5" @bind="_zustand.AeJeAnfrage" @bind:after="Geaendert" /></div>
+                        </div>
+                        @if (_ergebnis.Supportkontingent is { } s60)
+                        {
+                            <div class="ergebnis">
+                                <span>Bedarf <b>@Texte.Menge(s60.BedarfAe) AE</b></span>
+                                <span>Kontingent <b>@s60.KontingentAe AE (@Texte.Menge(s60.Stunden) h)</b></span>
+                                <span>Monatlich <b>@Texte.Euro(s60.Monatspreis)</b></span>
+                                <span>Kundenvorteil ggü. Ad-hoc <b>@Texte.Euro(s60.Kundenvorteil)</b></span>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="rechner">
+                    <label class="schalter"><input type="checkbox" @bind="_zustand.MitServerBackup" @bind:after="Geaendert" /> <strong>S14 Server Backup</strong></label>
+                    @if (_zustand.MitServerBackup)
+                    {
+                        <div class="felder">
+                            <div class="feld">
+                                <label for="variante">Variante</label>
+                                <select id="variante" @bind="_zustand.BackupVariante" @bind:after="Geaendert">
+                                    <option value="@BackupVariante.Cloud">Cloud-Backup</option>
+                                    <option value="@BackupVariante.Objektspeicher">Objektspeicher</option>
+                                </select>
+                            </div>
+                            <div class="feld"><label for="server">Server</label><input id="server" type="number" min="0" @bind="_zustand.BackupServer" @bind:after="Geaendert" /></div>
+                            @if (_zustand.BackupVariante == BackupVariante.Cloud)
+                            {
+                                <div class="feld"><label for="gb">Nativ geschützte Daten (GB)</label><input id="gb" type="number" min="0" @bind="_zustand.NativGeschuetzteGb" @bind:after="Geaendert" /></div>
+                            }
+                            else
+                            {
+                                <div class="feld"><label for="tb">Belegtes Volumen (TB)</label><input id="tb" type="number" min="0" step="0.1" @bind="_zustand.BelegteTb" @bind:after="Geaendert" /></div>
+                                <div class="feld"><label for="lizenz">Lizenzinstanzen (0 = Kundenlizenz)</label><input id="lizenz" type="number" min="0" @bind="_zustand.Lizenzinstanzen" @bind:after="Geaendert" /></div>
+                            }
+                        </div>
+                        @if (_ergebnis.ServerBackup is { } s14)
+                        {
+                            <div class="ergebnis">
+                                <span>Bausteine <b>@Texte.Euro(s14.SummeBausteine)</b></span>
+                                <span>Untergrenze <b>@Texte.Euro(s14.Preisuntergrenze)</b></span>
+                                <span>Monatlich <b>@Texte.Euro(s14.Monatspreis)</b>@(s14.UntergrenzeGreift ? " (Untergrenze greift)" : "")</span>
+                            </div>
+                        }
+                    }
+                </div>
+                <div class="rechner">
+                    <label class="schalter"><input type="checkbox" @bind="_zustand.MitCloudServer" @bind:after="Geaendert" /> <strong>S61 Cloud Server</strong></label>
+                    @if (_zustand.MitCloudServer)
+                    {
+                        <div class="felder">
+                            <div class="feld"><label for="terra">EK laut TERRA-Kalkulator (€ / Monat)</label><input id="terra" type="number" min="0" step="0.01" @bind="_zustand.EkTerraKalkulator" @bind:after="Geaendert" /></div>
+                            <div class="feld">
+                                <label for="cloudbackup">Datensicherung</label>
+                                <select id="cloudbackup" @bind="_zustand.CloudBackup" @bind:after="Geaendert">
+                                    <option value="@CloudBackup.Offen">Bitte wählen</option>
+                                    <option value="@CloudBackup.ServerBackup">Über S14 (Cloud-Backup)</option>
+                                    <option value="@CloudBackup.Kunde">Durch den Kunden</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="unterzeile klein">Pflicht: eine zusätzliche Firewall S21, auch wenn B05 gebucht ist.</p>
+                    }
+                </div>
+            </fieldset>
+
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Sonderpositionen</h2>
+                    <span class="unterzeile">brauchen die Freigabe der Vertriebsleitung</span>
+                </div>
+                @if (_daten.Kalkulation.Sonderpositionen.Count > 0)
+                {
+                    <div class="tab-rahmen">
+                        <table class="liste">
+                            <thead><tr><th>Bezeichnung</th><th class="num">Menge</th><th class="num">Preis</th><th>Status</th><th></th></tr></thead>
+                            <tbody>
+                                @foreach (var sp in _daten.Kalkulation.Sonderpositionen.OrderBy(s => s.Reihenfolge))
+                                {
+                                    <tr>
+                                        <td>
+                                            @sp.Bezeichnung <span class="unterzeile">(@sp.Einheit@(sp.Einmalig ? ", einmalig" : ""))</span><br />
+                                            <span class="unterzeile">@sp.Begruendung</span>
+                                            @if (sp.Kommentar is not null)
+                                            {
+                                                <br /><span class="unterzeile">Leitung: „@sp.Kommentar“</span>
+                                            }
+                                        </td>
+                                        <td class="num">@sp.Menge</td>
+                                        <td class="num">@Texte.Euro(sp.Preis)</td>
+                                        <td><span class="pille freigabe-@sp.Status">@Texte.Freigabe(sp.Status)</span></td>
+                                        <td>
+                                            <div class="aktionen">
+                                                @if (_daten.DarfSonderpositionenFreigeben && sp.Status != Freigabestatus.Freigegeben)
+                                                {
+                                                    <button class="knopf klein" type="button" @onclick="() => FreigebenAsync(sp)">Freigeben</button>
+                                                }
+                                                @if (_daten.DarfSonderpositionenFreigeben && sp.Status != Freigabestatus.Abgelehnt)
+                                                {
+                                                    <button class="knopf zweit klein" type="button" @onclick="() => AblehnenAsync(sp)">Ablehnen</button>
+                                                }
+                                                @if (_daten.DarfBearbeiten)
+                                                {
+                                                    <button class="knopf zweit klein" type="button" @onclick="() => EntfernenAsync(sp)">Entfernen</button>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                @if (_daten.DarfSonderpositionenFreigeben && _daten.Kalkulation.Sonderpositionen.Count > 0)
+                {
+                    <div class="karte-inhalt feld">
+                        <label for="leitungskommentar">Kommentar der Vertriebsleitung (bei Ablehnung Pflicht)</label>
+                        <input id="leitungskommentar" type="text" @bind="_leitungsKommentar" />
+                    </div>
+                }
+                @if (_daten.DarfBearbeiten)
+                {
+                    <form class="karte-inhalt felder" @onsubmit="SonderpositionHinzufuegenAsync">
+                        <div class="feld breit"><label for="sp-bez">Bezeichnung</label><input id="sp-bez" type="text" @bind="_spBezeichnung" /></div>
+                        <div class="feld"><label for="sp-einheit">Einheit</label><input id="sp-einheit" type="text" @bind="_spEinheit" placeholder="z. B. Monat, Stück" /></div>
+                        <div class="feld"><label for="sp-menge">Menge</label><input id="sp-menge" type="number" min="1" @bind="_spMenge" /></div>
+                        <div class="feld"><label for="sp-preis">Preis (€)</label><input id="sp-preis" type="number" min="0" step="0.01" @bind="_spPreis" /></div>
+                        <div class="feld"><span class="etikett">Abrechnung</span><label class="schalter"><input type="checkbox" @bind="_spEinmalig" /> einmalig</label></div>
+                        <div class="feld breit"><label for="sp-grund">Begründung</label><input id="sp-grund" type="text" @bind="_spBegruendung" /></div>
+                        <div class="aktionen"><button class="knopf zweit klein" type="submit">Sonderposition hinzufügen</button></div>
+                    </form>
+                }
+            </section>
+        </div>
+
+        <aside class="zusammenfassung karte">
+            <div class="karte-kopf"><h2>Ergebnis</h2></div>
+            <div class="karte-inhalt">
+                @if (_ergebnis.Positionen.Count == 0)
+                {
+                    <p class="unterzeile">Noch keine Positionen gewählt.</p>
+                }
+                else
+                {
+                    <table class="pos-liste">
+                        @foreach (var p in _ergebnis.Positionen)
+                        {
+                            <tr>
+                                <td>
+                                    @p.Bezeichnung
+                                    @if (p.Hinweis is not null)
+                                    {
+                                        <br /><span class="unterzeile klein">@p.Hinweis</span>
+                                    }
+                                </td>
+                                <td class="num">@Texte.Menge(p.BerechneteMenge) ×</td>
+                                <td class="num">@Texte.Euro(p.Betrag)@(p.Abrechnungsart == Abrechnungsart.Einmalig ? " einm." : "")</td>
+                            </tr>
+                        }
+                    </table>
+                }
+
+                <dl class="summen">
+                    <dt>Monatlich</dt>
+                    <dd class="gross">@Texte.Euro(_ergebnis.SummeMonatlich)</dd>
+                    <dt>Einmalig</dt>
+                    <dd>@Texte.Euro(_ergebnis.SummeEinmalig)</dd>
+                    <dt>Jahreswert (12 × monatlich)</dt>
+                    <dd>@Texte.Euro(_ergebnis.Jahreswert)</dd>
+                    <dt>Wert der Erstlaufzeit</dt>
+                    <dd>@Texte.Euro(_ergebnis.WertErstlaufzeit)</dd>
+                    @if (_ergebnis.Vergleich is { } v)
+                    {
+                        <dt>Bisher monatlich</dt>
+                        <dd>@Texte.Euro(v.Bisher)</dd>
+                        <dt>Veränderung</dt>
+                        <dd>@(v.Differenz >= 0 ? "+" : "")@Texte.Euro(v.Differenz)@(v.DifferenzProzent is { } pz ? $" ({(pz >= 0 ? "+" : "")}{pz:0.##} %)" : "")</dd>
+                    }
+                </dl>
+
+                @if (_daten.DarfEinkaufSehen)
+                {
+                    <div class="intern">
+                        <span class="etikett">Intern · nur Führung</span>
+                        <dl class="summen">
+                            <dt>Kosten monatlich</dt>
+                            <dd>@Texte.Euro(_ergebnis.KostenMonatlich)</dd>
+                            <dt>Deckungsbeitrag</dt>
+                            <dd>@Texte.Euro(_ergebnis.DeckungsbeitragMonatlich)</dd>
+                            <dt>Marge</dt>
+                            <dd>@(_ergebnis.Marge is { } m ? Texte.Prozent(m) : "–")</dd>
+                        </dl>
+                        @if (!_ergebnis.KostenVollstaendig)
+                        {
+                            <p class="unterzeile klein">Für einzelne Positionen fehlt der EK; Kosten und Marge sind unvollständig.</p>
+                        }
+                    </div>
+                }
+
+                @if (_ergebnis.Meldungen.Count > 0)
+                {
+                    <div class="meldungen">
+                        @foreach (var m in _ergebnis.Meldungen.OrderByDescending(m => m.Schwere))
+                        {
+                            <div class="meldung @(m.Schwere == Schwere.Fehler ? "fehler" : "info")">@m.Text</div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="meldung erfolg">Keine Fehler. Die Kalkulation ist angebotsfähig.</p>
+                }
+            </div>
+        </aside>
+    </div>
+}
 
 @code {
     [Parameter] public int Id { get; set; }
+
+    private KalkulationsDaten? _daten;
+    private GeladenerKatalog? _katalog;
+    private Rechenkern? _kern;
+    private IReadOnlyList<KatalogZeile> _connect = [];
+    private IReadOnlyList<KatalogGruppe> _gruppen = [];
+    private EditorZustand? _zustand;
+    private KalkulationsErgebnis? _ergebnis;
+    private byte[] _zeilenversion = [];
+    private bool _geaendert, _speichert, _meldungIstFehler;
+    private string? _ladefehler, _meldung, _leitungsKommentar;
+
+    private string? _spBezeichnung, _spEinheit, _spBegruendung;
+    private int _spMenge = 1;
+    private decimal _spPreis;
+    private bool _spEinmalig;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _daten = await Dienst.LadeAsync(Id);
+            if (_daten is null)
+            {
+                _ladefehler = "Diese Kalkulation gibt es nicht.";
+                return;
+            }
+
+            _katalog = await Dienst.KatalogAsync();
+            _kern = _katalog.ErzeugeRechenkern();
+            (_connect, _gruppen) = EditorZustand.Gliedere(_katalog);
+            var k = _daten.Kalkulation;
+            _zustand = EditorZustand.Aus(k.Titel, k.Vertragsbeginn, k.Eingabe, _connect.Select(c => c.Code).ToHashSet());
+            _zeilenversion = k.Zeilenversion;
+            _geaendert = false;
+            Berechne();
+        }
+        catch (Exception e) when (e is KeinZugriffException or InvalidOperationException)
+        {
+            _ladefehler = e.Message;
+        }
+    }
+
+    /// <summary>Rechnet mit dem aktuellen Stand der Eingaben und den gespeicherten Sonderpositionen.</summary>
+    private void Berechne()
+    {
+        var eingabe = _zustand!.AlsEingabe() with
+        {
+            Sonderpositionen = [.. _daten!.Kalkulation.Sonderpositionen.OrderBy(s => s.Reihenfolge).Select(s => s.AlsEingabe())],
+        };
+        _ergebnis = _kern!.Berechne(eingabe);
+    }
+
+    private void Geaendert()
+    {
+        _geaendert = true;
+        _meldung = null;
+        Berechne();
+    }
+
+    private void WaehleConnect(string code)
+    {
+        _zustand!.ConnectCode = _zustand.ConnectCode == code ? null : code;
+        Geaendert();
+    }
+
+    private void SetzeMenge(string code, object? wert)
+    {
+        _zustand!.SetzeMenge(code, int.TryParse(wert?.ToString(), out var menge) ? menge : 0);
+        Geaendert();
+    }
+
+    private async Task SpeichernAsync()
+    {
+        _speichert = true;
+        try
+        {
+            _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion);
+            _geaendert = false;
+            Zeige("Gespeichert.", false);
+        }
+        catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        {
+            Zeige("Jemand anderes hat diese Kalkulation inzwischen gespeichert. Bitte die Seite neu laden; deine Änderungen gehen dabei verloren.", true);
+        }
+        catch (Exception e) when (e is ArgumentException or KeinZugriffException or KeyNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+        finally
+        {
+            _speichert = false;
+        }
+    }
+
+    private Task SonderpositionHinzufuegenAsync() =>
+        SonderpositionAsync(() => Dienst.SonderpositionHinzufuegenAsync(Id,
+            new SonderpositionsDaten(_spBezeichnung ?? "", _spEinheit ?? "", _spMenge, _spPreis, _spBegruendung ?? "", _spEinmalig)), () =>
+            {
+                (_spBezeichnung, _spEinheit, _spBegruendung, _spMenge, _spPreis, _spEinmalig) = (null, null, null, 1, 0m, false);
+                return "Sonderposition hinzugefügt. Sie braucht noch die Freigabe der Vertriebsleitung.";
+            });
+
+    private Task EntfernenAsync(Sonderposition sp) =>
+        SonderpositionAsync(() => Dienst.SonderpositionEntfernenAsync(Id, sp.Id), () => $"„{sp.Bezeichnung}“ entfernt.");
+
+    private Task FreigebenAsync(Sonderposition sp) =>
+        SonderpositionAsync(() => Dienst.SonderpositionFreigebenAsync(Id, sp.Id, _leitungsKommentar), () =>
+        {
+            _leitungsKommentar = null;
+            return $"„{sp.Bezeichnung}“ freigegeben.";
+        });
+
+    private Task AblehnenAsync(Sonderposition sp) =>
+        SonderpositionAsync(() => Dienst.SonderpositionAblehnenAsync(Id, sp.Id, _leitungsKommentar ?? ""), () =>
+        {
+            _leitungsKommentar = null;
+            return $"„{sp.Bezeichnung}“ abgelehnt.";
+        });
+
+    /// <summary>Sonderpositionen werden sofort gespeichert; die übrigen Eingaben bleiben ungespeichert erhalten.</summary>
+    private async Task SonderpositionAsync(Func<Task<IReadOnlyList<Sonderposition>>> aktion, Func<string> erfolg)
+    {
+        try
+        {
+            var liste = await aktion();
+            _daten!.Kalkulation.Sonderpositionen.Clear();
+            _daten.Kalkulation.Sonderpositionen.AddRange(liste);
+            Zeige(erfolg(), false);
+            Berechne();
+        }
+        catch (Exception e) when (e is ArgumentException or KeinZugriffException or KeyNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+    }
+
+    private void Zeige(string text, bool fehler) => (_meldung, _meldungIstFehler) = (text, fehler);
 }
