@@ -66,6 +66,8 @@ internal sealed class KalkulationKonfiguration : IEntityTypeConfiguration<Kalkul
         builder.ToTable("Kalkulationen", "kalkulation");
         builder.Property(k => k.Titel).HasMaxLength(200);
         builder.Property(k => k.ErstelltVon).HasMaxLength(200);
+        builder.Property(k => k.Angebotsnummer).HasMaxLength(20);
+        builder.HasIndex(k => k.Angebotsnummer).IsUnique().HasFilter("[Angebotsnummer] IS NOT NULL");
         builder.Property(k => k.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
         builder.Property(k => k.Zeilenversion).IsRowVersion();
 
@@ -140,6 +142,43 @@ internal sealed class PositionsKostenKonfiguration : IEntityTypeConfiguration<Po
         builder.ToTable("PositionsKosten", "intern");
         builder.HasKey(k => k.VersionsPositionId);
         builder.Property(k => k.Kosten).HasPrecision(12, 2);
+    }
+}
+
+internal sealed class AngebotKonfiguration : IEntityTypeConfiguration<Angebot>
+{
+    public void Configure(EntityTypeBuilder<Angebot> builder)
+    {
+        builder.ToTable("Angebote", "kalkulation");
+        builder.HasIndex(a => a.KalkulationsversionId).IsUnique();
+        builder.HasIndex(a => a.Nummer);
+        builder.Property(a => a.Nummer).HasMaxLength(20);
+        builder.Property(a => a.Freitext).HasMaxLength(4000);
+        builder.Property(a => a.Dateiname).HasMaxLength(260);
+        builder.Property(a => a.Vorlage).HasMaxLength(260);
+        builder.Property(a => a.ErstelltVon).HasMaxLength(200);
+        builder.Property(a => a.VersendetVon).HasMaxLength(200);
+        builder.HasOne(a => a.Version).WithMany().HasForeignKey(a => a.KalkulationsversionId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(a => a.Datei).WithOne().HasForeignKey<AngebotsDatei>(d => d.AngebotId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AngebotsDateiKonfiguration : IEntityTypeConfiguration<AngebotsDatei>
+{
+    public void Configure(EntityTypeBuilder<AngebotsDatei> builder)
+    {
+        builder.ToTable("AngebotsDateien", "kalkulation");
+        builder.HasKey(d => d.AngebotId);
+    }
+}
+
+internal sealed class NummernkreisKonfiguration : IEntityTypeConfiguration<Nummernkreis>
+{
+    public void Configure(EntityTypeBuilder<Nummernkreis> builder)
+    {
+        builder.ToTable("Nummernkreise", "projekte");
+        builder.HasKey(n => new { n.Kreis, n.Jahr });
+        builder.Property(n => n.Kreis).HasMaxLength(10);
     }
 }
 

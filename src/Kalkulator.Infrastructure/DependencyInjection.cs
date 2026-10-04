@@ -20,6 +20,8 @@ public static class DependencyInjection
         services.AddScoped<RechenkernLader>();
         services.AddScoped<KundenprojektDienst>();
         services.AddScoped<KalkulationsDienst>();
+        services.AddScoped<AngebotsDienst>();
+        services.AddOptions<AngebotsEinstellungen>();
         return services;
     }
 }

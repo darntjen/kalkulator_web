@@ -100,6 +100,14 @@ Die Preisliste „Preisstand 15.07.2026“ entsteht als **Entwurf** und muss vom
 freigegeben werden. Enthält der Katalog schon Services, passiert nichts. Navision-Artikelnummern
 mit `9999…` sind Platzhalter (siehe `docs/11_navision-zuordnung.md`).
 
+### Angebote
+
+Ein Angebot entsteht im Kalkulationseditor (Bereich „Angebote“). Dabei wird der gespeicherte Stand als Version
+eingefroren, die Angebotsnummer `MS-A-JJJJ-NNNN` vergeben und das Word-Dokument aus
+`templates/angebot/Angebotsvorlage.docx` und `textbausteine.json` erzeugt und archiviert. Das geht nur mit einer
+freigegebenen Preisliste. Die Vorlagen werden mit dem Programm ausgeliefert (`Vorlagen/angebot`); der Ordner lässt
+sich über `Angebot:Vorlagenordner` umstellen. Platzhalter: `docs/08_angebotsvorlage.md`, Technik: ADR-0004.
+
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
 
