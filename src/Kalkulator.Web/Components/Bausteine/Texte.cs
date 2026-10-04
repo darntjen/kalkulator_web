@@ -57,6 +57,39 @@ public static class Texte
     public static string Zeitpunkt(DateTimeOffset zeitpunkt) =>
         TimeZoneInfo.ConvertTime(zeitpunkt, Zeitzone).ToString("dd.MM.yyyy HH:mm", Deutsch);
 
+    public static string Unterlagenart(UnterlagenArt art) => art switch
+    {
+        UnterlagenArt.Recherche => "Recherche",
+        UnterlagenArt.Standortgespraech => "Standortgespräch",
+        UnterlagenArt.Analyse => "Analyse",
+        UnterlagenArt.Workshop => "Workshop und Roadmap",
+        UnterlagenArt.Angebot => "Angebot",
+        UnterlagenArt.Protokoll => "Protokoll oder Transkript",
+        _ => "Sonstiges",
+    };
+
+    /// <summary>Lesbarer Name eines Bereichs der Kundenablage, z. B. „30_Analyse“ → „Analyse“.</summary>
+    public static string Ablagebereich(string bereich) => bereich switch
+    {
+        "00_Kundenakte" => "Kundenakte",
+        "10_Recherche" => "Recherche",
+        "20_Standortgespraech" => "Standortgespräch",
+        "30_Analyse" => "Analyse",
+        "40_Workshop_Roadmap" => "Workshop und Roadmap",
+        "60_Angebote" => "Angebote",
+        "80_Protokolle" => "Protokolle",
+        _ => bereich,
+    };
+
+    public static string Groesse(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => (bytes / 1024d).ToString("0", Deutsch) + " KB",
+        _ => (bytes / 1024d / 1024d).ToString("0.0", Deutsch) + " MB",
+    };
+
+    public static string Datum(DateOnly datum) => datum.ToString("dd.MM.yyyy", Deutsch);
+
     public static string Euro(decimal betrag) => betrag.ToString("#,##0.00 €", Deutsch);
 
     private static readonly TimeZoneInfo Zeitzone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");

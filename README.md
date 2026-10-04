@@ -130,6 +130,19 @@ Personen; wer das Projekt verantwortet, darf mit passender Rolle selbst freigebe
 Nimmt der Kunde an, setzt der Vertrieb das Projekt auf „Gewonnen“ und wählt dabei das angenommene Angebot. Die Vorlagen werden mit dem Programm ausgeliefert (`Vorlagen/angebot`); der Ordner lässt
 sich über `Angebot:Vorlagenordner` umstellen. Platzhalter: `docs/08_angebotsvorlage.md`, Technik: ADR-0004.
 
+### Unterlagen am Kundenprojekt
+
+Die Projektansicht zeigt die Unterlagen des Kunden: Das Projekt wird mit seinem Kanalordner im Team
+„Kundenprojekte“ verknüpft (nur lesend; Teams bleibt die Leitablage), dazu kommen Uploads im Kalkulator. Uploads
+abgeschlossener Projekte löscht der Kalkulator nach drei Jahren. Lokal ersetzt ein Ordner das Team:
+
+```bash
+Kundenablage__Quelle=Ordner Kundenablage__Ordner=/pfad/zur/kundenablage dotnet run --project src/Kalkulator.Web
+```
+
+Unterordner von `/pfad/zur/kundenablage` sind die Kanalordner, darin `00_Kundenakte`, `30_Analyse` usw. Technik:
+ADR-0010.
+
 ### Vertragsvorlagen
 
 Grundvertrag, AVB, SLA, AVV und Leistungsscheine kommen aus SharePoint (#26). Unter Katalog › Vertragsvorlagen sieht

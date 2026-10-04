@@ -1,5 +1,6 @@
 using System.Globalization;
 using Kalkulator.Infrastructure;
+using Kalkulator.Infrastructure.Ablage;
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 using Kalkulator.Infrastructure.Paperless;
@@ -32,6 +33,7 @@ builder.Services.Configure<AngebotsEinstellungen>(builder.Configuration.GetSecti
 builder.Services.Configure<VorlagenEinstellungen>(builder.Configuration.GetSection(VorlagenEinstellungen.Abschnitt));
 builder.Services.Configure<PdfEinstellungen>(builder.Configuration.GetSection(PdfEinstellungen.Abschnitt));
 builder.Services.Configure<PaperlessEinstellungen>(builder.Configuration.GetSection(PaperlessEinstellungen.Abschnitt));
+builder.Services.Configure<KundenablageEinstellungen>(builder.Configuration.GetSection(KundenablageEinstellungen.Abschnitt));
 builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
 {
     if (string.IsNullOrWhiteSpace(e.Vorlagenordner))
@@ -151,6 +153,39 @@ app.MapGet("/katalog/vorlagen/fassung/{id:int}/datei", async (int id, VorlagenDi
         return Results.Forbid();
     }
     catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+// Hochgeladene Unterlage bzw. Datei aus dem Kanalordner eines Kundenprojekts (Phase 4); wer das Projekt sehen darf.
+app.MapGet("/unterlagen/{id:int}", async (int id, UnterlagenDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, typ, inhalt) = await dienst.DateiAsync(id, abbruch);
+        return Results.File(inhalt, typ, name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+app.MapGet("/kundenprojekte/{id:int}/ablage", async (int id, string datei, UnterlagenDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, inhalt) = await dienst.AblageDateiAsync(id, datei, abbruch);
+        return Results.File(inhalt, "application/octet-stream", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (Exception e) when (e is KeyNotFoundException or InvalidOperationException)
     {
         return Results.NotFound();
     }

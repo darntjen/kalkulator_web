@@ -1,3 +1,4 @@
+using Kalkulator.Infrastructure.Ablage;
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Paperless;
@@ -38,6 +39,10 @@ public static class DependencyInjection
         services.TryAddSingleton<IPaperlessUebergabe>(d =>
             new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
         services.AddHostedService<NaechtlicherVorlagenabgleich>();
+        services.AddOptions<KundenablageEinstellungen>();
+        services.AddSingleton(Kundenablage);
+        services.AddScoped<UnterlagenDienst>();
+        services.AddHostedService<UnterlagenAufbewahrung>();
         return services;
     }
 
@@ -81,6 +86,30 @@ public static class DependencyInjection
         catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Security.Cryptography.CryptographicException or IOException)
         {
             return new KeineVorlagenquelle(ex.Message);
+        }
+    }
+
+    /// <summary>Kanalordner der Kunden laut Konfiguration „Kundenablage“; Graph nutzt die Anmeldung aus „Vorlagen:SharePoint“.</summary>
+    private static IKundenablage Kundenablage(IServiceProvider dienste)
+    {
+        var e = dienste.GetRequiredService<IOptions<KundenablageEinstellungen>>().Value;
+        var sharePoint = dienste.GetRequiredService<IOptions<VorlagenEinstellungen>>().Value.SharePoint;
+        try
+        {
+            return (e.Quelle ?? "").Trim().ToUpperInvariant() switch
+            {
+                "SHAREPOINT" => new SharePointKundenablage(GraphZugang.Aus(sharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }),
+                    string.IsNullOrWhiteSpace(e.Website) ? throw new InvalidOperationException("Für die Kundenablage fehlt die Einstellung Kundenablage:Website.") : e),
+                "ORDNER" => new OrdnerKundenablage(string.IsNullOrWhiteSpace(e.Ordner)
+                    ? throw new InvalidOperationException("Für die Quelle „Ordner“ fehlt die Einstellung Kundenablage:Ordner.")
+                    : e.Ordner),
+                "" => new KeineKundenablage(),
+                _ => throw new InvalidOperationException($"Unbekannte Kundenablage „{e.Quelle}“; erlaubt sind „SharePoint“ und „Ordner“."),
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Security.Cryptography.CryptographicException or IOException)
+        {
+            return new KeineKundenablage(ex.Message);
         }
     }
 }

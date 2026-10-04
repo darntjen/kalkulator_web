@@ -43,6 +43,12 @@ public class Kundenprojekt
     /// <summary>Erwarteter Abschlussmonat, immer der Monatserste (G-05).</summary>
     public DateOnly? ErwarteterAbschlussmonat { get; private set; }
 
+    /// <summary>Verknüpfter Kanalordner im Team „Kundenprojekte“ (Kennung der Ablage); Quelle der Unterlagen (G-02).</summary>
+    public string? KanalordnerId { get; private set; }
+
+    /// <summary>Name des Kanalordners zur Anzeige.</summary>
+    public string? Kanalordner { get; private set; }
+
     public DateTimeOffset AngelegtAm { get; private set; }
     public string AngelegtVon { get; private set; } = "";
 
@@ -112,6 +118,24 @@ public class Kundenprojekt
         Status = neu;
         Verlustgrund = verlustgrund;
         AngenommenesAngebotId = angenommenesAngebotId;
+    }
+
+    /// <summary>Wann das Projekt endgültig abgeschlossen wurde („Gewonnen“ oder „Verloren“); sonst leer.</summary>
+    public DateTimeOffset? AbgeschlossenAm =>
+        Status is ProjektStatus.Gewonnen or ProjektStatus.Verloren
+            ? StatusEreignisse.Where(e => e.Neu == Status).Select(e => (DateTimeOffset?)e.Zeitpunkt).Max()
+            : null;
+
+    /// <summary>Verknüpft das Projekt mit seinem Kanalordner im Team „Kundenprojekte“; <c>null</c> hebt die Verknüpfung auf.</summary>
+    public void VerknuepfeKanalordner(string? id, string? name)
+    {
+        if (id is not null && string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Der Kanalordner braucht einen Namen.", nameof(name));
+        }
+
+        KanalordnerId = string.IsNullOrWhiteSpace(id) ? null : id;
+        Kanalordner = KanalordnerId is null ? null : name!.Trim();
     }
 
     /// <summary>Pflegt den Forecast (G-05). Der Monat wird auf den Monatsersten gesetzt.</summary>

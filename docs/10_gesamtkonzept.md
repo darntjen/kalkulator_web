@@ -90,7 +90,7 @@ erDiagram
 | Objekt | Zweck | Wichtige Felder (Entwurf) |
 |--------|-------|---------------------------|
 | **Kundenprojekt** | Klammer um alles, was wir einem Kunden anbieten. Ersetzt die bisherige „Kalkulation“ als oberstes Objekt | Kunde (mit Navision-Kundennummer), Titel, verantwortlicher Vertrieb, Projektstatus (wie bisher), Neukunde/Bestandskunde, **Forecast: Abschlusswahrscheinlichkeit in % und erwarteter Abschlussmonat, beides manuell** |
-| **Dokumentenablage** | Hochgeladene Unterlagen | Art (Analyse, Workshop, Standortgespräch, Recherche, Angebot Analyse/Workshop, Sonstiges), Datei, hochgeladen von/am |
+| **Dokumentenablage** | Verknüpfter Kanalordner im Team „Kundenprojekte“ (lesend) und ergänzende Uploads (Entscheidung 04.10.2026, ADR-0010) | Kanalordner; je Upload Art (Recherche, Standortgespräch, Analyse, Workshop, Angebot, Protokoll, Sonstiges), Datei, Beschreibung, hochgeladen von/am |
 | **Herausforderung** | Baustein der Kundensituation | Dimension (**kaufmännisch / organisatorisch / technisch**), Titel, Beschreibung in Kundensprache, Auswirkung, Priorität, Quelle (z. B. „Analyse vom …“) |
 | **Analyse-/Workshop-Angebot** | Eckdaten für die Pipeline | Angebotsnummer, Datum, Paketpreis, Status (versendet/beauftragt/abgelehnt), abgelegtes Dokument |
 | **Transformationsprojekt** | Umsetzungsvorhaben aus der Roadmap, kalkuliert in Navision | Titel, Ziel und Nutzen in Kundensprache, Navision-Angebotsnummer, importierte Fassung, Kapitelstruktur, erwarteter Umsetzungszeitraum |
@@ -119,7 +119,7 @@ flowchart TD
 ```
 
 1. **Kundenprojekt anlegen:** Kunde mit Navision-Kundennummer, Titel. Der Vertrieb pflegt Abschlusswahrscheinlichkeit und erwarteten Abschlussmonat und hält beides aktuell.
-2. **Unterlagen hochladen:** Consultants laden Analyseergebnisse hoch. Der Vertrieb ergänzt Workshop-Ergebnisse, Gesprächszusammenfassungen und Recherchen.
+2. **Unterlagen:** Das Kundenprojekt wird mit seinem Kanalordner im Team „Kundenprojekte“ verknüpft; der Kalkulator zeigt die Dateien der Ordner 00 bis 40, 60 und 80 an. Was dort nicht liegt, laden Vertrieb oder Consultants hoch. Uploads werden drei Jahre nach Abschluss des Projekts gelöscht (Entscheidung 04.10.2026).
 3. **Kundensituation erfassen:** Der Vertrieb trägt die Herausforderungen manuell ein, gegliedert nach kaufmännisch, organisatorisch und technisch. Die Unterlagen sind daneben einsehbar.
 4. **Transformationsprojekt anlegen:** Der Vertrieb lädt das Navision-PDF hoch.
    - Die Anwendung liest Kopf, Positionen und Summen und prüft die Summe.
