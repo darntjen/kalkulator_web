@@ -154,6 +154,10 @@ Pdf__Wandler=LibreOffice Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_V
 
 Technik: ADR-0007.
 
+Ist Paperless eingerichtet (`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei beim
+Erzeugen automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless zur technischen
+Freigabe. Einrichtung: `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
+
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
 

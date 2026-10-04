@@ -198,6 +198,10 @@ internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertr
         builder.Property(v => v.ErstelltVon).HasMaxLength(200);
         builder.Property(v => v.GesamtDateiname).HasMaxLength(260);
         builder.Property(v => v.ZipDateiname).HasMaxLength(260);
+        VorlagenversionKonfiguration.Liste(builder.Property(v => v.Unterzeichner));
+        builder.Property(v => v.PaperlessDokumentId).HasMaxLength(100);
+        builder.Property(v => v.UebergabeFehler).HasMaxLength(1000);
+        builder.Ignore(v => v.IstUebergeben);
         builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Angebot>().WithMany().HasForeignKey(v => v.AngebotId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(v => v.Dokumente).WithOne().HasForeignKey(d => d.VertragswerkId).OnDelete(DeleteBehavior.Restrict);

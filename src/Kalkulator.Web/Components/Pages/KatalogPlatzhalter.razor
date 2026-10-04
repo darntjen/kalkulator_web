@@ -93,6 +93,21 @@ else
             </table>
         </div>
     </section>
+
+    <section class="karte">
+        <div class="karte-kopf"><h2>Unterschriftsfelder für Paperless</h2></div>
+        <div class="karte-inhalt stapel lesetext">
+            <p>
+                An die Stelle, an der unterschrieben wird, kommt <code>{{unterschrift.Rolle}}</code>, z. B. <code>{{unterschrift.Kunde}}</code>
+                für den Auftraggeber. Am besten steht der Platzhalter am Anfang der Unterschriftslinie; die linke untere Ecke des
+                Unterschriftsfelds liegt dann auf der Linie. Im Dokument bleibt die Stelle unsichtbar.
+            </p>
+            <p>
+                Die Rolle ist zugleich der Slot in Paperless. Für Rollen, die nicht fest eingestellt sind, fragt der Kalkulator beim
+                Erzeugen des Vertragswerks Name und E-Mail-Adresse ab. Dieselbe Rolle darf in mehreren Dokumenten vorkommen.
+            </p>
+        </div>
+    </section>
 }
 
 @code {

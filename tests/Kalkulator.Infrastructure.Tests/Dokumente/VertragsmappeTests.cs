@@ -86,7 +86,7 @@ public class VertragsmappeTests
     }
 
     /// <summary>Läuft nur, wo LibreOffice installiert ist (lokal); sonst als übersprungen gemeldet.</summary>
-    private sealed class LibreOfficeFactAttribute : FactAttribute
+    internal sealed class LibreOfficeFactAttribute : FactAttribute
     {
         public LibreOfficeFactAttribute()
         {

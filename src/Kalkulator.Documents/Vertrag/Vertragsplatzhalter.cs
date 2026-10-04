@@ -25,6 +25,9 @@ public static class Vertragsplatzhalter
     public const string EingabePraefix = "eingabe.";
     public const string PreisPraefix = "preis.";
 
+    /// <summary>Unterschriftsfeld für Paperless: <c>{{unterschrift.Rolle}}</c> (#26, Teil D).</summary>
+    public const string UnterschriftPraefix = "unterschrift.";
+
     /// <summary>Felder je gebuchter Preiskomponente: <c>{{preis.KOMPONENTE.menge}}</c> usw.</summary>
     public static readonly IReadOnlyList<string> PreisFelder = ["menge", "einzelpreis", "summe"];
 

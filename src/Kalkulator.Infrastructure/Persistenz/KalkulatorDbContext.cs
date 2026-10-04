@@ -114,6 +114,10 @@ public class KalkulatorDbContext(
     private static readonly HashSet<string> EntscheidungsFelder =
         [nameof(Vorlagenversion.Status), nameof(Vorlagenversion.EntschiedenVon), nameof(Vorlagenversion.EntschiedenAm), nameof(Vorlagenversion.Kommentar)];
 
+    /// <summary>Am Vertragswerk ändert sich nach dem Erzeugen nur der Vermerk der Übergabe an Paperless.</summary>
+    private static readonly HashSet<string> UebergabeFelder =
+        [nameof(Vertragswerk.PaperlessDokumentId), nameof(Vertragswerk.UebergebenAm), nameof(Vertragswerk.UebergabeFehler), nameof(Vertragswerk.UebergabeVersuchtAm)];
+
     /// <summary>
     /// Eingefrorene Versionen, ihre Positionen und Kosten sowie archivierte Angebotsdokumente dürfen nur angelegt werden;
     /// an einem Angebot ist nur der Versandvermerk änderbar. Vorlagenfassungen und ihre Dateien sind ebenso unveränderlich.
@@ -125,7 +129,8 @@ public class KalkulatorDbContext(
                     && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei
                         or VertragswerkEintrag or VertragswerkDatei)
                 || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion or Vertragswerk)
-                || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name))));
+                || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name)))
+                || (e.State == EntityState.Modified && e.Entity is Vertragswerk && e.Properties.Any(p => p.IsModified && !UebergabeFelder.Contains(p.Metadata.Name))));
         if (geaendert is not null)
         {
             throw new InvalidOperationException(

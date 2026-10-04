@@ -26,6 +26,15 @@ public sealed record Ankreuzfeld(bool Gewaehlt)
 }
 
 /// <summary>
+/// Unsichtbare Marke (weiß, 1 pt) an der Stelle des Platzhalters, z. B. für ein Unterschriftsfeld, das nach der
+/// PDF-Umwandlung dort gesetzt wird. Die Marke steht in einem eigenen Lauf, damit nur sie unsichtbar wird.
+/// </summary>
+public sealed record UnsichtbareMarke(string Text)
+{
+    public override string ToString() => Text;
+}
+
+/// <summary>
 /// Befüllt Word-Vorlagen (ADR-0004). Die Vorlage wird in Word gepflegt; variable Stellen schreibt man als Platzhalter:
 /// <list type="bullet">
 /// <item><c>{{schluessel}}</c> im Fließtext, in Tabellen, Kopf- und Fußzeilen.</item>
@@ -347,27 +356,112 @@ public static partial class WordVorlage
                 continue;
             }
 
-            var neu = Platzhalter().Replace(text.Text, m =>
+            // Abschnitte des Textes; unsichtbare Marken kommen in eigene Läufe.
+            var teile = new List<(string Text, bool Marke)>();
+            var rest = new System.Text.StringBuilder();
+            var position = 0;
+            foreach (Match m in Platzhalter().Matches(text.Text))
             {
+                rest.Append(text.Text, position, m.Index - position);
+                position = m.Index + m.Length;
                 var schluessel = m.Groups[1].Value;
                 if (!Suche(schluessel, kontext, out var wert))
                 {
                     unbekannt.Add(schluessel);
-                    return "";
+                    continue;
                 }
 
-                return wert switch
+                if (wert is UnsichtbareMarke marke)
+                {
+                    teile.Add((rest.ToString(), false));
+                    rest.Clear();
+                    teile.Add((marke.Text, true));
+                    continue;
+                }
+
+                rest.Append(wert switch
                 {
                     null => "",
                     string s => s,
                     bool b => b ? "ja" : "nein",
                     Ankreuzfeld k => k.ToString(),
                     _ => throw new VorlagenFehler($"„{schluessel}“ ist eine Liste und kann nicht als Text eingesetzt werden."),
-                };
-            });
+                });
+            }
 
-            SetzeText(text, neu);
+            rest.Append(text.Text, position, text.Text.Length - position);
+            teile.Add((rest.ToString(), false));
+
+            if (teile.Count == 1 || text.Parent is not Run lauf)
+            {
+                SetzeText(text, string.Concat(teile.Select(t => t.Text)));
+                continue;
+            }
+
+            SetzeTeile(text, lauf, teile);
         }
+    }
+
+    /// <summary>
+    /// Verteilt die Abschnitte auf den bisherigen Lauf und neue Läufe gleicher Formatierung dahinter; Marken werden weiß
+    /// und 1 pt groß. Was im Lauf nach dem Text stand (z. B. ein Tabulator), wandert in den letzten Lauf.
+    /// </summary>
+    private static void SetzeTeile(Text text, Run lauf, List<(string Text, bool Marke)> teile)
+    {
+        var nachfolger = text.ElementsAfter().ToList();
+        SetzeText(text, teile[0].Text);
+        OpenXmlElement letzter = lauf;
+        Run? letzterNormal = null;
+        foreach (var (inhalt, marke) in teile.Skip(1).Where(t => t.Marke || t.Text.Length > 0))
+        {
+            var neuer = NeuerLauf(lauf, inhalt, marke);
+            letzter.InsertAfterSelf(neuer);
+            letzter = neuer;
+            letzterNormal = marke ? null : neuer;
+        }
+
+        if (nachfolger.Count == 0)
+        {
+            return;
+        }
+
+        if (letzterNormal is null && !ReferenceEquals(letzter, lauf))
+        {
+            letzterNormal = NeuerLauf(lauf, null, false);
+            letzter.InsertAfterSelf(letzterNormal);
+        }
+
+        foreach (var element in nachfolger)
+        {
+            element.Remove();
+            (letzterNormal ?? lauf).AppendChild(element);
+        }
+    }
+
+    private static Run NeuerLauf(Run vorbild, string? inhalt, bool marke)
+    {
+        var lauf = new Run();
+        if (vorbild.RunProperties?.CloneNode(true) is RunProperties eigenschaften)
+        {
+            lauf.RunProperties = eigenschaften;
+        }
+
+        if (marke)
+        {
+            var e = lauf.RunProperties ??= new RunProperties();
+            e.Color = new Color { Val = "FFFFFF" };
+            e.FontSize = new FontSize { Val = "2" };
+            e.FontSizeComplexScript = new FontSizeComplexScript { Val = "2" };
+        }
+
+        if (inhalt is not null)
+        {
+            var text = new Text();
+            lauf.AppendChild(text);
+            SetzeText(text, inhalt);
+        }
+
+        return lauf;
     }
 
     /// <summary>Setzt Text; Zeilenumbrüche im Wert werden zu Umbrüchen im Lauf.</summary>

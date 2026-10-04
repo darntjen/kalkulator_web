@@ -6,6 +6,7 @@ using Kalkulator.Domain.Projekte;
 using Kalkulator.Domain.Vertrag;
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Erstbefuellung;
+using Kalkulator.Infrastructure.Paperless;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Infrastructure.Tests.Dokumente;
 using Microsoft.EntityFrameworkCore;
@@ -42,7 +43,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         return name;
     }
 
-    /// <summary>PDF-Umwandlung für Tests: merkt sich die Word-Dateien und liefert je Dokument eine leere PDF-Seite.</summary>
+    /// <summary>PDF-Umwandlung für Tests: merkt sich die Word-Dateien und liefert je Dokument eine Seite mit den Unterschriftsmarken.</summary>
     internal sealed class TestWandler : Kalkulator.Infrastructure.Vorlagen.IPdfWandler
     {
         public List<byte[]> Dokumente { get; } = [];
@@ -52,13 +53,29 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         public Task<byte[]> InPdfAsync(byte[] docx, CancellationToken abbruch)
         {
             Dokumente.Add(docx);
-            return Task.FromResult(VertragsmappeTests.LeeresPdf(1));
+            return Task.FromResult(UnterschriftsfelderTests.PdfMitMarken(docx));
         }
     }
 
     private readonly TestWandler _wandler = new();
 
-    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null)
+    /// <summary>Paperless für Tests: merkt sich die Aufträge; mit <see cref="Fehler"/> lehnt es ab.</summary>
+    internal sealed class TestPaperless : IPaperlessUebergabe
+    {
+        public List<PaperlessAuftrag> Auftraege { get; } = [];
+
+        public string? Fehler { get; set; }
+
+        public Task<string> UebergebenAsync(PaperlessAuftrag auftrag, CancellationToken abbruch)
+        {
+            Auftraege.Add(auftrag);
+            return Fehler is { } f ? throw new PaperlessFehler(f) : Task.FromResult($"pl-{Auftraege.Count}");
+        }
+    }
+
+    private readonly TestPaperless _paperless = new();
+
+    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null, PaperlessEinstellungen? paperless = null)
     {
         var fabrik = new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, benutzer));
         var einstellungen = Options.Create(new AngebotsEinstellungen { Vorlagenordner = AngebotsdokumentTests.Vorlagenordner() });
@@ -67,7 +84,8 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             new KalkulationsDienst(fabrik, benutzer, TimeProvider.System),
             new AngebotsDienst(fabrik, benutzer, TimeProvider.System, einstellungen),
             new VertragswerkDienst(fabrik, benutzer, TimeProvider.System, wandler ?? _wandler,
-                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx") })));
+                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx") }),
+                _paperless, Options.Create(paperless ?? new PaperlessEinstellungen())));
     }
 
     /// <summary>Legt eine aktive Fassung für die Vorlage <paramref name="code"/> an, geprüft wie beim Abgleich.</summary>
@@ -92,6 +110,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             Hinweise = analyse.Hinweise,
             Eingaben = analyse.Eingaben,
             Komponenten = analyse.Komponenten,
+            Unterschriften = analyse.Unterschriften,
             Datei = new VorlagenDatei { Inhalt = inhalt },
         }, DateTimeOffset.UtcNow)!;
         vorlage.Aktiviere(fassung, "produktmanagement@noesse.de", DateTimeOffset.UtcNow, null);
@@ -335,6 +354,141 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         await AlleVorlagenAsync(datenbank, id);
 
         Assert.Contains("PDF-Umwandlung ist nicht eingerichtet", (await dienste.Vertragswerk.BereitschaftAsync(projekt)).Sperrgrund, StringComparison.Ordinal);
+    }
+
+    private static readonly PaperlessEinstellungen PaperlessAn = new()
+    {
+        ApiSchluessel = "test",
+        ArbeitsbereichId = 1,
+        Rollen = new Dictionary<string, PaperlessRolle>(StringComparer.Ordinal)
+        {
+            ["Nösse"] = new() { Slot = "Geschaeftsfuehrung", AusVorlage = true },
+            ["Zeuge"] = new() { Name = "Max Muster", EMail = "max.muster@noesse.de" },
+        },
+    };
+
+    private static readonly Unterzeichner[] Kunde = [new("Kunde", "Erika Beispiel", "erika.beispiel@example.org")];
+
+    /// <summary>Gewonnenes Projekt; der Grundvertrag hat Unterschriftsfelder für Kunde, Nösse und Zeuge.</summary>
+    private async Task<(string Datenbank, Dienste Dienste, int Projekt)> MitUnterschriftenAsync(PaperlessEinstellungen? paperless = null)
+    {
+        var datenbank = await NeueDatenbankAsync();
+        var dienste = DiensteFuer(datenbank, Vertrieb, paperless: paperless ?? PaperlessAn);
+        await AktiviereVorlageAsync(datenbank, "S01", VorlagenpruefungTests.Dokument("S01 für {{kunde.firma}}, Vertreter {{eingabe.Vertreter}}"));
+        var (projekt, id) = await GewonnenAsync(datenbank, dienste);
+        await AlleVorlagenAsync(datenbank, id);
+        await AktiviereVorlageAsync(datenbank, "GRUNDVERTRAG", VorlagenpruefungTests.Dokument(
+            "Managed-Services-Vertrag mit {{kunde.anschrift}}, Vertragsnummer {{vertrag.nummer}}, Beginn {{vertrag.beginn}}",
+            "{{#positionen}}",
+            "{{position.code}}",
+            "{{/positionen}}",
+            "Gesamt {{summe.monatlich}}",
+            "Auftraggeber {{unterschrift.Kunde}}",
+            "Auftragnehmer {{unterschrift.Nösse}}",
+            "Zeuge {{unterschrift.Zeuge}}"));
+        return (datenbank, dienste, projekt);
+    }
+
+    [Fact]
+    public async Task Ohne_Paperless_entsteht_das_Vertragswerk_wie_bisher_ohne_Uebergabe()
+    {
+        var (_, dienste, projekt) = await MitUnterschriftenAsync(new PaperlessEinstellungen());
+
+        var bereitschaft = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.False(bereitschaft.Paperless);
+        Assert.Null(bereitschaft.Unterzeichnerrollen);
+        await dienste.Vertragswerk.ErzeugenAsync(projekt);
+
+        Assert.Empty(_paperless.Auftraege);
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Null(werk.UebergabeVersuchtAm);
+    }
+
+    [Fact]
+    public async Task Vertragswerk_geht_beim_Erzeugen_mit_Unterschriftsfeldern_an_Paperless()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+
+        var bereitschaft = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.True(bereitschaft.Paperless);
+        Assert.Equal(["Kunde"], bereitschaft.Unterzeichnerrollen);
+        Assert.Null(bereitschaft.Hinweis);
+
+        var fehlt = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErzeugenAsync(projekt, [new Unterzeichner("Kunde", "Erika Beispiel", "erika@")]));
+        Assert.Contains("gültige E-Mail-Adresse für „Kunde“", fehlt.Message, StringComparison.Ordinal);
+        Assert.Empty(await dienste.Vertragswerk.ListeAsync(projekt));
+
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, [.. Kunde, new Unterzeichner("Sonstige", "X", "x@example.org")]);
+
+        var auftrag = Assert.Single(_paperless.Auftraege);
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Equal(("pl-1", (string?)null), (werk.PaperlessDokumentId, werk.UebergabeFehler));
+        Assert.NotNull(werk.UebergebenAm);
+        Assert.Equal($"Vertrag {werk.Nummer} – Muster Spedition GmbH", auftrag.Name);
+        Assert.Equal((await dienste.Vertragswerk.DateiAsync(werkId, zip: false)).Inhalt, auftrag.Pdf);
+
+        // Kunde aus der Eingabe, Zeuge fest eingestellt; die Geschäftsführung legt die Paperless-Vorlage fest.
+        Assert.Equal(
+            [new PaperlessTeilnehmer("Kunde", "Erika Beispiel", "erika.beispiel@example.org"), new PaperlessTeilnehmer("Zeuge", "Max Muster", "max.muster@noesse.de")],
+            auftrag.Teilnehmer);
+        Assert.Equal(["Kunde", "Geschaeftsfuehrung", "Zeuge"], auftrag.Felder.Select(f => f.Slot));
+        Assert.All(auftrag.Felder, f => Assert.Equal(3, f.Stelle.Seite)); // Deckblatt, AVV, dann Grundvertrag
+
+        await using var kontext = db.NeuerKontextAufDatenbank(datenbank);
+        var gespeichert = await kontext.Vertragswerke.SingleAsync();
+        Assert.Equal(Kunde, gespeichert.Unterzeichner);
+
+        // Am Vertragswerk ist nur der Übergabevermerk änderbar.
+        kontext.Entry(gespeichert).Property(v => v.GesamtDateiname).CurrentValue = "anders.pdf";
+        await Assert.ThrowsAsync<InvalidOperationException>(() => kontext.SaveChangesAsync());
+    }
+
+    [Fact]
+    public async Task Fehlgeschlagene_Uebergabe_behaelt_das_Vertragswerk_und_laesst_sich_wiederholen()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        _paperless.Fehler = "Paperless hat „documents“ abgelehnt (401 Unauthorized).";
+
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Null(werk.PaperlessDokumentId);
+        Assert.Contains("401", werk.UebergabeFehler, StringComparison.Ordinal);
+        Assert.NotNull(werk.UebergabeVersuchtAm);
+
+        var consultant = DiensteFuer(datenbank, new TestBenutzer("consultant@noesse.de", Rollen.Consultant), paperless: PaperlessAn);
+        await Assert.ThrowsAsync<KeinZugriffException>(() => consultant.Vertragswerk.ErneutUebergebenAsync(werkId));
+
+        _paperless.Fehler = null;
+        await dienste.Vertragswerk.ErneutUebergebenAsync(werkId);
+
+        werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Equal(("pl-2", (string?)null), (werk.PaperlessDokumentId, werk.UebergabeFehler));
+        Assert.Equal(_paperless.Auftraege[0].Teilnehmer, _paperless.Auftraege[^1].Teilnehmer);
+
+        var doppelt = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErneutUebergebenAsync(werkId));
+        Assert.Contains("bereits an Paperless übergeben", doppelt.Message, StringComparison.Ordinal);
+
+        // Eine überholte Ausfertigung geht nicht mehr an Paperless.
+        _paperless.Fehler = "Paperless nicht erreichbar.";
+        var zweite = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        _paperless.Fehler = null;
+        await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        var ueberholt = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErneutUebergebenAsync(zweite));
+        Assert.Contains("nur die neueste Ausfertigung", ueberholt.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Fehlt_ein_Feld_im_PDF_wird_nicht_uebergeben()
+    {
+        var werk = new Vertragswerk { Nummer = "MS-A-2026-0001", ErstelltVon = "t", GesamtDateiname = "v.pdf", ZipDateiname = "v.zip", Unterzeichner = Kunde };
+        var pdf = UnterschriftsfelderTests.PdfMitText([(Unterschriftsfelder.Marke("Kunde"), 72, 100)]);
+
+        var fehler = Assert.Throws<PaperlessFehler>(() => VertragswerkDienst.Auftrag(PaperlessAn, werk, "Firma", pdf, ["Kunde", "Zeuge"]));
+        Assert.Contains("Unterschriftsfeld für Zeuge", fehler.Message, StringComparison.Ordinal);
+
+        var ohnePerson = new Vertragswerk { Nummer = "1", ErstelltVon = "t", GesamtDateiname = "v.pdf", ZipDateiname = "v.zip" };
+        Assert.Contains("„Kunde“ fehlt der Unterzeichner", Assert.Throws<PaperlessFehler>(() => VertragswerkDienst.Auftrag(PaperlessAn, ohnePerson, "Firma", pdf, ["Kunde"])).Message, StringComparison.Ordinal);
     }
 
     private static string Text(byte[] docx)
