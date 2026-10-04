@@ -147,15 +147,24 @@ public class ErstbefuellungTests(SqlServerFixture db)
     [InlineData(ParameterSchluessel.CloudServerMargenteiler, 0.55)]
     [InlineData(ParameterSchluessel.VkVerrechnungssatzProStunde, 135)]
     [InlineData(ParameterSchluessel.EkKostensatzProStunde, 60.75)]
-    [InlineData(ParameterSchluessel.MargeGruenAb, 0.55)]
-    [InlineData(ParameterSchluessel.MargeGruenBis, 0.72)]
-    [InlineData(ParameterSchluessel.MargeRotUnter, 0.45)]
+    [InlineData(ParameterSchluessel.MargeGruenAb, 0.45)]
+    [InlineData(ParameterSchluessel.MargeRotUnter, 0.38)]
     public async Task Parameter_sind_gepflegt(string schluessel, decimal wert)
     {
         await using var kontext = await BefuellteDatenbankAsync();
         var (_, preisliste) = await LadeAsync(kontext);
 
         Assert.Equal(wert, preisliste.ParameterWert(schluessel));
+    }
+
+    [Fact]
+    public async Task Margen_Ampel_hat_fuer_Managed_Services_keine_Obergrenze()
+    {
+        await using var kontext = await BefuellteDatenbankAsync();
+        var (_, preisliste) = await LadeAsync(kontext);
+
+        Assert.DoesNotContain(preisliste.Parameter, p => p.Schluessel == ParameterSchluessel.MargeGruenBis);
+        Assert.Equal(new Margenschwellen(0.45m, null, 0.38m), Margenschwellen.Aus(preisliste));
     }
 
     [Theory]

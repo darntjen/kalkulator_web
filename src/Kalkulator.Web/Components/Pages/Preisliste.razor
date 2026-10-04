@@ -241,7 +241,7 @@ else
                     <h2>Einkauf, Deckungsbeitrag und Marge</h2>
                     <span class="unterzeile">
                         Kosten = EK/Lizenz + Betrieb (Aufwand × @Texte.Euro(satz)/h bzw. fester Betrag) + Overhead + Korrektur.
-                        Ampel: grün @Texte.Prozent(schwellen.GruenAb)–@Texte.Prozent(schwellen.GruenBis), rot unter @Texte.Prozent(schwellen.RotUnter), sonst gelb.
+                        Ampel: @schwellen.Text(Texte.Prozent).
                     </span>
                 </div>
                 <div class="karte-inhalt">

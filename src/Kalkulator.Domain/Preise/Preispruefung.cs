@@ -17,26 +17,31 @@ public enum Ampel
 }
 
 /// <summary>
-/// Schwellen der Margen-Ampel. Die Excel-Vorlage nennt nur „grün = gesund (55–72 %)“ und setzt Gelb und Rot von Hand;
-/// hier ist die Ampel regelbasiert und die Schwellen sind Parameter der Preisliste.
+/// Schwellen der Margen-Ampel als Parameter der Preisliste. Für Managed Services gilt (Entscheidung 04.10.2026):
+/// grün ab 45 %, gelb von 38 % bis unter 45 %, rot unter 38 %. Eine Obergrenze für Grün ist optional; ohne sie bleibt
+/// auch eine sehr hohe Marge grün.
 /// </summary>
-public sealed record Margenschwellen(decimal GruenAb, decimal GruenBis, decimal RotUnter)
+public sealed record Margenschwellen(decimal GruenAb, decimal? GruenBis, decimal RotUnter)
 {
-    public static readonly Margenschwellen Standard = new(0.55m, 0.72m, 0.45m);
+    public static readonly Margenschwellen Standard = new(0.45m, null, 0.38m);
 
     public static Margenschwellen Aus(Preisliste preisliste) => new(
         preisliste.ParameterWertOder(ParameterSchluessel.MargeGruenAb, Standard.GruenAb),
-        preisliste.ParameterWertOder(ParameterSchluessel.MargeGruenBis, Standard.GruenBis),
+        preisliste.Parameter.SingleOrDefault(p => p.Schluessel == ParameterSchluessel.MargeGruenBis)?.Wert ?? Standard.GruenBis,
         preisliste.ParameterWertOder(ParameterSchluessel.MargeRotUnter, Standard.RotUnter));
 
-    /// <summary>Grün im Zielkorridor, rot unter der Rot-Schwelle, sonst gelb (auch oberhalb des Korridors: Preis prüfen).</summary>
+    /// <summary>Grün ab der Grün-Schwelle (bis zur Obergrenze, falls gesetzt), rot unter der Rot-Schwelle, sonst gelb.</summary>
     public Ampel Bewerte(decimal? marge) => marge switch
     {
         null => Ampel.Grau,
         var m when m < RotUnter => Ampel.Rot,
-        var m when m >= GruenAb && m <= GruenBis => Ampel.Gruen,
+        var m when m >= GruenAb && (GruenBis is null || m <= GruenBis) => Ampel.Gruen,
         _ => Ampel.Gelb,
     };
+
+    /// <summary>Lesbare Fassung, z. B. „grün ab 45 %, rot unter 38 %, sonst gelb“.</summary>
+    public string Text(Func<decimal, string> prozent) =>
+        $"grün ab {prozent(GruenAb)}{(GruenBis is { } bis ? $" bis {prozent(bis)}" : "")}, rot unter {prozent(RotUnter)}, sonst gelb";
 }
 
 /// <summary>Kosten, Verkaufspreis, Deckungsbeitrag und Marge einer Preiskomponente in einer Preisliste.</summary>
