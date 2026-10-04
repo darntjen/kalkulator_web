@@ -6,6 +6,7 @@
 @using Kalkulator.Web.Components.Editor
 @inject KalkulationsDienst Dienst
 @inject AngebotsDienst Angebote
+@inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
 
 <PageTitle>@(_zustand?.Titel ?? "Kalkulation") · Managed-Services-Kalkulator</PageTitle>
 
@@ -234,6 +235,88 @@ else
                         <div class="feld breit"><label for="sp-grund">Begründung</label><input id="sp-grund" type="text" @bind="_spBegruendung" /></div>
                         <div class="aktionen"><button class="knopf zweit klein" type="submit">Sonderposition hinzufügen</button></div>
                     </form>
+                }
+            </section>
+
+            <section class="karte" id="vertriebsfreigabe">
+                <div class="karte-kopf">
+                    <h2>Vertriebsfreigabe</h2>
+                    <span class="unterzeile">Vertriebsleitung und Solution Consultant geben den gespeicherten Stand frei, bevor ein Angebot entsteht</span>
+                </div>
+                <div class="tab-rahmen">
+                    <table class="liste">
+                        <thead><tr><th>Freigabe</th><th>Status</th><th>Von</th><th>Kommentar</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var rolle in Enum.GetValues<FreigabeRolle>())
+                            {
+                                var aktiv = _daten.Kalkulation.AktiveFreigabe(rolle);
+                                <tr>
+                                    <td>@Texte.Freigaberolle(rolle)</td>
+                                    <td>
+                                        @if (aktiv is null)
+                                        {
+                                            <span class="pille freigabe-Offen">offen</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pille freigabe-Freigegeben">freigegeben</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (aktiv is not null)
+                                        {
+                                            @aktiv.Benutzer<br /><span class="unterzeile">@Texte.Zeitpunkt(aktiv.Zeitpunkt)</span>
+                                        }
+                                    </td>
+                                    <td>@aktiv?.Kommentar</td>
+                                    <td>
+                                        <div class="aktionen">
+                                            @if (_daten.DarfVertriebFreigeben.Contains(rolle))
+                                            {
+                                                @if (aktiv is null)
+                                                {
+                                                    <button class="knopf klein" type="button" disabled="@(SperrgrundFreigabe is not null || _gibtFrei)" @onclick="() => VertriebFreigebenAsync(rolle)">Freigeben</button>
+                                                }
+                                                else if (IstIch(aktiv.Benutzer))
+                                                {
+                                                    <button class="knopf zweit klein" type="button" @onclick="() => FreigabeZurueckziehenAsync(rolle)">Zurückziehen</button>
+                                                }
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (_daten.DarfVertriebFreigeben.Any(r => _daten.Kalkulation.AktiveFreigabe(r) is null))
+                {
+                    <div class="karte-inhalt felder">
+                        <div class="feld breit">
+                            <label for="freigabekommentar">Kommentar zur Freigabe (optional)</label>
+                            <input id="freigabekommentar" type="text" @bind="_freigabeKommentar" />
+                        </div>
+                        @if (SperrgrundFreigabe is { } sperre)
+                        {
+                            <p class="unterzeile breit">@sperre</p>
+                        }
+                    </div>
+                }
+                else if (!_daten.Kalkulation.IstVertriebsfreigegeben)
+                {
+                    <p class="karte-inhalt unterzeile">Jede Änderung an Positionen, Mengen, Sonderpositionen oder Vertragsbeginn hebt erteilte Freigaben wieder auf.</p>
+                }
+                @if (_daten.Kalkulation.Vertriebsfreigaben.Any(f => !f.IstAktiv))
+                {
+                    <details class="karte-inhalt">
+                        <summary>Verlauf (@_daten.Kalkulation.Vertriebsfreigaben.Count(f => !f.IstAktiv) aufgehobene Freigaben)</summary>
+                        <ul class="aenderungen">
+                            @foreach (var f in _daten.Kalkulation.Vertriebsfreigaben.Where(f => !f.IstAktiv).OrderByDescending(f => f.AufgehobenAm))
+                            {
+                                <li>@Texte.Freigaberolle(f.Rolle): @f.Benutzer am @Texte.Zeitpunkt(f.Zeitpunkt) · aufgehoben am @Texte.Zeitpunkt(f.AufgehobenAm!.Value) (@f.Aufhebungsgrund, @f.AufgehobenVon)</li>
+                            }
+                        </ul>
+                    </details>
                 }
             </section>
 
@@ -471,7 +554,8 @@ else
         {
             _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion);
             _geaendert = false;
-            Zeige("Gespeichert.", false);
+            var aufgehoben = await NeuLadenAsync();
+            Zeige(aufgehoben ? "Gespeichert. Weil sich der Stand geändert hat, sind die Vertriebsfreigaben aufgehoben." : "Gespeichert.", false);
         }
         catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {
@@ -517,11 +601,9 @@ else
     {
         try
         {
-            var liste = await aktion();
-            _daten!.Kalkulation.Sonderpositionen.Clear();
-            _daten.Kalkulation.Sonderpositionen.AddRange(liste);
-            Zeige(erfolg(), false);
-            Berechne();
+            await aktion();
+            var aufgehoben = await NeuLadenAsync();
+            Zeige(erfolg() + (aufgehoben ? " Die Vertriebsfreigaben sind damit aufgehoben." : ""), false);
         }
         catch (Exception e) when (e is ArgumentException or KeinZugriffException or KeyNotFoundException)
         {
@@ -541,7 +623,71 @@ else
         !_katalog!.PreislisteFreigegeben ? "Angebote entstehen erst mit einer freigegebenen Preisliste."
         : _geaendert ? "Bitte zuerst speichern; das Angebot zeigt den gespeicherten Stand."
         : _ergebnis!.HatFehler ? "Die Kalkulation enthält noch Fehler (siehe Ergebnis)."
+        : !_daten!.Kalkulation.IstVertriebsfreigegeben ? $"Es fehlt noch die Vertriebsfreigabe: {string.Join(" und ", Enum.GetValues<FreigabeRolle>().Where(r => _daten.Kalkulation.AktiveFreigabe(r) is null).Select(Texte.Freigaberolle))}."
         : null;
+
+    private string? _freigabeKommentar;
+    private bool _gibtFrei;
+
+    /// <summary>Warum gerade nicht freigegeben werden kann; <c>null</c>, wenn es geht.</summary>
+    private string? SperrgrundFreigabe =>
+        !_katalog!.PreislisteFreigegeben ? "Freigeben lässt sich erst mit einer freigegebenen Preisliste."
+        : _geaendert ? "Es gibt ungespeicherte Änderungen. Freigegeben wird nur der gespeicherte Stand."
+        : _ergebnis!.HatFehler ? "Die Kalkulation enthält noch Fehler oder offene Sonderpositionen (siehe Ergebnis)."
+        : IstIch(_daten!.Projekt.Verantwortlich) ? "Vier-Augen-Prinzip: Du verantwortest dieses Kundenprojekt und gibst es daher nicht selbst frei."
+        : _daten.Kalkulation.Vertriebsfreigaben.Any(f => f.IstAktiv && IstIch(f.Benutzer)) ? "Vier-Augen-Prinzip: Die zweite Freigabe muss von einer anderen Person kommen."
+        : null;
+
+    private bool IstIch(string benutzer) => string.Equals(benutzer.Trim(), Benutzer.Name.Trim(), StringComparison.OrdinalIgnoreCase);
+
+    private async Task VertriebFreigebenAsync(FreigabeRolle rolle)
+    {
+        _gibtFrei = true;
+        try
+        {
+            await Dienst.VertriebFreigebenAsync(Id, rolle, _daten!.Stand, _freigabeKommentar);
+            _freigabeKommentar = null;
+            await NeuLadenAsync();
+            Zeige(_daten!.Kalkulation.IstVertriebsfreigegeben
+                ? "Freigegeben. Beide Vertriebsfreigaben liegen vor; das Angebot kann erzeugt werden."
+                : $"Freigabe {Texte.Freigaberolle(rolle)} erteilt.", false);
+        }
+        catch (Exception e) when (e is InvalidOperationException or KeinZugriffException or KeyNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+        finally
+        {
+            _gibtFrei = false;
+        }
+    }
+
+    private async Task FreigabeZurueckziehenAsync(FreigabeRolle rolle)
+    {
+        try
+        {
+            await Dienst.VertriebsfreigabeZurueckziehenAsync(Id, rolle);
+            await NeuLadenAsync();
+            Zeige($"Freigabe {Texte.Freigaberolle(rolle)} zurückgezogen.", false);
+        }
+        catch (Exception e) when (e is InvalidOperationException or KeinZugriffException or KeyNotFoundException)
+        {
+            Zeige(e.Message, true);
+        }
+    }
+
+    /// <summary>
+    /// Lädt Kalkulation, Sonderpositionen und Freigaben neu; ungespeicherte Eingaben im Editor bleiben erhalten.
+    /// Gibt zurück, ob dabei Vertriebsfreigaben weggefallen sind.
+    /// </summary>
+    private async Task<bool> NeuLadenAsync()
+    {
+        var vorher = _daten!.Kalkulation.Vertriebsfreigaben.Count(f => f.IstAktiv);
+        _daten = await Dienst.LadeAsync(Id) ?? _daten;
+        _zeilenversion = _daten.Kalkulation.Zeilenversion;
+        Berechne();
+        return _daten.Kalkulation.Vertriebsfreigaben.Count(f => f.IstAktiv) < vorher;
+    }
 
     private async Task LadeAngeboteAsync()
     {

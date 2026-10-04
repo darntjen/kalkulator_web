@@ -14,6 +14,12 @@ public sealed record ProjektZeile(
     DateOnly? ErwarteterAbschlussmonat,
     int Kalkulationen);
 
+/// <summary>Ein versendetes Angebot zur Auswahl als „angenommen“.</summary>
+public sealed record AngebotsAuswahl(int Id, string Nummer, int Version, string Kalkulation, DateOnly? VersendetAm, decimal SummeMonatlich)
+{
+    public string Text => $"{Nummer} V{Version} · {Kalkulation}";
+}
+
 public sealed record NeuesKundenprojekt(
     string Firma,
     string? Strasse,
@@ -118,8 +124,44 @@ public sealed class KundenprojektDienst(IDbContextFactory<KalkulatorDbContext> k
         return projekt.Id;
     }
 
-    public Task SetzeStatusAsync(int projektId, ProjektStatus neu, string? kommentar, Verlustgrund? verlustgrund, CancellationToken abbruch = default) =>
-        BearbeiteAsync(projektId, p => p.SetzeStatus(neu, _recht.Name, zeit.GetUtcNow(), kommentar, verlustgrund), abbruch);
+    /// <summary>
+    /// Setzt den Projektstatus. Bei „Gewonnen“ ist das angenommene Angebot Pflicht: ein als versendet markiertes
+    /// Angebot einer Kalkulation dieses Projekts (#26).
+    /// </summary>
+    public async Task SetzeStatusAsync(int projektId, ProjektStatus neu, string? kommentar, Verlustgrund? verlustgrund,
+        int? angenommenesAngebotId = null, CancellationToken abbruch = default)
+    {
+        if (angenommenesAngebotId is { } angebotId)
+        {
+            var passt = (await AngeboteZurAnnahmeAsync(projektId, abbruch)).Any(a => a.Id == angebotId);
+            if (!passt)
+            {
+                throw new ArgumentException("Angenommen werden kann nur ein versendetes Angebot dieses Kundenprojekts.", nameof(angenommenesAngebotId));
+            }
+        }
+
+        await BearbeiteAsync(projektId, p => p.SetzeStatus(neu, _recht.Name, zeit.GetUtcNow(), kommentar, verlustgrund, angenommenesAngebotId), abbruch);
+    }
+
+    /// <summary>Versendete Angebote aller Kalkulationen des Projekts, neueste zuerst; Auswahl für „Gewonnen“.</summary>
+    public async Task<IReadOnlyList<AngebotsAuswahl>> AngeboteZurAnnahmeAsync(int projektId, CancellationToken abbruch = default)
+    {
+        await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
+        var projekt = await kontext.Kundenprojekte.AsNoTracking().SingleOrDefaultAsync(p => p.Id == projektId, abbruch)
+            ?? throw new KeyNotFoundException($"Kundenprojekt {projektId} gibt es nicht.");
+        if (!_recht.DarfSehen(projekt))
+        {
+            throw new KeinZugriffException("Dieses Kundenprojekt gehört einem anderen Vertriebsmitarbeiter.");
+        }
+
+        var kalkulationen = kontext.Kalkulationen.Where(k => k.KundenprojektId == projektId);
+        return await kontext.Angebote.AsNoTracking()
+            .Where(a => a.VersendetAm != null || a.Id == projekt.AngenommenesAngebotId)
+            .Join(kalkulationen, a => a.Version!.KalkulationId, k => k.Id, (a, k) => new { a, k.Titel })
+            .OrderByDescending(x => x.a.VersendetAm).ThenByDescending(x => x.a.Id)
+            .Select(x => new AngebotsAuswahl(x.a.Id, x.a.Nummer, x.a.Version!.Nummer, x.Titel, x.a.VersendetAm, x.a.Version.SummeMonatlich))
+            .ToListAsync(abbruch);
+    }
 
     public Task SetzeForecastAsync(int projektId, int? wahrscheinlichkeit, DateOnly? abschlussmonat, CancellationToken abbruch = default) =>
         BearbeiteAsync(projektId, p => p.SetzeForecast(wahrscheinlichkeit, abschlussmonat), abbruch);

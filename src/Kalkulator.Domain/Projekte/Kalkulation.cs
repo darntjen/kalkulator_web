@@ -48,6 +48,84 @@ public class Kalkulation
     public List<Sonderposition> Sonderpositionen { get; } = [];
     public List<Kalkulationsversion> Versionen { get; } = [];
 
+    /// <summary>Vertriebsfreigaben samt Verlauf; gültig sind nur die aktiven (#26).</summary>
+    public List<Vertriebsfreigabe> Vertriebsfreigaben { get; } = [];
+
+    public Vertriebsfreigabe? AktiveFreigabe(FreigabeRolle rolle) =>
+        Vertriebsfreigaben.SingleOrDefault(f => f.IstAktiv && f.Rolle == rolle);
+
+    /// <summary>Vertriebsleitung und Solution Consultant haben den aktuellen Arbeitsstand freigegeben.</summary>
+    public bool IstVertriebsfreigegeben => Enum.GetValues<FreigabeRolle>().All(r => AktiveFreigabe(r) is not null);
+
+    /// <summary>
+    /// Gibt den Arbeitsstand aus Sicht einer Rolle frei. Voraussetzungen: Die Kalkulation ist angebotsfähig (keine
+    /// Fehler, keine offenen Sonderpositionen), wer das Projekt verantwortet, gibt nicht selbst frei, und beide
+    /// Freigaben kommen von verschiedenen Personen (Vier-Augen-Prinzip). Dafür muss das Kundenprojekt geladen sein.
+    /// </summary>
+    public Vertriebsfreigabe VertriebFreigeben(FreigabeRolle rolle, string benutzer, DateTimeOffset zeitpunkt, string? kommentar, KalkulationsErgebnis ergebnis)
+    {
+        if (!ergebnis.AngebotMoeglich)
+        {
+            throw new KalkulationNichtAngebotsfaehigException(ergebnis.Meldungen.Where(m => m.Schwere == Schwere.Fehler).Select(m => m.Text));
+        }
+
+        if (AktiveFreigabe(rolle) is { } vorhanden)
+        {
+            throw new InvalidOperationException($"Die Freigabe {Text(rolle)} liegt bereits vor ({vorhanden.Benutzer}).");
+        }
+
+        var projekt = Kundenprojekt ?? throw new InvalidOperationException("Zum Freigeben muss das Kundenprojekt geladen sein.");
+        if (Gleich(projekt.Verantwortlich, benutzer))
+        {
+            throw new InvalidOperationException("Vier-Augen-Prinzip: Wer das Kundenprojekt verantwortet, gibt die Kalkulation nicht selbst frei.");
+        }
+
+        if (Vertriebsfreigaben.Any(f => f.IstAktiv && Gleich(f.Benutzer, benutzer)))
+        {
+            throw new InvalidOperationException("Vier-Augen-Prinzip: Die beiden Freigaben müssen von verschiedenen Personen kommen.");
+        }
+
+        var freigabe = new Vertriebsfreigabe
+        {
+            Rolle = rolle,
+            Benutzer = benutzer,
+            Zeitpunkt = zeitpunkt,
+            Kommentar = string.IsNullOrWhiteSpace(kommentar) ? null : kommentar.Trim(),
+        };
+        Vertriebsfreigaben.Add(freigabe);
+        return freigabe;
+    }
+
+    /// <summary>Zieht die eigene Freigabe zurück, z. B. nach neuen Erkenntnissen.</summary>
+    public void VertriebsfreigabeZurueckziehen(FreigabeRolle rolle, string benutzer, DateTimeOffset zeitpunkt)
+    {
+        var freigabe = AktiveFreigabe(rolle) ?? throw new InvalidOperationException($"Eine Freigabe {Text(rolle)} liegt nicht vor.");
+        if (!Gleich(freigabe.Benutzer, benutzer))
+        {
+            throw new InvalidOperationException("Nur wer freigegeben hat, kann die Freigabe zurückziehen.");
+        }
+
+        freigabe.Aufheben(benutzer, zeitpunkt, "zurückgezogen");
+    }
+
+    /// <summary>Hebt alle aktiven Freigaben auf, weil sich der Arbeitsstand geändert hat.</summary>
+    /// <returns>Ob es aktive Freigaben gab.</returns>
+    public bool HebeVertriebsfreigabenAuf(string benutzer, DateTimeOffset zeitpunkt, string grund)
+    {
+        var aktive = Vertriebsfreigaben.Where(f => f.IstAktiv).ToList();
+        foreach (var f in aktive)
+        {
+            f.Aufheben(benutzer, zeitpunkt, grund);
+        }
+
+        return aktive.Count > 0;
+    }
+
+    private static string Text(FreigabeRolle rolle) =>
+        rolle == FreigabeRolle.Vertriebsleitung ? "der Vertriebsleitung" : "des Solution Consultants";
+
+    private static bool Gleich(string a, string b) => string.Equals(a.Trim(), b.Trim(), StringComparison.OrdinalIgnoreCase);
+
     /// <summary>Überschreibt den Arbeitsstand. Mitgegebene Sonderpositionen werden ignoriert.</summary>
     public void AendereEingabe(KalkulationsEingabe eingabe) => Eingabe = eingabe with { Sonderpositionen = [] };
 
@@ -107,6 +185,10 @@ public class Kalkulation
             Vertragsbeginn = Vertragsbeginn,
             SummeMonatlich = ergebnis.SummeMonatlich,
             SummeEinmalig = ergebnis.SummeEinmalig,
+            FreigabeVertriebsleitungVon = AktiveFreigabe(FreigabeRolle.Vertriebsleitung)?.Benutzer,
+            FreigabeVertriebsleitungAm = AktiveFreigabe(FreigabeRolle.Vertriebsleitung)?.Zeitpunkt,
+            FreigabeSolutionConsultantVon = AktiveFreigabe(FreigabeRolle.SolutionConsultant)?.Benutzer,
+            FreigabeSolutionConsultantAm = AktiveFreigabe(FreigabeRolle.SolutionConsultant)?.Zeitpunkt,
         };
         version.Positionen.AddRange(ergebnis.Positionen.Select((p, i) => new VersionsPosition
         {

@@ -30,9 +30,10 @@ public class KundenprojektTests
         projekt.SetzeStatus(ProjektStatus.Zurueckgestellt, "v", Jetzt, "Budget erst 2027");
         projekt.SetzeStatus(ProjektStatus.AngebotVersendet, "v", Jetzt);
         projekt.SetzeStatus(ProjektStatus.VertragErstellt, "v", Jetzt);
-        projekt.SetzeStatus(ProjektStatus.Gewonnen, "v", Jetzt);
+        projekt.SetzeStatus(ProjektStatus.Gewonnen, "v", Jetzt, angenommenesAngebotId: 7);
 
         Assert.Equal(ProjektStatus.Gewonnen, projekt.Status);
+        Assert.Equal(7, projekt.AngenommenesAngebotId);
         Assert.Equal(6, projekt.StatusEreignisse.Count);
         Assert.Equal("Budget erst 2027", projekt.StatusEreignisse[2].Kommentar);
         Assert.Equal(ProjektStatus.Zurueckgestellt, projekt.StatusEreignisse[3].Alt);
@@ -49,6 +50,19 @@ public class KundenprojektTests
         Assert.Throws<UngueltigerStatuswechselException>(() =>
             projekt.SetzeStatus(ziel, "v", Jetzt, verlustgrund: ziel == ProjektStatus.Verloren ? Verlustgrund.Preis : null));
         Assert.Single(projekt.StatusEreignisse);
+    }
+
+    [Fact]
+    public void Gewonnen_braucht_das_angenommene_Angebot_und_geht_direkt_nach_dem_Angebot()
+    {
+        var projekt = NeuesProjekt();
+        projekt.SetzeStatus(ProjektStatus.AngebotVersendet, "v", Jetzt);
+
+        Assert.Throws<ArgumentException>(() => projekt.SetzeStatus(ProjektStatus.Gewonnen, "v", Jetzt));
+        Assert.Throws<ArgumentException>(() => projekt.SetzeStatus(ProjektStatus.Zurueckgestellt, "v", Jetzt, angenommenesAngebotId: 3));
+        projekt.SetzeStatus(ProjektStatus.Gewonnen, "v", Jetzt, "Zusage per Mail", angenommenesAngebotId: 3);
+
+        Assert.Equal((ProjektStatus.Gewonnen, 3), (projekt.Status, projekt.AngenommenesAngebotId));
     }
 
     [Fact]

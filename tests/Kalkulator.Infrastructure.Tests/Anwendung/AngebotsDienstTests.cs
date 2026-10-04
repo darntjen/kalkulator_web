@@ -57,7 +57,7 @@ public class AngebotsDienstTests(SqlServerFixture db)
 
     private static TestBenutzer Neu(string rolle) => new($"{rolle.ToLowerInvariant()}-{Guid.NewGuid():N}@noesse.de", rolle);
 
-    private async Task<(int Projekt, int Kalkulation, Dienste Dienste)> KalkulationAsync(KalkulationsEingabe eingabe)
+    private async Task<(int Projekt, int Kalkulation, Dienste Dienste)> KalkulationAsync(KalkulationsEingabe eingabe, bool freigeben = true)
     {
         var dienste = await DiensteAsync(Neu(Rollen.Vertrieb));
         var projekt = await dienste.Projekte.AnlegenAsync(new NeuesKundenprojekt("Angebots-Test GmbH & Co. KG", "Am Hafen 3", "26122", "Oldenburg",
@@ -65,7 +65,23 @@ public class AngebotsDienstTests(SqlServerFixture db)
         var id = await dienste.Projekte.NeueKalkulationAsync(projekt, "Variante A");
         var geladen = await dienste.Kalkulationen.LadeAsync(id);
         await dienste.Kalkulationen.SpeichernAsync(id, "Variante A", new DateOnly(2027, 1, 1), eingabe, geladen!.Kalkulation.Zeilenversion);
+        if (freigeben)
+        {
+            await FreigebenAsync(id);
+        }
+
         return (projekt, id, dienste);
+    }
+
+    /// <summary>Vertriebsfreigabe durch Vertriebsleitung und Solution Consultant (#26).</summary>
+    private async Task FreigebenAsync(int kalkulationId)
+    {
+        foreach (var (rolle, freigabe) in new[] { (Rollen.Vertriebsleitung, FreigabeRolle.Vertriebsleitung), (Rollen.Consultant, FreigabeRolle.SolutionConsultant) })
+        {
+            var dienste = await DiensteAsync(Neu(rolle));
+            var stand = (await dienste.Kalkulationen.LadeAsync(kalkulationId))!.Stand;
+            await dienste.Kalkulationen.VertriebFreigebenAsync(kalkulationId, freigabe, stand, null);
+        }
     }
 
     private static string Text(byte[] datei)
@@ -103,6 +119,103 @@ public class AngebotsDienstTests(SqlServerFixture db)
         await using var kontext = db.NeuerKontextAufDatenbank(Datenbank);
         var version = await kontext.Kalkulationsversionen.Include(v => v.Positionen).SingleAsync(v => v.KalkulationId == id && v.Nummer == 1);
         Assert.Equal(1027.20m, version.SummeMonatlich);
+        Assert.StartsWith("vertriebsleitung-", version.FreigabeVertriebsleitungVon, StringComparison.Ordinal);
+        Assert.StartsWith("consultant-", version.FreigabeSolutionConsultantVon, StringComparison.Ordinal);
+        Assert.NotNull(version.FreigabeSolutionConsultantAm);
+    }
+
+    [Fact]
+    public async Task Ohne_beide_Vertriebsfreigaben_gibt_es_kein_Angebot()
+    {
+        var (_, id, dienste) = await KalkulationAsync(Rk01, freigeben: false);
+        var leitung = await DiensteAsync(Neu(Rollen.Vertriebsleitung));
+        await leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, (await leitung.Kalkulationen.LadeAsync(id))!.Stand, "passt");
+
+        var fehler = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Angebote.ErzeugenAsync(id, null, null));
+
+        Assert.Contains("Solution Consultant", fehler.Message, StringComparison.Ordinal);
+        Assert.Empty(await dienste.Angebote.ListeAsync(id));
+    }
+
+    [Fact]
+    public async Task Vertriebsfreigabe_nur_durch_die_passende_Rolle_und_nach_dem_Vier_Augen_Prinzip()
+    {
+        var (_, id, vertrieb) = await KalkulationAsync(Rk01, freigeben: false);
+        var leitungsBenutzer = Neu(Rollen.Vertriebsleitung);
+        var leitung = await DiensteAsync(leitungsBenutzer);
+        var consultant = await DiensteAsync(Neu(Rollen.Consultant));
+        var stand = (await vertrieb.Kalkulationen.LadeAsync(id))!.Stand;
+
+        Assert.Empty((await vertrieb.Kalkulationen.LadeAsync(id))!.DarfVertriebFreigeben);
+        Assert.Equal([FreigabeRolle.Vertriebsleitung], (await leitung.Kalkulationen.LadeAsync(id))!.DarfVertriebFreigeben);
+        Assert.Equal([FreigabeRolle.SolutionConsultant], (await consultant.Kalkulationen.LadeAsync(id))!.DarfVertriebFreigeben);
+        await Assert.ThrowsAsync<KeinZugriffException>(() => vertrieb.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, stand, null));
+        await Assert.ThrowsAsync<KeinZugriffException>(() => consultant.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, stand, null));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, "0000000000000000", null));
+
+        await leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, stand, " passt ");
+        await Assert.ThrowsAsync<InvalidOperationException>(() => leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, stand, null));
+
+        // Wer Vertriebsleitung und Consultant zugleich ist, gibt trotzdem nur einmal frei.
+        var beides = await DiensteAsync(new TestBenutzer(leitungsBenutzer.Name, Rollen.Vertriebsleitung, Rollen.Consultant));
+        var vierAugen = await Assert.ThrowsAsync<InvalidOperationException>(() => beides.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.SolutionConsultant, stand, null));
+        Assert.Contains("verschiedenen Personen", vierAugen.Message, StringComparison.Ordinal);
+
+        await consultant.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.SolutionConsultant, stand, null);
+        var freigegeben = (await vertrieb.Kalkulationen.LadeAsync(id))!.Kalkulation;
+        Assert.True(freigegeben.IstVertriebsfreigegeben);
+        Assert.Equal("passt", freigegeben.AktiveFreigabe(FreigabeRolle.Vertriebsleitung)!.Kommentar);
+
+        // Nur wer freigegeben hat, zieht zurück.
+        var andererConsultant = await DiensteAsync(Neu(Rollen.Consultant));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => andererConsultant.Kalkulationen.VertriebsfreigabeZurueckziehenAsync(id, FreigabeRolle.SolutionConsultant));
+        await consultant.Kalkulationen.VertriebsfreigabeZurueckziehenAsync(id, FreigabeRolle.SolutionConsultant);
+        var zurueck = (await vertrieb.Kalkulationen.LadeAsync(id))!.Kalkulation;
+        Assert.False(zurueck.IstVertriebsfreigegeben);
+        Assert.Equal("zurückgezogen", zurueck.Vertriebsfreigaben.Single(f => !f.IstAktiv).Aufhebungsgrund);
+    }
+
+    [Fact]
+    public async Task Verantwortliche_geben_ihre_eigene_Kalkulation_nicht_frei()
+    {
+        var leitungsBenutzer = Neu(Rollen.Vertriebsleitung);
+        var leitung = await DiensteAsync(leitungsBenutzer);
+        var projekt = await leitung.Projekte.AnlegenAsync(new NeuesKundenprojekt("Eigenes Projekt GmbH", null, null, null, null, null, "MS", false, null, null));
+        var id = await leitung.Projekte.NeueKalkulationAsync(projekt, "Variante A");
+        var geladen = await leitung.Kalkulationen.LadeAsync(id);
+        await leitung.Kalkulationen.SpeichernAsync(id, "Variante A", null, Rk01, geladen!.Kalkulation.Zeilenversion);
+
+        var fehler = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, (await leitung.Kalkulationen.LadeAsync(id))!.Stand, null));
+
+        Assert.Contains("verantwortet", fehler.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Aenderungen_am_Arbeitsstand_heben_die_Freigaben_auf()
+    {
+        var (_, id, dienste) = await KalkulationAsync(Rk01);
+        var geladen = (await dienste.Kalkulationen.LadeAsync(id))!;
+
+        // Speichern ohne inhaltliche Änderung (nur Titel) lässt die Freigaben stehen.
+        await dienste.Kalkulationen.SpeichernAsync(id, "Variante A (final)", new DateOnly(2027, 1, 1), Rk01, geladen.Kalkulation.Zeilenversion);
+        geladen = (await dienste.Kalkulationen.LadeAsync(id))!;
+        Assert.True(geladen.Kalkulation.IstVertriebsfreigegeben);
+
+        await dienste.Kalkulationen.SpeichernAsync(id, "Variante A (final)", new DateOnly(2027, 1, 1), Rk01 with { AnzahlUser = 16 }, geladen.Kalkulation.Zeilenversion);
+        geladen = (await dienste.Kalkulationen.LadeAsync(id))!;
+        Assert.False(geladen.Kalkulation.IstVertriebsfreigegeben);
+        Assert.All(geladen.Kalkulation.Vertriebsfreigaben, f => Assert.Equal("Arbeitsstand geändert", f.Aufhebungsgrund));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Angebote.ErzeugenAsync(id, null, null));
+
+        await FreigebenAsync(id);
+        await dienste.Kalkulationen.SonderpositionHinzufuegenAsync(id, new SonderpositionsDaten("Sonderreport", "Monat", 1, 50m, "Kundenwunsch", false));
+        geladen = (await dienste.Kalkulationen.LadeAsync(id))!;
+        Assert.False(geladen.Kalkulation.IstVertriebsfreigegeben);
+        Assert.Equal(2, geladen.Kalkulation.Vertriebsfreigaben.Count(f => f.Aufhebungsgrund == "Sonderposition geändert"));
+
+        // Mit offener Sonderposition ist die Kalkulation nicht angebotsfähig und lässt sich nicht freigeben.
+        await Assert.ThrowsAsync<KalkulationNichtAngebotsfaehigException>(() => FreigebenAsync(id));
     }
 
     [Fact]
@@ -122,9 +235,10 @@ public class AngebotsDienstTests(SqlServerFixture db)
     [Fact]
     public async Task Fehlerhafte_Kalkulation_erzeugt_kein_Angebot_und_verbraucht_keine_Nummer()
     {
-        var (_, id, dienste) = await KalkulationAsync(Rk01 with { Positionen = [new("B01", 10)] });
+        var (_, id, dienste) = await KalkulationAsync(Rk01 with { Positionen = [new("B01", 10)] }, freigeben: false);
 
-        await Assert.ThrowsAsync<KalkulationNichtAngebotsfaehigException>(() => dienste.Angebote.ErzeugenAsync(id, null, null));
+        await Assert.ThrowsAsync<KalkulationNichtAngebotsfaehigException>(() => FreigebenAsync(id));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Angebote.ErzeugenAsync(id, null, null));
 
         Assert.Empty(await dienste.Angebote.ListeAsync(id));
         Assert.Null((await dienste.Kalkulationen.LadeAsync(id))!.Kalkulation.Angebotsnummer);
@@ -143,6 +257,31 @@ public class AngebotsDienstTests(SqlServerFixture db)
         Assert.Equal(ProjektStatus.AngebotVersendet, geladen!.Status);
         Assert.Contains("versendet am", geladen.StatusEreignisse.OrderBy(e => e.Zeitpunkt).Last().Kommentar, StringComparison.Ordinal);
         await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Angebote.AlsVersendetMarkierenAsync(angebot, dienste.Angebote.Heute));
+    }
+
+    [Fact]
+    public async Task Gewonnen_nur_mit_einem_versendeten_Angebot_des_Projekts()
+    {
+        var (projekt, id, dienste) = await KalkulationAsync(Rk01);
+        var entwurf = await dienste.Angebote.ErzeugenAsync(id, null, null);
+        var versendet = await dienste.Angebote.ErzeugenAsync(id, null, null);
+        var fremd = await KalkulationAsync(Rk01);
+        var fremdesAngebot = await fremd.Dienste.Angebote.ErzeugenAsync(fremd.Kalkulation, null, null);
+        await fremd.Dienste.Angebote.AlsVersendetMarkierenAsync(fremdesAngebot, fremd.Dienste.Angebote.Heute);
+        await dienste.Angebote.AlsVersendetMarkierenAsync(versendet, dienste.Angebote.Heute);
+
+        var auswahl = Assert.Single(await dienste.Projekte.AngeboteZurAnnahmeAsync(projekt));
+        Assert.Equal((versendet, 2), (auswahl.Id, auswahl.Version));
+        Assert.Equal(1027.20m, auswahl.SummeMonatlich);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Gewonnen, null, null));
+        await Assert.ThrowsAsync<ArgumentException>(() => dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Gewonnen, null, null, entwurf));
+        await Assert.ThrowsAsync<ArgumentException>(() => dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Gewonnen, null, null, fremdesAngebot));
+
+        await dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Gewonnen, "Zusage per Mail", null, versendet);
+
+        var geladen = await dienste.Projekte.LadeAsync(projekt);
+        Assert.Equal((ProjektStatus.Gewonnen, versendet), (geladen!.Status, geladen.AngenommenesAngebotId));
     }
 
     [Fact]

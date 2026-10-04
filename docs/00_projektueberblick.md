@@ -89,8 +89,8 @@ in Word zusammengesetzt.
 | Rolle | Beschreibung | Rechte in der Anwendung (Entwurf) |
 |-------|--------------|-----------------------------------|
 | **Vertrieb** | Erstellt Kundenprojekte, Kalkulationen, Angebote und Vertragsunterlagen, pflegt Projektstatus und Forecast | Eigene Kundenprojekte anlegen, bearbeiten und ausgeben. **Keine Rabatte.** Kein Einblick in EK und Marge der Managed Services; EK und Marge **seiner Transformationsprojekte** pflegt und sieht er |
-| **Consultant** | Führt Analysen durch | Sieht Kundenprojekte und Kalkulationen, lädt Analyseergebnisse hoch. Kalkuliert nicht, erzeugt keine Angebote, sieht keine Einkaufspreise |
-| **Vertriebsleitung** | Sieht das Team, gibt Sonderpositionen frei | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams und **Freigabe freier Sonderpositionen** |
+| **Consultant** (Solution Consultant) | Führt Analysen durch, prüft die Lösung | Sieht Kundenprojekte und Kalkulationen, lädt Analyseergebnisse hoch. **Erteilt die Vertriebsfreigabe aus Lösungssicht** (#26). Kalkuliert nicht, erzeugt keine Angebote, sieht keine Einkaufspreise |
+| **Vertriebsleitung** | Sieht das Team, gibt Sonderpositionen und Kalkulationen frei | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams, **Freigabe freier Sonderpositionen** und **Vertriebsfreigabe der Kalkulation** (#26) |
 | **Produktmanagement / Service-Owner** | Pflegt Services, Preise, EK und Vorlagen | Pflege von Servicekatalog, Preislisten, EK-Kalkulation sowie Angebots- und Vertragsvorlagen |
 | **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken inkl. Deckungsbeitrag und Marge |
 | **Administration (IT)** | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups |

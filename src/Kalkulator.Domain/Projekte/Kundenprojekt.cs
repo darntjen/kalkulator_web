@@ -10,8 +10,9 @@ public class Kundenprojekt
     private static readonly Dictionary<ProjektStatus, ProjektStatus[]> Uebergaenge = new()
     {
         [ProjektStatus.Entwurf] = [ProjektStatus.AngebotVersendet],
+        // „Gewonnen“ direkt nach dem Angebot: Der Kunde sagt zu, danach entsteht das Vertragswerk (#26).
         [ProjektStatus.AngebotVersendet] =
-            [ProjektStatus.Entwurf, ProjektStatus.VertragErstellt, ProjektStatus.Verloren, ProjektStatus.Zurueckgestellt],
+            [ProjektStatus.Entwurf, ProjektStatus.VertragErstellt, ProjektStatus.Gewonnen, ProjektStatus.Verloren, ProjektStatus.Zurueckgestellt],
         [ProjektStatus.VertragErstellt] =
             [ProjektStatus.Entwurf, ProjektStatus.Gewonnen, ProjektStatus.Verloren, ProjektStatus.Zurueckgestellt],
         [ProjektStatus.Zurueckgestellt] = [ProjektStatus.AngebotVersendet],
@@ -32,6 +33,9 @@ public class Kundenprojekt
 
     public ProjektStatus Status { get; private set; } = ProjektStatus.Entwurf;
     public Verlustgrund? Verlustgrund { get; private set; }
+
+    /// <summary>Angebot, das der Kunde angenommen hat; gesetzt mit dem Status „Gewonnen“ (#26).</summary>
+    public int? AngenommenesAngebotId { get; private set; }
 
     /// <summary>Abschlusswahrscheinlichkeit in Prozent (G-05).</summary>
     public int? Wahrscheinlichkeit { get; private set; }
@@ -64,12 +68,26 @@ public class Kundenprojekt
 
     public bool KannWechselnZu(ProjektStatus neu) => Uebergaenge[Status].Contains(neu);
 
-    /// <summary>Setzt den Projektstatus und protokolliert den Wechsel. Bei „Verloren“ ist ein Verlustgrund Pflicht.</summary>
-    public void SetzeStatus(ProjektStatus neu, string benutzer, DateTimeOffset zeitpunkt, string? kommentar = null, Verlustgrund? verlustgrund = null)
+    /// <summary>
+    /// Setzt den Projektstatus und protokolliert den Wechsel. Bei „Verloren“ ist ein Verlustgrund Pflicht, bei
+    /// „Gewonnen“ das angenommene Angebot (geprüft vom Anwendungsdienst, weil Angebote ein eigenes Aggregat sind).
+    /// </summary>
+    public void SetzeStatus(ProjektStatus neu, string benutzer, DateTimeOffset zeitpunkt, string? kommentar = null, Verlustgrund? verlustgrund = null,
+        int? angenommenesAngebotId = null)
     {
         if (!KannWechselnZu(neu))
         {
             throw new UngueltigerStatuswechselException(Status, neu);
+        }
+
+        if (neu == ProjektStatus.Gewonnen && angenommenesAngebotId is null)
+        {
+            throw new ArgumentException("Bei „Gewonnen“ bitte das angenommene Angebot wählen.", nameof(angenommenesAngebotId));
+        }
+
+        if (neu != ProjektStatus.Gewonnen && angenommenesAngebotId is not null)
+        {
+            throw new ArgumentException("Ein angenommenes Angebot gehört nur zum Status „Gewonnen“.", nameof(angenommenesAngebotId));
         }
 
         if (neu == ProjektStatus.Verloren && verlustgrund is null)
@@ -93,6 +111,7 @@ public class Kundenprojekt
         });
         Status = neu;
         Verlustgrund = verlustgrund;
+        AngenommenesAngebotId = angenommenesAngebotId;
     }
 
     /// <summary>Pflegt den Forecast (G-05). Der Monat wird auf den Monatsersten gesetzt.</summary>
