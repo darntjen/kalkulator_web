@@ -771,3 +771,7 @@ tr.fassungszeile > td { background: var(--flaeche-2); padding: .75rem; }
 .fassungen input[type=text] { width: 100%; box-sizing: border-box; }
 dl.daten dd { overflow-wrap: anywhere; }
 .fassungen .fassung + .fassung { border-top: 1px solid var(--linie); }
+
+/* Vertragswerk im Kundenprojekt (#26, Teil C) */
+.dokumentliste { margin: 0; padding-left: 1.4rem; }
+.dokumentliste li { padding: .15rem 0; }

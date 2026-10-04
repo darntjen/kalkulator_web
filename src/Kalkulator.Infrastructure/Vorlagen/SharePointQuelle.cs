@@ -53,6 +53,28 @@ public sealed class GraphZugang(HttpClient http, TokenCredential anmeldung)
         return antwort;
     }
 
+    /// <summary>Laufwerk (Dokumentbibliothek) einer Website; leere Bibliothek heißt Standardbibliothek.</summary>
+    public async Task<string> LaufwerkAsync(string? website, string? bibliothek, CancellationToken abbruch)
+    {
+        var adresse = new Uri(website ?? throw new InvalidOperationException("Für SharePoint fehlt die Einstellung Vorlagen:SharePoint:Website."));
+        var site = await HoleAsync<GraphElement>($"sites/{adresse.Host}:{adresse.AbsolutePath.TrimEnd('/')}", abbruch);
+        if (string.IsNullOrWhiteSpace(bibliothek))
+        {
+            return (await HoleAsync<GraphElement>($"sites/{site.Id}/drive", abbruch)).Id;
+        }
+
+        var laufwerke = await HoleAsync<GraphListe>($"sites/{site.Id}/drives?$select=id,name", abbruch);
+        return laufwerke.Werte.FirstOrDefault(l => l.Name.Equals(bibliothek, StringComparison.OrdinalIgnoreCase))?.Id
+            ?? throw new InvalidOperationException($"Die Bibliothek „{bibliothek}“ gibt es auf {website} nicht.");
+    }
+
+    /// <summary>Pfad für <c>root:/…:</c>-Adressen; Schrägstriche bleiben erhalten.</summary>
+    public static string Pfad(string pfad) => Uri.EscapeDataString(pfad.Trim('/')).Replace("%2F", "/", StringComparison.Ordinal);
+
+    private sealed record GraphElement([property: JsonPropertyName("id")] string Id, [property: JsonPropertyName("name")] string Name);
+
+    private sealed record GraphListe([property: JsonPropertyName("value")] List<GraphElement> Werte);
+
     private static Uri Adresse(string pfad) => pfad.StartsWith("https://", StringComparison.Ordinal) ? new Uri(pfad) : new Uri(Basis + pfad);
 
     private static string Kuerze(string text) => text.Length > 300 ? text[..300] + " …" : text;
@@ -84,7 +106,7 @@ public sealed class SharePointQuelle(GraphZugang graph, SharePointEinstellungen 
         var ordner = (einstellungen.Ordnerpfad ?? "").Trim('/');
         var start = ordner.Length == 0
             ? $"drives/{laufwerk}/root/children"
-            : $"drives/{laufwerk}/root:/{Uri.EscapeDataString(ordner).Replace("%2F", "/", StringComparison.Ordinal)}:/children";
+            : $"drives/{laufwerk}/root:/{GraphZugang.Pfad(ordner)}:/children";
         var ergebnis = new List<QuellDatei>();
         await SammleAsync(start, "", ergebnis, abbruch);
         return [.. ergebnis.OrderBy(d => d.Pfad, StringComparer.Ordinal)];
@@ -121,28 +143,8 @@ public sealed class SharePointQuelle(GraphZugang graph, SharePointEinstellungen 
     }
 
     /// <summary>Laufwerk (Dokumentbibliothek) der Website; einmal je Quelle ermittelt.</summary>
-    private async Task<string> LaufwerkAsync(CancellationToken abbruch)
-    {
-        if (_laufwerk is not null)
-        {
-            return _laufwerk;
-        }
-
-        var website = new Uri(einstellungen.Website ?? throw new InvalidOperationException("Für SharePoint fehlt die Einstellung Vorlagen:SharePoint:Website."));
-        var site = await graph.HoleAsync<Element>($"sites/{website.Host}:{website.AbsolutePath.TrimEnd('/')}", abbruch);
-        if (string.IsNullOrWhiteSpace(einstellungen.Bibliothek))
-        {
-            _laufwerk = (await graph.HoleAsync<Element>($"sites/{site.Id}/drive", abbruch)).Id;
-        }
-        else
-        {
-            var laufwerke = await graph.HoleAsync<Seite>($"sites/{site.Id}/drives?$select=id,name", abbruch);
-            _laufwerk = laufwerke.Werte.FirstOrDefault(l => l.Name.Equals(einstellungen.Bibliothek, StringComparison.OrdinalIgnoreCase))?.Id
-                ?? throw new InvalidOperationException($"Die Bibliothek „{einstellungen.Bibliothek}“ gibt es auf {einstellungen.Website} nicht.");
-        }
-
-        return _laufwerk;
-    }
+    private async Task<string> LaufwerkAsync(CancellationToken abbruch) =>
+        _laufwerk ??= await graph.LaufwerkAsync(einstellungen.Website, einstellungen.Bibliothek, abbruch);
 
     private sealed record Seite(
         [property: JsonPropertyName("value")] List<Element> Werte,

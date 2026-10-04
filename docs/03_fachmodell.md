@@ -74,6 +74,8 @@ erDiagram
 | **Sonderposition** | Freie Position im Arbeitsstand | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), entschieden von/am, Kommentar (bei Ablehnung Pflicht). Jede inhaltliche Änderung setzt die Freigabe auf „offen“ zurück, ebenso das Duplizieren der Kalkulation (Entscheidung 02.10.2026) |
 | **Vertriebsfreigabe** | Freigabe einer Kalkulation vor dem Angebot (#26, Entscheidung 04.10.2026) | Rolle (Vertriebsleitung / Solution Consultant), wer, wann, Kommentar; aufgehoben am/von, Grund. Je Rolle höchstens eine aktive Freigabe. Ein Angebot entsteht nur mit beiden aktiven Freigaben; sie werden in die Kalkulationsversion übernommen. Jede inhaltliche Änderung (Positionen, Mengen, Sonderrechner, Sonderpositionen, Vertragsbeginn) hebt beide auf. Beide Freigaben kommen von verschiedenen Personen; wer das Kundenprojekt verantwortet, darf mit passender Rolle selbst freigeben |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
+| **Vertragsangaben** | Angaben, die die Vertragsvorlagen über `{{eingabe.…}}` verlangen (#26) | Werte (Text, Auswahl) und Listen; gepflegt am Arbeitsstand, eingefroren mit der Kalkulationsversion |
+| **Vertragswerk** | Erzeugtes Vertragswerk eines gewonnenen Projekts (#26) | Vertragsnummer (= Angebotsnummer), Ausfertigung, angenommenes Angebot, Dokumente in Rangfolge mit verwendeter Vorlagenfassung, Gesamt-PDF und ZIP; unveränderlich |
 
 ## Projektstatus eines Kundenprojekts (bestätigt 25.09.2026, am Kundenprojekt seit 29.09.2026)
 

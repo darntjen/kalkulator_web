@@ -1,6 +1,6 @@
 # Vertragsvorlagen aus SharePoint
 
-Stand: 04.10.2026 · Issue #26, Teil B
+Stand: 04.10.2026 · Issue #26, Teile B und C
 
 Die Word-Vorlagen des Vertragswerks liegen zentral in SharePoint. Dazu gehören Grundvertrag, AVB, SLA, AVV,
 Leistungsscheine und Bundle-Scheine. Der Kalkulator übernimmt neue Fassungen von dort automatisch, prüft sie und
@@ -48,12 +48,47 @@ weiterhin V1.0. Jede Fassung bekommt deshalb eine eigene laufende Nummer (V1, V2
 Kommt eine neuere Datei, während eine ältere noch zur Prüfung liegt, wird die ältere als „abgelöst“ markiert. Die
 aktive Fassung bleibt aktiv, bis eine neue freigegeben ist.
 
-## 3. Platzhalter
+## 3. Vertragsangaben und Vertragswerk (Teil C)
+
+**Vertragsangaben in der Kalkulation** (Entscheidung 04.10.2026):
+- Der Editor zeigt im Bereich „Vertragsangaben“ genau die Eingaben, die die aktiven Vorlagen für die gebuchten
+  Leistungen verlangen. Namen gelten über alle Vorlagen hinweg: Fragen zwei Vorlagen nach „Vertreter“, wird das
+  einmal erfasst.
+- Ein Angebot entsteht erst, wenn alle Angaben vollständig sind. Die Angaben werden mit dem Angebot eingefroren.
+- Änderungen an den Angaben heben die Vertriebsfreigaben auf, weil der Solution Consultant auch diese Angaben prüft.
+
+**Vertragswerk im Kundenprojekt:**
+- Nach „Gewonnen“ zeigt die Projektansicht den Bereich „Vertragswerk“: die Dokumente in der Rangfolge nach § 1 Abs. 3
+  Grundvertrag mit der jeweils aktiven Fassung und gegebenenfalls, was noch fehlt.
+- Was zum Erzeugen vorliegen muss:
+  - Das angenommene Angebot ist mit beiden Vertriebsfreigaben entstanden.
+  - Jedes Dokument hat eine aktive Fassung; fehlt eine, ist die Erzeugung gesperrt (Entscheidung 04.10.2026).
+  - Alle Angaben, die die aktiven Fassungen verlangen, stehen im Angebot. Verlangt eine Vorlage nach dem Angebot
+    eine neue Angabe, ist ein neues Angebot nötig.
+  - Die PDF-Umwandlung ist eingerichtet.
+- „Vertragswerk erzeugen“ befüllt jedes Dokument, wandelt es in PDF um und erstellt:
+  - die **Gesamtdatei für den Kunden**: Deckblatt mit Vertragsdaten und Verzeichnis
+    (`templates/vertrag/Deckblatt.docx`), danach alle Dokumente;
+  - ein **ZIP** mit der Gesamtdatei und allen Einzel-PDFs (`Einzeldokumente/01 …`).
+- **Vertragsnummer** ist die Angebotsnummer (Entscheidung 04.10.2026).
+- **Archiv:** Jede Erzeugung ist eine unveränderliche Ausfertigung (1, 2 …). Festgehalten wird, welche
+  Vorlagenfassung je Dokument verwendet wurde.
+
+**PDF-Umwandlung** (Konfiguration `Pdf`):
+- `Pdf:Wandler` = `Graph`: Umwandlung über Microsoft 365. Die Datei wird in den Arbeitsordner `Pdf:Ordnerpfad` der
+  Vorlagen-Website hochgeladen, als PDF abgerufen und wieder gelöscht. Dafür braucht die App **Schreibrecht** auf die
+  Website (Sites.Selected, Rolle `write`).
+- `Pdf:Wandler` = `LibreOffice`: für Entwicklung und Test (`Pdf:LibreOffice` = Programmpfad).
+- Ohne Eintrag lässt sich kein Vertragswerk erzeugen; die Projektansicht nennt den Grund.
+
+## 4. Platzhalter
 
 Die vollständige, immer aktuelle Liste steht im Kalkulator unter Katalog › Vertragsvorlagen › „Platzhalter für
 Vertragsvorlagen“. Die Grundregeln:
 
 - **Text:** `{{kunde.firma}}`. Die Formatierung am Platzhalter gilt für den eingesetzten Wert.
+- **Positionen:** `{{#positionen}}` sind die monatlichen Positionen (Vergütungsübersicht), `{{#einmalig}}` die
+  einmaligen, z. B. die Onboarding-Pauschale. Beide mit denselben Feldern `{{position.…}}`.
 - **Listen:** Ein Absatz, der nur `{{#positionen}}` enthält, bis zu einem Absatz `{{/positionen}}` wird je Eintrag
   wiederholt. In Tabellen beginnt die erste Zelle einer Zeile mit `{{#positionen}}` und die letzte Zelle endet mit
   `{{/positionen}}`.
@@ -72,7 +107,7 @@ Vertragsvorlagen“. Die Grundregeln:
 Pflicht im Grundvertrag: `{{kunde.firma}}` oder `{{kunde.anschrift}}`, `{{vertrag.nummer}}`, `{{vertrag.beginn}}`,
 die Liste `{{#positionen}}` und `{{summe.monatlich}}`.
 
-## 4. Markierungsanleitung für die heutigen Vorlagen
+## 5. Markierungsanleitung für die heutigen Vorlagen
 
 Die Fassungen in SharePoint (Stand 10/2026) kennzeichnen variable Stellen noch mit `[…]` oder `____`. Die Prüfung
 meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalter fehlen. So werden sie umgestellt:
@@ -87,6 +122,7 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 | § 1 Abs. 2 „in der … vereinbarten Stufe (Standard, Premium oder Enterprise)“ | optional „in der Stufe `{{vertrag.connectstufe}}`“ |
 | § 3 Tabelle: die vier Beispielzeilen (S01, B05, S34, B03) | eine Zeile: 1. Zelle `{{#positionen}}{{position.code}}`, dann `{{position.bezeichnung}}`, `{{position.menge}}`, `{{position.einzelpreis}}`, letzte Zelle `{{position.gesamtpreis}}{{/positionen}}` |
 | § 3 „Gesamtbetrag (netto, monatlich)“ 1.391,80 € | `{{summe.monatlich}}` |
+| § 3 einmalige Leistungen (neu, falls gewünscht) | eigene Tabellenzeile `{{#einmalig}}{{position.code}}` … `{{position.gesamtpreis}}{{/einmalig}}`, Summe `{{summe.einmalig}}` |
 | § 6 die beiden Zeilen `[ggf. weitere Bundle-Leistungsscheine …]` und `[ggf. weitere Einzel-Leistungsscheine …]` samt der festen Anlagen davor | Absatz `{{#anlagen}}`, Aufzählungspunkt `{{anlage.code}} — {{anlage.bezeichnung}}`, Absatz `{{/anlagen}}` |
 | „Ort, Datum: ____“, „Unterschrift: ____“ | bleiben; unterschrieben wird in Paperless |
 
@@ -109,12 +145,12 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 Leistungsscheine ohne variable Stellen (z. B. S02) bleiben unverändert. Weitere Stellen mit `____` oder `[…]` zeigt
 die Prüfung nach dem ersten Abgleich je Vorlage an.
 
-## 5. Einrichtung (IT)
+## 6. Einrichtung (IT)
 
 1. **App-Registrierung** in Entra ID für den Kalkulator, Anwendungsberechtigung **Microsoft Graph `Sites.Selected`**,
    Administratorzustimmung erteilen.
-2. **Zugriff auf die Website** „Service-Katalog“ erteilen, Rolle `read`; für die PDF-Umwandlung in Teil C später
-   `write` auf einen Arbeitsordner. Das geht per Graph
+2. **Zugriff auf die Website** „Service-Katalog“ erteilen: Rolle `write`, weil die PDF-Umwandlung Dateien im
+   Arbeitsordner `Pdf:Ordnerpfad` ablegt und wieder löscht. Nur für den Abgleich genügt `read`. Das geht per Graph
    (`POST /sites/{site-id}/permissions`) oder PnP PowerShell (`Grant-PnPAzureADAppSitePermission`).
 3. **Anmeldung der App:** ein Zertifikat (empfohlen) oder ein Client-Secret. Beides gehört nicht ins Repository,
    sondern in die Konfiguration auf dem Server (Umgebungsvariablen oder geschützte appsettings).
@@ -130,5 +166,7 @@ die Prüfung nach dem ersten Abgleich je Vorlage an.
    | `Vorlagen:SharePoint:Bibliothek` | leer = Standardbibliothek |
    | `Vorlagen:SharePoint:Ordnerpfad` | `Allgemein/Nösse MSP Servicekatalog/03_Vertragswerk (EXTERN)` |
    | `Vorlagen:Ordner` | nur bei Quelle `Ordner`: lokaler Ordner mit derselben Struktur |
+   | `Pdf:Wandler` | `Graph` (oder `LibreOffice` zum Testen, leer = keine Vertragswerke) |
+   | `Pdf:Ordnerpfad` | Arbeitsordner für die Umwandlung, z. B. `Kalkulator/PDF-Umwandlung` |
 
 Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgleich meldet dann, was fehlt.

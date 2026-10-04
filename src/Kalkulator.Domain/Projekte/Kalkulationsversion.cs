@@ -1,5 +1,6 @@
 using Kalkulator.Domain.Berechnung;
 using Kalkulator.Domain.Katalog;
+using Kalkulator.Domain.Vertrag;
 
 namespace Kalkulator.Domain.Projekte;
 
@@ -22,6 +23,10 @@ public class Kalkulationsversion
     public required KalkulationsEingabe Eingabe { get; init; }
 
     public DateOnly? Vertragsbeginn { get; init; }
+
+    /// <summary>Vertragsangaben zum Zeitpunkt des Angebots; Grundlage des Vertragswerks (#26, Teil C).</summary>
+    public Vertragsangaben Vertragsangaben { get; init; } = new();
+
     public decimal SummeMonatlich { get; init; }
     public decimal SummeEinmalig { get; init; }
 

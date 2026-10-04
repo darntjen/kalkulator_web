@@ -141,6 +141,19 @@ Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_Vertragswerk dotnet run --
 
 Ablage, Platzhalter und Einrichtung des Graph-Zugriffs: `docs/12_vertragsvorlagen.md`, Technik: ADR-0006.
 
+### Vertragswerk
+
+Was die Vorlagen an Angaben verlangen (z. B. Serverliste in S14), erfasst der Vertrieb im Kalkulationseditor unter
+„Vertragsangaben“; ohne sie entsteht kein Angebot. Nach „Gewonnen“ erzeugt der Vertrieb im Kundenprojekt das
+Vertragswerk: alle Dokumente als PDF, eine Gesamtdatei mit Deckblatt und ein ZIP. Die PDF-Umwandlung läuft über
+Microsoft 365; lokal geht auch LibreOffice:
+
+```bash
+Pdf__Wandler=LibreOffice Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_Vertragswerk dotnet run --project src/Kalkulator.Web
+```
+
+Technik: ADR-0007.
+
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
 

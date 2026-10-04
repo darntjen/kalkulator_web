@@ -95,6 +95,14 @@ public sealed class AngebotsDienst(
         }
 
         var version = kalkulation.FriereEin(katalog.ErzeugeRechenkern(), _recht.Name, zeit.GetUtcNow());
+
+        // Die Vertragsangaben, die die aktiven Vorlagen verlangen, müssen vor dem Angebot vollständig sein (#26, Teil C).
+        var vorschau = await VertragswerkDienst.VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch);
+        if (version.Vertragsangaben.Fehlend(vorschau.Eingaben) is { Count: > 0 } fehlend)
+        {
+            throw new InvalidOperationException("Vor dem Angebot fehlen noch Vertragsangaben: " + string.Join(", ", fehlend) + ".");
+        }
+
         if (kalkulation.Angebotsnummer is null)
         {
             kalkulation.VergebeAngebotsnummer(await NaechsteNummerAsync(kontext, heute.Year, abbruch));

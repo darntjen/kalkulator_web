@@ -7,6 +7,8 @@
 @inject KalkulationsDienst Dienst
 @inject AngebotsDienst Angebote
 @inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
+@inject VertragswerkDienst Vertragswerk
+@using Kalkulator.Domain.Vertrag
 
 <PageTitle>@(_zustand?.Titel ?? "Kalkulation") · Managed-Services-Kalkulator</PageTitle>
 
@@ -235,6 +237,84 @@ else
                         <div class="feld breit"><label for="sp-grund">Begründung</label><input id="sp-grund" type="text" @bind="_spBegruendung" /></div>
                         <div class="aktionen"><button class="knopf zweit klein" type="submit">Sonderposition hinzufügen</button></div>
                     </form>
+                }
+            </section>
+
+            <section class="karte" id="vertragsangaben">
+                <div class="karte-kopf">
+                    <h2>Vertragsangaben</h2>
+                    <span class="unterzeile">verlangen die Vorlagen der gebuchten Leistungen; vor dem Angebot vollständig</span>
+                </div>
+                @if (_vorschau is null)
+                {
+                    <p class="karte-inhalt unterzeile">Lade …</p>
+                }
+                else
+                {
+                    <fieldset class="karte-inhalt stapel" disabled="@(!_daten.DarfBearbeiten)">
+                        @if (_vorschau.Eingaben.Count == 0)
+                        {
+                            <p class="unterzeile">Für die gebuchten Leistungen verlangen die Vorlagen keine Angaben.</p>
+                        }
+                        @foreach (var e in _vorschau.Eingaben)
+                        {
+                            var fehlt = FehlendeAngaben.Contains(e.Name);
+                            @switch (e.Art)
+                            {
+                                case EingabeArt.Text:
+                                    <div class="feld">
+                                        <label for="va-@FeldId(e.Name)">@e.Name@(fehlt ? " *" : "")</label>
+                                        <input id="va-@FeldId(e.Name)" type="text" value="@WertVon(e.Name)" @onchange="w => SetzeWert(e.Name, w.Value)" />
+                                    </div>
+                                    break;
+                                case EingabeArt.Auswahl:
+                                    <div class="feld">
+                                        <label for="va-@FeldId(e.Name)">@e.Name@(fehlt ? " *" : "")</label>
+                                        <select id="va-@FeldId(e.Name)" value="@WertVon(e.Name)" @onchange="w => SetzeWert(e.Name, w.Value)">
+                                            <option value="">Bitte wählen</option>
+                                            @foreach (var o in e.Optionen)
+                                            {
+                                                <option value="@o">@o</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    break;
+                                default:
+                                    var zeilen = ZeilenVon(e.Name);
+                                    <div class="stapel">
+                                        <span class="etikett">@e.Name@(fehlt ? " * (mindestens eine Zeile)" : "")</span>
+                                        <div class="tab-rahmen">
+                                            <table class="liste">
+                                                <thead><tr>@foreach (var sp in e.Optionen) { <th>@sp</th> }<th class="eng"></th></tr></thead>
+                                                <tbody>
+                                                    @for (var i = 0; i < zeilen.Count; i++)
+                                                    {
+                                                        var zeile = zeilen[i];
+                                                        <tr>
+                                                            @foreach (var sp in e.Optionen)
+                                                            {
+                                                                <td><input type="text" aria-label="@e.Name @sp" value="@(zeile.GetValueOrDefault(sp))" @onchange="w => SetzeZelle(zeile, sp, w.Value)" /></td>
+                                                            }
+                                                            <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => EntferneZeile(e.Name, zeile)">Entfernen</button></td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="aktionen"><button type="button" class="knopf zweit klein" @onclick="() => NeueZeile(e.Name)">Zeile hinzufügen</button></div>
+                                    </div>
+                                    break;
+                            }
+                        }
+                        @if (_vorschau.OhneVorlage.Count > 0)
+                        {
+                            <p class="unterzeile">Noch ohne freigegebene Vorlage (das Vertragswerk lässt sich erst danach erzeugen): @string.Join(", ", _vorschau.OhneVorlage.Select(d => d.Dokument.Code))</p>
+                        }
+                        @if (_daten.DarfBearbeiten && _vorschau.Eingaben.Count > 0)
+                        {
+                            <p class="unterzeile">Die Angaben werden mit „Speichern“ gesichert. Änderungen heben erteilte Vertriebsfreigaben auf.</p>
+                        }
+                    </fieldset>
                 }
             </section>
 
@@ -508,6 +588,7 @@ else
             var k = _daten.Kalkulation;
             _zustand = EditorZustand.Aus(k.Titel, k.Vertragsbeginn, k.Eingabe, _connect.Select(c => c.Code).ToHashSet());
             _zeilenversion = k.Zeilenversion;
+            LadeAngaben(k.Vertragsangaben);
             _geaendert = false;
             Berechne();
             await LadeAngeboteAsync();
@@ -552,7 +633,7 @@ else
         _speichert = true;
         try
         {
-            _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion);
+            _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion, AlsAngaben());
             _geaendert = false;
             var aufgehoben = await NeuLadenAsync();
             Zeige(aufgehoben ? "Gespeichert. Weil sich der Stand geändert hat, sind die Vertriebsfreigaben aufgehoben." : "Gespeichert.", false);
@@ -623,6 +704,7 @@ else
         !_katalog!.PreislisteFreigegeben ? "Angebote entstehen erst mit einer freigegebenen Preisliste."
         : _geaendert ? "Bitte zuerst speichern; das Angebot zeigt den gespeicherten Stand."
         : _ergebnis!.HatFehler ? "Die Kalkulation enthält noch Fehler (siehe Ergebnis)."
+        : FehlendeAngaben.Count > 0 ? $"Es fehlen noch Vertragsangaben: {string.Join(", ", FehlendeAngaben)}."
         : !_daten!.Kalkulation.IstVertriebsfreigegeben ? $"Es fehlt noch die Vertriebsfreigabe: {string.Join(" und ", Enum.GetValues<FreigabeRolle>().Where(r => _daten.Kalkulation.AktiveFreigabe(r) is null).Select(Texte.Freigaberolle))}."
         : null;
 
@@ -729,5 +811,101 @@ else
         {
             Zeige(e.Message, true);
         }
+    }
+
+    // ---------- Vertragsangaben (#26, Teil C) ----------
+
+    private Vertragsvorschau? _vorschau;
+    private string? _vorschauFuer;
+    private Dictionary<string, string> _werte = new(StringComparer.Ordinal);
+    private Dictionary<string, List<Dictionary<string, string>>> _listen = new(StringComparer.Ordinal);
+
+    private IReadOnlyList<string> FehlendeAngaben => _vorschau is null ? [] : AlsAngaben().Fehlend(_vorschau.Eingaben);
+
+    private void LadeAngaben(Vertragsangaben angaben)
+    {
+        _werte = new Dictionary<string, string>(angaben.Werte, StringComparer.Ordinal);
+        _listen = angaben.Listen.ToDictionary(l => l.Key, l => l.Value.Select(z => new Dictionary<string, string>(z, StringComparer.Ordinal)).ToList(), StringComparer.Ordinal);
+    }
+
+    /// <summary>Die Angaben, wie sie gespeichert werden; nur Werte, die die Vorlagen kennen, damit alte Angaben nicht stören.</summary>
+    private Vertragsangaben AlsAngaben() => new()
+    {
+        Werte = _werte.Where(w => !string.IsNullOrWhiteSpace(w.Value)).ToDictionary(w => w.Key, w => w.Value.Trim(), StringComparer.Ordinal),
+        Listen = _listen.ToDictionary(
+            l => l.Key,
+            l => (IReadOnlyList<IReadOnlyDictionary<string, string>>)[.. l.Value
+                .Where(z => z.Values.Any(v => !string.IsNullOrWhiteSpace(v)))
+                .Select(z => (IReadOnlyDictionary<string, string>)z.Where(f => !string.IsNullOrWhiteSpace(f.Value)).ToDictionary(f => f.Key, f => f.Value.Trim(), StringComparer.Ordinal))],
+            StringComparer.Ordinal),
+    };
+
+    private string WertVon(string name) => _werte.GetValueOrDefault(name) ?? "";
+
+    private List<Dictionary<string, string>> ZeilenVon(string name)
+    {
+        if (!_listen.TryGetValue(name, out var zeilen))
+        {
+            zeilen = [new Dictionary<string, string>(StringComparer.Ordinal)];
+            _listen[name] = zeilen;
+        }
+
+        return zeilen;
+    }
+
+    private static string FeldId(string name) => string.Concat(name.Where(char.IsLetterOrDigit));
+
+    private void SetzeWert(string name, object? wert)
+    {
+        _werte[name] = wert?.ToString() ?? "";
+        AngabeGeaendert();
+    }
+
+    private void SetzeZelle(Dictionary<string, string> zeile, string spalte, object? wert)
+    {
+        zeile[spalte] = wert?.ToString() ?? "";
+        AngabeGeaendert();
+    }
+
+    private void NeueZeile(string name) => ZeilenVon(name).Add(new Dictionary<string, string>(StringComparer.Ordinal));
+
+    private void EntferneZeile(string name, Dictionary<string, string> zeile)
+    {
+        ZeilenVon(name).Remove(zeile);
+        AngabeGeaendert();
+    }
+
+    private void AngabeGeaendert()
+    {
+        _geaendert = true;
+        _meldung = null;
+    }
+
+    /// <summary>Lädt Dokumente und verlangte Angaben neu, sobald sich die gebuchten Services ändern.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_ergebnis is null || _daten is null)
+        {
+            return;
+        }
+
+        var codes = _ergebnis.Positionen.Select(p => p.ServiceCode).OfType<string>().Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var schluessel = string.Join(",", codes);
+        if (schluessel == _vorschauFuer)
+        {
+            return;
+        }
+
+        _vorschauFuer = schluessel;
+        try
+        {
+            _vorschau = await Vertragswerk.VorschauAsync(Id, codes);
+        }
+        catch (Exception e) when (e is KeinZugriffException or KeyNotFoundException)
+        {
+            _vorschau = new Vertragsvorschau([], []);
+        }
+
+        StateHasChanged();
     }
 }

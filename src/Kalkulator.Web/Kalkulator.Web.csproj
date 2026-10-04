@@ -10,6 +10,8 @@
     <!-- Angebotsvorlage und Textbausteine werden mit dem Programm ausgeliefert (docs/08_angebotsvorlage.md). -->
     <None Include="..\..\templates\angebot\Angebotsvorlage.docx;..\..\templates\angebot\textbausteine.json"
           Link="Vorlagen\angebot\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\templates\vertrag\Deckblatt.docx"
+          Link="Vorlagen\vertrag\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -32,6 +32,7 @@ public class KalkulatorDbContext(
     public DbSet<Kalkulation> Kalkulationen => Set<Kalkulation>();
     public DbSet<Kalkulationsversion> Kalkulationsversionen => Set<Kalkulationsversion>();
     public DbSet<Angebot> Angebote => Set<Angebot>();
+    public DbSet<Vertragswerk> Vertragswerke => Set<Vertragswerk>();
     public DbSet<Nummernkreis> Nummernkreise => Set<Nummernkreis>();
     public DbSet<AenderungsEintrag> Aenderungsprotokoll => Set<AenderungsEintrag>();
 
@@ -121,8 +122,9 @@ public class KalkulatorDbContext(
     {
         var geaendert = ChangeTracker.Entries()
             .FirstOrDefault(e => (e.State is EntityState.Modified or EntityState.Deleted
-                    && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei)
-                || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion)
+                    && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei
+                        or VertragswerkEintrag or VertragswerkDatei)
+                || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion or Vertragswerk)
                 || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name))));
         if (geaendert is not null)
         {
@@ -154,7 +156,7 @@ public class KalkulatorDbContext(
 
     private List<(EntityEntry Eintrag, string Aktion, string? Werte)> ErfasseAenderungen() =>
         [.. ChangeTracker.Entries()
-            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich))
+            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich or VertragswerkDatei))
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(e => (e, e.State switch
             {

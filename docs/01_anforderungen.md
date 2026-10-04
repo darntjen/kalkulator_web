@@ -52,6 +52,7 @@
 | B-21 | **Freie Sonderpositionen:** Pflichtfelder Bezeichnung, Einheit, Menge, Preis (nur positiv), Begründung; gekennzeichnet in Angebot und Statistik; kein eigener Leistungsschein | M |
 | B-22 | **Freigabe von Sonderpositionen durch die Vertriebsleitung:** Solange eine Sonderposition nicht freigegeben ist, kann weder Angebot noch Vertragspaket erzeugt werden. Freigabe und Ablehnung werden mit Kommentar protokolliert; der Vertrieb wird benachrichtigt | M |
 | B-23 | **Vertriebsfreigabe der Kalkulation** durch Vertriebsleitung und Solution Consultant vor dem Angebot (#26): Freigabe mit optionalem Kommentar, zurückziehbar; jede inhaltliche Änderung hebt sie auf; zwei verschiedene Personen, Verantwortliche mit passender Rolle dürfen selbst freigeben. Die Freigaben werden mit der Angebotsversion eingefroren. Bei „Gewonnen“ wird das angenommene Angebot gewählt | M |
+| B-24 | **Vertragswerk aus dem angenommenen Angebot** (#26): Vertragsangaben in der Kalkulation (Pflicht vor dem Angebot), Erzeugung nach „Gewonnen“ aus den aktiven Vorlagenfassungen, alle Dokumente als PDF, Gesamt-PDF mit Deckblatt und Verzeichnis, ZIP; Vertragsnummer = Angebotsnummer; Archiv je Ausfertigung | M |
 | B-16 | **Vorher/Nachher-Vergleich** für Bestandskunden (alter Monatspreis gegen neues Modell) | S |
 | B-17 | Anzeige des Bundle-Vorteils gegenüber Einzelbuchung (Verkaufsargument) | S |
 

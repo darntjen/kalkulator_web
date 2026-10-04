@@ -1,6 +1,7 @@
 @page "/projekte/{Id:int}"
 @rendermode InteractiveServer
 @inject KundenprojektDienst Dienst
+@inject VertragswerkDienst Vertragswerk
 @inject NavigationManager Navigation
 
 <PageTitle>@(_projekt?.Kunde?.Firma ?? "Kundenprojekt") · Managed-Services-Kalkulator</PageTitle>
@@ -31,6 +32,75 @@ else
 
     <div class="spalten">
         <div class="stapel">
+            @if (_projekt.Status == ProjektStatus.Gewonnen && _bereitschaft is { } b)
+            {
+                <section class="karte" id="vertragswerk">
+                    <div class="karte-kopf">
+                        <h2>Vertragswerk</h2>
+                        @if (b.Angebot is not null)
+                        {
+                            <span class="unterzeile">aus Angebot @b.Angebot</span>
+                        }
+                    </div>
+                    <div class="karte-inhalt stapel">
+                        @if (b.Vorschau is { } vorschau)
+                        {
+                            <ol class="dokumentliste">
+                                @foreach (var d in vorschau.Dokumente)
+                                {
+                                    <li>
+                                        @d.Dokument.Bezeichnung
+                                        @if (d.Fassung is { } f)
+                                        {
+                                            <span class="unterzeile"> · @d.Vorlage!.Code V@(f.Nummer)@(f.VersionLaut is { } v ? $" ({v})" : "")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pille fassung-Abgelehnt">keine freigegebene Vorlage</span>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                        @if (b.Sperrgrund is { } grund)
+                        {
+                            <p class="meldung info">@grund</p>
+                        }
+                        @if (b.DarfErzeugen)
+                        {
+                            <div class="aktionen">
+                                <button type="button" class="knopf" disabled="@(b.Sperrgrund is not null || _erzeugt)" @onclick="VertragswerkErzeugenAsync">@(_erzeugt ? "Erzeuge Vertragswerk …" : "Vertragswerk erzeugen")</button>
+                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen.</span>
+                            </div>
+                        }
+                    </div>
+                    @if (_vertragswerke.Count > 0)
+                    {
+                        <div class="tab-rahmen">
+                            <table class="liste">
+                                <thead><tr><th>Ausfertigung</th><th>Erstellt</th><th>Dokumente</th><th></th></tr></thead>
+                                <tbody>
+                                    @foreach (var w in _vertragswerke)
+                                    {
+                                        <tr>
+                                            <td><strong>@w.Nummer</strong> · @w.Ausfertigung.</td>
+                                            <td>@Texte.Zeitpunkt(w.ErstelltAm)<br /><span class="unterzeile">@w.ErstelltVon</span></td>
+                                            <td>@w.Dokumente.Count</td>
+                                            <td>
+                                                <div class="aktionen">
+                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
+                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            }
+
             <section class="karte">
                 <div class="karte-kopf">
                     <h2>Kalkulationen</h2>
@@ -247,6 +317,9 @@ else
     private Verlustgrund? _verlustgrund;
     private int? _angenommenesAngebot;
     private IReadOnlyList<AngebotsAuswahl> _angeboteZurAnnahme = [];
+    private VertragswerkBereitschaft? _bereitschaft;
+    private IReadOnlyList<VertragswerkZeile> _vertragswerke = [];
+    private bool _erzeugt;
 
     private IReadOnlyList<ProjektStatus> Moegliche =>
         _projekt is null ? [] : [.. Enum.GetValues<ProjektStatus>().Where(_projekt.KannWechselnZu)];
@@ -270,6 +343,11 @@ else
 
             _darfBearbeiten = Dienst.Recht.DarfBearbeiten(_projekt);
             _angeboteZurAnnahme = await Dienst.AngeboteZurAnnahmeAsync(Id);
+            if (_projekt.Status == ProjektStatus.Gewonnen)
+            {
+                _bereitschaft = await Vertragswerk.BereitschaftAsync(Id);
+                _vertragswerke = await Vertragswerk.ListeAsync(Id);
+            }
             _wahrscheinlichkeit = _projekt.Wahrscheinlichkeit;
             _monat = _projekt.ErwarteterAbschlussmonat?.ToDateTime(TimeOnly.MinValue);
         }
@@ -304,6 +382,19 @@ else
         _kommentar = null;
     }, "Status gesetzt.");
 
+    private async Task VertragswerkErzeugenAsync()
+    {
+        _erzeugt = true;
+        try
+        {
+            await AusfuehrenAsync(() => Vertragswerk.ErzeugenAsync(Id), "Vertragswerk erzeugt. Gesamt-PDF und ZIP stehen zum Herunterladen bereit.");
+        }
+        finally
+        {
+            _erzeugt = false;
+        }
+    }
+
     /// <summary>Führt eine Aktion aus, zeigt Erfolg oder die fachliche Fehlermeldung und lädt das Projekt neu.</summary>
     private async Task AusfuehrenAsync(Func<Task> aktion, string? erfolg)
     {
@@ -312,7 +403,7 @@ else
             await aktion();
             (_meldung, _meldungIstFehler) = (erfolg, false);
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or KeinZugriffException or Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {
             (_meldung, _meldungIstFehler) = (e is Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException
                 ? "Jemand anderes hat das Projekt gerade geändert. Die Ansicht ist jetzt aktuell, bitte noch einmal versuchen."

@@ -28,9 +28,34 @@ public static class DependencyInjection
         services.AddOptions<AngebotsEinstellungen>();
         services.AddOptions<VorlagenEinstellungen>();
         services.AddSingleton(Vorlagenquelle);
+        services.AddOptions<PdfEinstellungen>();
+        services.AddSingleton(PdfWandler);
         services.AddScoped<VorlagenDienst>();
+        services.AddScoped<VertragswerkDienst>();
+        services.AddOptions<VertragswerkEinstellungen>();
         services.AddHostedService<NaechtlicherVorlagenabgleich>();
         return services;
+    }
+
+    /// <summary>PDF-Umwandlung laut Konfiguration „Pdf“; Graph nutzt die Anmeldung aus „Vorlagen:SharePoint“.</summary>
+    private static IPdfWandler PdfWandler(IServiceProvider dienste)
+    {
+        var pdf = dienste.GetRequiredService<IOptions<PdfEinstellungen>>().Value;
+        var sharePoint = dienste.GetRequiredService<IOptions<VorlagenEinstellungen>>().Value.SharePoint;
+        try
+        {
+            return (pdf.Wandler ?? "").Trim().ToUpperInvariant() switch
+            {
+                "GRAPH" => new GraphPdfWandler(GraphZugang.Aus(sharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }), sharePoint, pdf),
+                "LIBREOFFICE" => new LibreOfficeWandler(string.IsNullOrWhiteSpace(pdf.LibreOffice) ? "soffice" : pdf.LibreOffice),
+                "" => new KeinPdfWandler(),
+                _ => throw new InvalidOperationException($"Unbekannte PDF-Umwandlung „{pdf.Wandler}“; erlaubt sind „Graph“ und „LibreOffice“."),
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Security.Cryptography.CryptographicException or IOException)
+        {
+            return new KeinPdfWandler(ex.Message);
+        }
     }
 
     /// <summary>Quelle der Vertragsvorlagen laut Konfiguration „Vorlagen“; eine unvollständige Konfiguration meldet der Abgleich.</summary>

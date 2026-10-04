@@ -53,7 +53,7 @@ else
                     {
                         <tr>
                             <td><code>@(p.Art == PlatzhalterArt.Liste ? $"{{{{#{p.Schluessel}}}}} … {{{{/{p.Schluessel}}}}}" : $"{{{{{p.Schluessel}}}}}")</code></td>
-                            <td>@p.Beschreibung@(p.Art == PlatzhalterArt.Listenfeld ? $" (nur in {{{{#{p.Liste}}}}})" : "")</td>
+                            <td>@p.Beschreibung@(p.Art == PlatzhalterArt.Listenfeld ? " (nur in " + string.Join(", ", Vertragsplatzhalter.ListenFuer(p).Select(l => $"{{{{#{l}}}}}")) + ")" : "")</td>
                             <td class="unterzeile">@p.Beispiel</td>
                         </tr>
                     }

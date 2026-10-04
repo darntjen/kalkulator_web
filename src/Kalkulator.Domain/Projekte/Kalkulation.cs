@@ -1,5 +1,6 @@
 using Kalkulator.Domain.Berechnung;
 using Kalkulator.Domain.Preise;
+using Kalkulator.Domain.Vertrag;
 
 namespace Kalkulator.Domain.Projekte;
 
@@ -27,6 +28,11 @@ public class Kalkulation
 
     /// <summary>Arbeitsstand ohne Sonderpositionen; diese liegen mit ihrem Freigabestatus in <see cref="Sonderpositionen"/>.</summary>
     public KalkulationsEingabe Eingabe { get; private set; } = new();
+
+    /// <summary>Angaben für das Vertragswerk, die die Vorlagen verlangen (#26, Teil C); werden mit dem Angebot eingefroren.</summary>
+    public Vertragsangaben Vertragsangaben { get; private set; } = new();
+
+    public void AendereVertragsangaben(Vertragsangaben angaben) => Vertragsangaben = angaben;
 
     public int LetzteVersionsnummer { get; private set; }
 
@@ -177,6 +183,7 @@ public class Kalkulation
             PreislisteId = preisliste.Id,
             Eingabe = eingabe,
             Vertragsbeginn = Vertragsbeginn,
+            Vertragsangaben = Vertragsangaben,
             SummeMonatlich = ergebnis.SummeMonatlich,
             SummeEinmalig = ergebnis.SummeEinmalig,
             FreigabeVertriebsleitungVon = AktiveFreigabe(FreigabeRolle.Vertriebsleitung)?.Benutzer,
@@ -213,6 +220,7 @@ public class Kalkulation
         var kopie = projekt.NeueKalkulation(titel, benutzer, zeitpunkt);
         kopie.Vertragsbeginn = Vertragsbeginn;
         kopie.AendereEingabe(Eingabe);
+        kopie.AendereVertragsangaben(Vertragsangaben);
         kopie.Sonderpositionen.AddRange(Sonderpositionen.Select(s => s.Kopie()));
         return kopie;
     }

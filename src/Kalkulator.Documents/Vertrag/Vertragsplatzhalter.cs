@@ -44,7 +44,8 @@ public static class Vertragsplatzhalter
         new("vertrag.connectstufe", PlatzhalterArt.Text, "Connect-Stufe (auch SLA-Stufe)", "Standard"),
         new("summe.monatlich", PlatzhalterArt.Text, "Gesamtbetrag netto monatlich", "1.391,80 €"),
         new("summe.einmalig", PlatzhalterArt.Text, "Einmalige Beträge netto", "900,00 €"),
-        new("positionen", PlatzhalterArt.Liste, "Alle Positionen des Vertrags (Vergütungsübersicht)", ""),
+        new("positionen", PlatzhalterArt.Liste, "Monatliche Positionen des Vertrags (Vergütungsübersicht)", ""),
+        new("einmalig", PlatzhalterArt.Liste, "Einmalige Positionen, z. B. Onboarding-Pauschale; Felder wie bei den Positionen", ""),
         new("anlagen", PlatzhalterArt.Liste, "Alle Dokumente des Vertragswerks in Rangfolge", ""),
         new("schein.code", PlatzhalterArt.Text, "Code des Leistungsscheins", "S14"),
         new("schein.bezeichnung", PlatzhalterArt.Text, "Bezeichnung des Leistungsscheins", "Server Backup"),
@@ -68,5 +69,5 @@ public static class Vertragsplatzhalter
 
     /// <summary>Listen, in denen ein Listenfeld stehen darf (<c>position.*</c> auch in <c>schein.positionen</c>).</summary>
     public static IEnumerable<string> ListenFuer(Platzhalter feld) =>
-        feld.Liste == "positionen" ? ["positionen", "schein.positionen"] : [feld.Liste!];
+        feld.Liste == "positionen" ? ["positionen", "einmalig", "schein.positionen"] : [feld.Liste!];
 }
