@@ -42,6 +42,7 @@ public static class DependencyInjection
         services.AddOptions<KundenablageEinstellungen>();
         services.AddSingleton(Kundenablage);
         services.AddScoped<UnterlagenDienst>();
+        services.AddScoped<KundensituationDienst>();
         services.AddHostedService<UnterlagenAufbewahrung>();
         return services;
     }

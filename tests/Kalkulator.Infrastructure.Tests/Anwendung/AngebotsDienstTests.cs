@@ -92,6 +92,30 @@ public class AngebotsDienstTests(SqlServerFixture db)
     }
 
     [Fact]
+    public async Task Angebot_friert_die_Loesungsbezuege_der_gebuchten_Services_ein()
+    {
+        var (projekt, id, dienste) = await KalkulationAsync(Rk01, freigeben: false);
+        var leitung = Neu(Rollen.Vertriebsleitung);
+        var situation = new KundensituationDienst(new Fabrik(() => db.NeuerKontextAufDatenbank(Datenbank, leitung)), leitung, TimeProvider.System);
+        var sicherung = await situation.AnlegenAsync(projekt, new HerausforderungsDaten(Dimension.Technisch, "Datensicherung nicht nachgewiesen", null, null, Prioritaet.Hoch, null));
+        var budget = await situation.AnlegenAsync(projekt, new HerausforderungsDaten(Dimension.Kaufmaennisch, "IT-Kosten planbar machen", null, null, Prioritaet.Mittel, null));
+        var geladen = (await dienste.Kalkulationen.LadeAsync(id))!;
+        await dienste.Kalkulationen.SpeichernAsync(id, "Variante A", new DateOnly(2027, 1, 1), Rk01, geladen.Kalkulation.Zeilenversion, null,
+            [new("B03", sicherung), new("S01-STD", budget), new("S14", sicherung)]);
+        await FreigebenAsync(id);
+
+        await dienste.Angebote.ErzeugenAsync(id, null, null);
+        await situation.AendernAsync(sicherung, new HerausforderungsDaten(Dimension.Technisch, "Neuer Titel", null, null, Prioritaet.Niedrig, null));
+
+        await using var kontext = db.NeuerKontextAufDatenbank(Datenbank);
+        var version = await kontext.Kalkulationsversionen.SingleAsync(v => v.KalkulationId == id);
+        // S14 ist nicht gebucht und fällt weg; der Titel bleibt der zum Zeitpunkt des Angebots.
+        Assert.Equal(
+            [new Loesungsbezug("B03", Dimension.Technisch, Prioritaet.Hoch, "Datensicherung nicht nachgewiesen"), new Loesungsbezug("S01-STD", Dimension.Kaufmaennisch, Prioritaet.Mittel, "IT-Kosten planbar machen")],
+            version.Loesungsbezuege);
+    }
+
+    [Fact]
     public async Task Angebot_friert_ein_vergibt_Nummer_und_archiviert_das_Dokument()
     {
         var (_, id, dienste) = await KalkulationAsync(Rk01);

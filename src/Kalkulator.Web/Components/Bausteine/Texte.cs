@@ -57,6 +57,27 @@ public static class Texte
     public static string Zeitpunkt(DateTimeOffset zeitpunkt) =>
         TimeZoneInfo.ConvertTime(zeitpunkt, Zeitzone).ToString("dd.MM.yyyy HH:mm", Deutsch);
 
+    public static string Dimension(Dimension dimension) => dimension switch
+    {
+        Domain.Projekte.Dimension.Kaufmaennisch => "Kaufmännisch",
+        Domain.Projekte.Dimension.Organisatorisch => "Organisatorisch",
+        _ => "Technisch",
+    };
+
+    public static string Prioritaet(Prioritaet prioritaet) => prioritaet switch
+    {
+        Domain.Projekte.Prioritaet.Hoch => "hoch",
+        Domain.Projekte.Prioritaet.Mittel => "mittel",
+        _ => "niedrig",
+    };
+
+    public static string AnalyseStatus(AnalyseAngebotsStatus status) => status switch
+    {
+        AnalyseAngebotsStatus.Versendet => "versendet",
+        AnalyseAngebotsStatus.Beauftragt => "beauftragt",
+        _ => "abgelehnt",
+    };
+
     public static string Unterlagenart(UnterlagenArt art) => art switch
     {
         UnterlagenArt.Recherche => "Recherche",

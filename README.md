@@ -143,6 +143,16 @@ Kundenablage__Quelle=Ordner Kundenablage__Ordner=/pfad/zur/kundenablage dotnet r
 Unterordner von `/pfad/zur/kundenablage` sind die Kanalordner, darin `00_Kundenakte`, `30_Analyse` usw. Technik:
 ADR-0010.
 
+### Kundensituation und Analyse-Angebote
+
+In der Projektansicht erfassen Vertrieb, Vertriebsleitung und Consultants die **Kundensituation**: Herausforderungen
+je Dimension (kaufmännisch, organisatorisch, technisch) mit Priorität, Auswirkung und Quelle. In der Kalkulation
+ordnet der Vertrieb unter „Wofür der Kunde die Leistungen braucht“ jedem gebuchten Service die Herausforderungen zu,
+die er löst. Die Zuordnung gehört zum gespeicherten Stand (sie hebt Vertriebsfreigaben auf) und wird mit dem Angebot
+eingefroren; eine verknüpfte Herausforderung lässt sich nicht löschen. Angebote zu **Analyse und Workshop** entstehen
+weiter per Skill; im Kalkulator stehen nur die Eckdaten mit der Navision-Nummer, dem Status und optional dem
+hochgeladenen Dokument.
+
 ### Vertragsvorlagen
 
 Grundvertrag, AVB, SLA, AVV und Leistungsscheine kommen aus SharePoint (#26). Unter Katalog › Vertragsvorlagen sieht

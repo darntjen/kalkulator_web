@@ -18,7 +18,8 @@ public sealed record KalkulationsDaten(
     bool DarfEinkaufSehen,
     bool DarfSonderpositionenFreigeben,
     IReadOnlyList<FreigabeRolle> DarfVertriebFreigeben,
-    string Stand);
+    string Stand,
+    IReadOnlyList<Herausforderung> Herausforderungen);
 
 public sealed record SonderpositionsDaten(string Bezeichnung, string Einheit, int Menge, decimal Preis, string Begruendung, bool Einmalig);
 
@@ -54,8 +55,10 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
             throw new KeinZugriffException("Diese Kalkulation gehört zu einem Kundenprojekt eines anderen Vertriebsmitarbeiters.");
         }
 
+        var herausforderungen = await kontext.Set<Herausforderung>().AsNoTracking().Where(h => h.KundenprojektId == projekt.Id)
+            .OrderBy(h => h.Dimension).ThenBy(h => h.Prioritaet).ThenBy(h => h.Id).ToListAsync(abbruch);
         return new KalkulationsDaten(kalkulation, projekt, _recht.DarfBearbeiten(projekt), _recht.DarfEinkaufSehen, _recht.DarfSonderpositionenFreigeben,
-            [.. Enum.GetValues<FreigabeRolle>().Where(_recht.DarfVertriebFreigeben)], Stand(kalkulation));
+            [.. Enum.GetValues<FreigabeRolle>().Where(_recht.DarfVertriebFreigeben)], Stand(kalkulation), herausforderungen);
     }
 
     /// <summary>
@@ -80,11 +83,12 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
     /// </summary>
     /// <returns>Die neue Zeilenversion für das nächste Speichern.</returns>
     /// <summary>
-    /// Speichert den Arbeitsstand. <paramref name="vertragsangaben"/> ersetzt die Vertragsangaben, wenn angegeben (#26, Teil C).
-    /// Ändert sich der Stand inhaltlich, sind erteilte Vertriebsfreigaben aufgehoben.
+    /// Speichert den Arbeitsstand. <paramref name="vertragsangaben"/> ersetzt die Vertragsangaben, wenn angegeben (#26, Teil C),
+    /// <paramref name="zuordnungen"/> die Verknüpfung der Services mit den Herausforderungen (G-04). Ändert sich der Stand
+    /// inhaltlich, sind erteilte Vertriebsfreigaben aufgehoben.
     /// </summary>
     public async Task<byte[]> SpeichernAsync(int id, string titel, DateOnly? vertragsbeginn, KalkulationsEingabe eingabe, byte[] zeilenversion,
-        Vertragsangaben? vertragsangaben = null, CancellationToken abbruch = default)
+        Vertragsangaben? vertragsangaben = null, IReadOnlyList<Zuordnung>? zuordnungen = null, CancellationToken abbruch = default)
     {
         if (string.IsNullOrWhiteSpace(titel))
         {
@@ -101,6 +105,19 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
         if (vertragsangaben is not null)
         {
             kalkulation.AendereVertragsangaben(vertragsangaben);
+        }
+
+        if (zuordnungen is not null)
+        {
+            // Nur Herausforderungen dieses Kundenprojekts.
+            var ids = zuordnungen.Select(z => z.HerausforderungId).Distinct().ToList();
+            var bekannt = await kontext.Set<Herausforderung>().CountAsync(h => h.KundenprojektId == kalkulation.KundenprojektId && ids.Contains(h.Id), abbruch);
+            if (bekannt != ids.Count)
+            {
+                throw new ArgumentException("Eine verknüpfte Herausforderung gehört nicht zu diesem Kundenprojekt.");
+            }
+
+            kalkulation.AendereZuordnungen(zuordnungen);
         }
 
         if (Stand(kalkulation) != vorher)
@@ -223,7 +240,8 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
     internal static string Stand(Kalkulation kalkulation)
     {
         var text = EingabeJson.Text(kalkulation.VollstaendigeEingabe()) + "|" + kalkulation.Vertragsbeginn?.ToString("O", System.Globalization.CultureInfo.InvariantCulture)
-            + "|" + AngabenJson.Text(kalkulation.Vertragsangaben);
+            + "|" + AngabenJson.Text(kalkulation.Vertragsangaben)
+            + (kalkulation.Zuordnungen.Count > 0 ? "|" + string.Join(",", kalkulation.Zuordnungen.Select(z => $"{z.ServiceCode}:{z.HerausforderungId}")) : "");
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16];
     }
 
