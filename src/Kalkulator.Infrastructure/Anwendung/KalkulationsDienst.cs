@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Kalkulator.Domain.Berechnung;
 using Kalkulator.Domain.Projekte;
+using Kalkulator.Domain.Vertrag;
 using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Infrastructure.Persistenz.Konfiguration;
@@ -78,7 +79,12 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
     /// jemand anderes inzwischen gespeichert, gibt es eine <see cref="DbUpdateConcurrencyException"/>.
     /// </summary>
     /// <returns>Die neue Zeilenversion für das nächste Speichern.</returns>
-    public async Task<byte[]> SpeichernAsync(int id, string titel, DateOnly? vertragsbeginn, KalkulationsEingabe eingabe, byte[] zeilenversion, CancellationToken abbruch = default)
+    /// <summary>
+    /// Speichert den Arbeitsstand. <paramref name="vertragsangaben"/> ersetzt die Vertragsangaben, wenn angegeben (#26, Teil C).
+    /// Ändert sich der Stand inhaltlich, sind erteilte Vertriebsfreigaben aufgehoben.
+    /// </summary>
+    public async Task<byte[]> SpeichernAsync(int id, string titel, DateOnly? vertragsbeginn, KalkulationsEingabe eingabe, byte[] zeilenversion,
+        Vertragsangaben? vertragsangaben = null, CancellationToken abbruch = default)
     {
         if (string.IsNullOrWhiteSpace(titel))
         {
@@ -92,6 +98,11 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
         kalkulation.Titel = titel.Trim();
         kalkulation.Vertragsbeginn = vertragsbeginn;
         kalkulation.AendereEingabe(eingabe);
+        if (vertragsangaben is not null)
+        {
+            kalkulation.AendereVertragsangaben(vertragsangaben);
+        }
+
         if (Stand(kalkulation) != vorher)
         {
             kalkulation.HebeVertriebsfreigabenAuf(_recht.Name, zeit.GetUtcNow(), "Arbeitsstand geändert");
@@ -205,12 +216,14 @@ public sealed class KalkulationsDienst(IDbContextFactory<KalkulatorDbContext> ko
     }
 
     /// <summary>
-    /// Fingerabdruck des Arbeitsstands: Eingabe mit Sonderpositionen und deren Freigabestatus sowie Vertragsbeginn.
+    /// Fingerabdruck des Arbeitsstands: Eingabe mit Sonderpositionen und deren Freigabestatus, Vertragsbeginn und
+    /// Vertragsangaben (diese prüft der Solution Consultant mit).
     /// Ändert er sich, gelten erteilte Vertriebsfreigaben nicht mehr.
     /// </summary>
     internal static string Stand(Kalkulation kalkulation)
     {
-        var text = EingabeJson.Text(kalkulation.VollstaendigeEingabe()) + "|" + kalkulation.Vertragsbeginn?.ToString("O", System.Globalization.CultureInfo.InvariantCulture);
+        var text = EingabeJson.Text(kalkulation.VollstaendigeEingabe()) + "|" + kalkulation.Vertragsbeginn?.ToString("O", System.Globalization.CultureInfo.InvariantCulture)
+            + "|" + AngabenJson.Text(kalkulation.Vertragsangaben);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text)))[..16];
     }
 

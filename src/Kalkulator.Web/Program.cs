@@ -29,11 +29,20 @@ builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionS
 // Angebotsvorlage und Textbausteine liegen beim Programm (templates/angebot wird mitkopiert); der Ordner ist umstellbar (C-02).
 builder.Services.Configure<AngebotsEinstellungen>(builder.Configuration.GetSection("Angebot"));
 builder.Services.Configure<VorlagenEinstellungen>(builder.Configuration.GetSection(VorlagenEinstellungen.Abschnitt));
+builder.Services.Configure<PdfEinstellungen>(builder.Configuration.GetSection(PdfEinstellungen.Abschnitt));
 builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
 {
     if (string.IsNullOrWhiteSpace(e.Vorlagenordner))
     {
         e.Vorlagenordner = Path.Combine(AppContext.BaseDirectory, "Vorlagen", "angebot");
+    }
+});
+builder.Services.Configure<VertragswerkEinstellungen>(builder.Configuration.GetSection("Vertragswerk"));
+builder.Services.PostConfigure<VertragswerkEinstellungen>(e =>
+{
+    if (string.IsNullOrWhiteSpace(e.Deckblatt))
+    {
+        e.Deckblatt = Path.Combine(AppContext.BaseDirectory, "Vorlagen", "vertrag", "Deckblatt.docx");
     }
 });
 
@@ -108,6 +117,25 @@ app.MapGet("/katalog/export/{id:int}", async (int id, PreislistenDienst dienst, 
         return Results.NotFound();
     }
 });
+// Vertragswerk als Gesamt-PDF oder ZIP (#26, Teil C); wer das Kundenprojekt sehen darf.
+app.MapGet("/vertragswerke/{id:int}/{art:regex(^(pdf|zip)$)}", async (int id, string art, VertragswerkDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var zip = art == "zip";
+        var (name, inhalt) = await dienst.DateiAsync(id, zip, abbruch);
+        return Results.File(inhalt, zip ? "application/zip" : "application/pdf", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
 // Word-Datei einer Vorlagenfassung (#26, Teil B); Produktmanagement und Führung.
 app.MapGet("/katalog/vorlagen/fassung/{id:int}/datei", async (int id, VorlagenDienst dienst, CancellationToken abbruch) =>
 {

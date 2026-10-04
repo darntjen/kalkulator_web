@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Kalkulator.Domain.Berechnung;
 using Kalkulator.Domain.Preise;
 using Kalkulator.Domain.Projekte;
+using Kalkulator.Domain.Vertrag;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -70,6 +71,7 @@ internal sealed class KalkulationKonfiguration : IEntityTypeConfiguration<Kalkul
         builder.Property(k => k.Angebotsnummer).HasMaxLength(20);
         builder.HasIndex(k => k.Angebotsnummer).IsUnique().HasFilter("[Angebotsnummer] IS NOT NULL");
         builder.Property(k => k.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
+        builder.Property(k => k.Vertragsangaben).HasConversion(AngabenJson.Konverter, AngabenJson.Vergleich).HasColumnType("nvarchar(max)");
         builder.Property(k => k.Zeilenversion).IsRowVersion();
 
         // Genau eine Variante je Kundenprojekt zählt im Forecast (E-09).
@@ -122,6 +124,7 @@ internal sealed class KalkulationsversionKonfiguration : IEntityTypeConfiguratio
         builder.HasIndex(v => new { v.KalkulationId, v.Nummer }).IsUnique();
         builder.Property(v => v.ErstelltVon).HasMaxLength(200);
         builder.Property(v => v.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
+        builder.Property(v => v.Vertragsangaben).HasConversion(AngabenJson.Konverter, AngabenJson.Vergleich).HasColumnType("nvarchar(max)");
         builder.Property(v => v.SummeMonatlich).HasPrecision(12, 2);
         builder.Property(v => v.SummeEinmalig).HasPrecision(12, 2);
         builder.Property(v => v.FreigabeVertriebsleitungVon).HasMaxLength(200);
@@ -185,6 +188,44 @@ internal sealed class AngebotKonfiguration : IEntityTypeConfiguration<Angebot>
     }
 }
 
+internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertragswerk>
+{
+    public void Configure(EntityTypeBuilder<Vertragswerk> builder)
+    {
+        builder.ToTable("Vertragswerke", "kalkulation");
+        builder.HasIndex(v => new { v.KundenprojektId, v.Ausfertigung }).IsUnique();
+        builder.Property(v => v.Nummer).HasMaxLength(20);
+        builder.Property(v => v.ErstelltVon).HasMaxLength(200);
+        builder.Property(v => v.GesamtDateiname).HasMaxLength(260);
+        builder.Property(v => v.ZipDateiname).HasMaxLength(260);
+        builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Angebot>().WithMany().HasForeignKey(v => v.AngebotId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(v => v.Dokumente).WithOne().HasForeignKey(d => d.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(v => v.Datei).WithOne().HasForeignKey<VertragswerkDatei>(d => d.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class VertragswerkEintragKonfiguration : IEntityTypeConfiguration<VertragswerkEintrag>
+{
+    public void Configure(EntityTypeBuilder<VertragswerkEintrag> builder)
+    {
+        builder.ToTable("VertragswerkDokumente", "kalkulation");
+        builder.Property(d => d.Code).HasMaxLength(20);
+        builder.Property(d => d.Bezeichnung).HasMaxLength(200);
+        builder.Property(d => d.Fassung).HasMaxLength(60);
+        builder.HasOne<Kalkulator.Domain.Katalog.Vorlagenversion>().WithMany().HasForeignKey(d => d.VorlagenversionId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class VertragswerkDateiKonfiguration : IEntityTypeConfiguration<VertragswerkDatei>
+{
+    public void Configure(EntityTypeBuilder<VertragswerkDatei> builder)
+    {
+        builder.ToTable("VertragswerkDateien", "kalkulation");
+        builder.HasKey(d => d.VertragswerkId);
+    }
+}
+
 internal sealed class AngebotsDateiKonfiguration : IEntityTypeConfiguration<AngebotsDatei>
 {
     public void Configure(EntityTypeBuilder<AngebotsDatei> builder)
@@ -220,4 +261,43 @@ internal static class EingabeJson
         (a, b) => JsonSerializer.Serialize(a, Optionen) == JsonSerializer.Serialize(b, Optionen),
         e => JsonSerializer.Serialize(e, Optionen).GetHashCode(StringComparison.Ordinal),
         e => JsonSerializer.Deserialize<KalkulationsEingabe>(JsonSerializer.Serialize(e, Optionen), Optionen)!);
+}
+
+/// <summary>Vertragsangaben als JSON (#26, Teil C).</summary>
+internal static class AngabenJson
+{
+    private static readonly JsonSerializerOptions Optionen = new();
+
+    public static string Text(Vertragsangaben angaben) => JsonSerializer.Serialize(Roh.Aus(angaben), Optionen);
+
+    public static Vertragsangaben Lies(string text) => (JsonSerializer.Deserialize<Roh>(text, Optionen) ?? new Roh()).Angaben();
+
+    public static readonly ValueConverter<Vertragsangaben, string> Konverter = new(a => Text(a), s => Lies(s));
+
+    public static readonly ValueComparer<Vertragsangaben> Vergleich = new(
+        (a, b) => Text(a!) == Text(b!),
+        a => Text(a).GetHashCode(StringComparison.Ordinal),
+        a => Lies(Text(a)));
+
+    /// <summary>Serialisierbare Form mit sortierten Schlüsseln, damit gleiche Angaben gleichen Text ergeben.</summary>
+    private sealed class Roh
+    {
+        public SortedDictionary<string, string> Werte { get; set; } = new(StringComparer.Ordinal);
+        public SortedDictionary<string, List<SortedDictionary<string, string>>> Listen { get; set; } = new(StringComparer.Ordinal);
+
+        public static Roh Aus(Vertragsangaben a) => new()
+        {
+            Werte = new(a.Werte.ToDictionary(), StringComparer.Ordinal),
+            Listen = new(a.Listen.ToDictionary(l => l.Key, l => l.Value.Select(z => new SortedDictionary<string, string>(z.ToDictionary(), StringComparer.Ordinal)).ToList()), StringComparer.Ordinal),
+        };
+
+        public Vertragsangaben Angaben() => new()
+        {
+            Werte = new Dictionary<string, string>(Werte, StringComparer.Ordinal),
+            Listen = Listen.ToDictionary(
+                l => l.Key,
+                l => (IReadOnlyList<IReadOnlyDictionary<string, string>>)[.. l.Value.Select(z => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>(z, StringComparer.Ordinal))],
+                StringComparer.Ordinal),
+        };
+    }
 }

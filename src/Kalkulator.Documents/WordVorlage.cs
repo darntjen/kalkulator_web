@@ -19,6 +19,12 @@ public sealed class Datensatz : Dictionary<string, object?>
 
 public class VorlagenFehler(string meldung) : InvalidOperationException(meldung);
 
+/// <summary>Kästchen im Text (☒ bzw. ☐); als Block erscheint der Abschnitt nur, wenn es angekreuzt ist.</summary>
+public sealed record Ankreuzfeld(bool Gewaehlt)
+{
+    public override string ToString() => Gewaehlt ? "☒" : "☐";
+}
+
 /// <summary>
 /// Befüllt Word-Vorlagen (ADR-0004). Die Vorlage wird in Word gepflegt; variable Stellen schreibt man als Platzhalter:
 /// <list type="bullet">
@@ -311,6 +317,7 @@ public static partial class WordVorlage
         {
             null or false => [],
             true => [null],
+            Ankreuzfeld k => k.Gewaehlt ? [null] : [],
             string s => string.IsNullOrWhiteSpace(s) ? [] : [null],
             IEnumerable<Datensatz> liste => [.. liste],
             _ => throw new VorlagenFehler($"„{schluessel}“ ist kein Block (Wert vom Typ {wert.GetType().Name})."),
@@ -354,6 +361,7 @@ public static partial class WordVorlage
                     null => "",
                     string s => s,
                     bool b => b ? "ja" : "nein",
+                    Ankreuzfeld k => k.ToString(),
                     _ => throw new VorlagenFehler($"„{schluessel}“ ist eine Liste und kann nicht als Text eingesetzt werden."),
                 };
             });

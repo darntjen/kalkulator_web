@@ -4,6 +4,7 @@ using Kalkulator.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(KalkulatorDbContext))]
-    partial class KalkulatorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261004144350_Vertragsangaben")]
+    partial class Vertragsangaben
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1132,115 +1135,6 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                     b.ToTable("VersionsPositionen", "kalkulation");
                 });
 
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertragswerk", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AngebotId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Ausfertigung")
-                        .HasColumnType("int");
-
-                    b.Property<DateTimeOffset>("ErstelltAm")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("ErstelltVon")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("GesamtDateiname")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)");
-
-                    b.Property<int>("KundenprojektId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Nummer")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("ZipDateiname")
-                        .IsRequired()
-                        .HasMaxLength(260)
-                        .HasColumnType("nvarchar(260)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AngebotId");
-
-                    b.HasIndex("KundenprojektId", "Ausfertigung")
-                        .IsUnique();
-
-                    b.ToTable("Vertragswerke", "kalkulation");
-                });
-
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkDatei", b =>
-                {
-                    b.Property<int>("VertragswerkId")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("GesamtPdf")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.Property<byte[]>("Zip")
-                        .IsRequired()
-                        .HasColumnType("varbinary(max)");
-
-                    b.HasKey("VertragswerkId");
-
-                    b.ToTable("VertragswerkDateien", "kalkulation");
-                });
-
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkEintrag", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Bezeichnung")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Fassung")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("nvarchar(60)");
-
-                    b.Property<int>("Reihenfolge")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VertragswerkId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("VorlagenversionId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("VertragswerkId");
-
-                    b.HasIndex("VorlagenversionId");
-
-                    b.ToTable("VertragswerkDokumente", "kalkulation");
-                });
-
             modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertriebsfreigabe", b =>
                 {
                     b.Property<int>("Id")
@@ -1593,45 +1487,6 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertragswerk", b =>
-                {
-                    b.HasOne("Kalkulator.Domain.Projekte.Angebot", null)
-                        .WithMany()
-                        .HasForeignKey("AngebotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Kalkulator.Domain.Projekte.Kundenprojekt", null)
-                        .WithMany()
-                        .HasForeignKey("KundenprojektId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkDatei", b =>
-                {
-                    b.HasOne("Kalkulator.Domain.Projekte.Vertragswerk", null)
-                        .WithOne("Datei")
-                        .HasForeignKey("Kalkulator.Domain.Projekte.VertragswerkDatei", "VertragswerkId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkEintrag", b =>
-                {
-                    b.HasOne("Kalkulator.Domain.Projekte.Vertragswerk", null)
-                        .WithMany("Dokumente")
-                        .HasForeignKey("VertragswerkId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Kalkulator.Domain.Katalog.Vorlagenversion", null)
-                        .WithMany()
-                        .HasForeignKey("VorlagenversionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertriebsfreigabe", b =>
                 {
                     b.HasOne("Kalkulator.Domain.Projekte.Kalkulation", null)
@@ -1705,13 +1560,6 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
             modelBuilder.Entity("Kalkulator.Domain.Projekte.VersionsPosition", b =>
                 {
                     b.Navigation("Kosten");
-                });
-
-            modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertragswerk", b =>
-                {
-                    b.Navigation("Datei");
-
-                    b.Navigation("Dokumente");
                 });
 #pragma warning restore 612, 618
         }
