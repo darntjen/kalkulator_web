@@ -40,7 +40,7 @@ Angebote, die weiterhin außerhalb entstehen, etwa Analyse und Workshop.
 
 - **Keine Schnittstellen.** Informationen kommen als Datei-Upload oder manuelle Eingabe herein und gehen als Word-Dokument hinaus.
 - **Navision bleibt führend** für die Kalkulation von Hardware, Software und Dienstleistung.
-- **Keine KI in v1.** Die KI-gestützte Angebotserstellung aus erhobenen Daten und Transkripten ist für **Version 2** vorgesehen. v1 legt dafür saubere, strukturierte Daten an.
+- **Keine KI in v1.** Die KI-gestützte Angebotserstellung aus erhobenen Daten und Transkripten ist für **Version 2** vorgesehen. v1 legt dafür saubere, strukturierte Daten an. *Fortschreibung 04.10.2026: Konzept in [13_ki-angebotserstellung.md](13_ki-angebotserstellung.md), Vorschlag als Phase 6b direkt nach dem Gesamtangebot; das Angebot zu Analyse und Workshop bleibt beim Skill.*
 
 ## 2. Prozesskette und Einordnung der heutigen Artefakte
 

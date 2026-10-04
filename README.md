@@ -42,6 +42,7 @@ Gesamtangebot (siehe `docs/05_roadmap.md`).
 | [docs/10_gesamtkonzept.md](docs/10_gesamtkonzept.md) | Gesamtkonzept: Kundensituation, Navision-Import, Managed Services und Gesamtangebot (freigegebener Arbeitsstand) |
 | [docs/11_navision-zuordnung.md](docs/11_navision-zuordnung.md) | Navision-Artikelnummern und Dienstleistungsrollen (vorläufig mit Platzhaltern) |
 | [docs/12_vertragsvorlagen.md](docs/12_vertragsvorlagen.md) | Vertragsvorlagen aus SharePoint: Abgleich, Freigabe, Platzhalter, Markierungsanleitung, Einrichtung |
+| [docs/13_ki-angebotserstellung.md](docs/13_ki-angebotserstellung.md) | KI-gestützte Angebotserstellung für Projekte und Managed Services (Entwurf) |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 

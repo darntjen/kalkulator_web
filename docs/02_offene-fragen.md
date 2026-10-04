@@ -144,3 +144,17 @@
 | 12.4 🟠 | **Paperless einrichten:** API-Schlüssel, Arbeitsbereich und gegebenenfalls die Paperless-Vorlage (ID). Welche Rollen bzw. Slots hat die Vorlage, und wer unterschreibt für Nösse? | Rolle „Kunde“ für den Auftraggeber, die Unterschrift für Nösse regelt die Paperless-Vorlage (`AusVorlage`). Einstellungen nach `docs/12_vertragsvorlagen.md`, Abschnitt 7 | |
 | 12.5 🟠 | **Paperless-API mit echtem Schlüssel prüfen:** Upload, Unterschriftsfelder (Koordinaten) und Vorlage mit eigener PDF-Datei; die Dokumentation war bei der Umsetzung nicht abrufbar | Testdokument in einem Test-Arbeitsbereich übergeben und Lage der Felder ansehen | |
 | 12.6 🟠 | **Unterschriftsfelder markieren:** In welchen Vorlagen wird unterschrieben (Grundvertrag, AVV, Leistungsscheine)? | Produktmanagement setzt `{{unterschrift.Kunde}}` (und gegebenenfalls `{{unterschrift.Nösse}}`) an die Unterschriftslinien | |
+
+## 14. Fragen zur KI-gestützten Angebotserstellung (04.10.2026)
+
+Beantwortet am 04.10.2026: Umfang nur Projekt und Managed Services (Analyse/Workshop bleibt beim Skill), Navision als
+PDF-Upload, Gestaltung nach Styleguide, Lesezugriff auf das Team „Kundenprojekte“, Leasingrate von außen, Nutzung der
+Claude-API mit Kundendaten freigegeben. Konzept: [13_ki-angebotserstellung.md](13_ki-angebotserstellung.md).
+
+| Nr. | Frage | Vorschlag | Antwort |
+|-----|-------|-----------|---------|
+| 14.1 🟠 | **Zeitpunkt:** KI-Texte als Phase 6b direkt nach dem Gesamtangebot statt erst in Version 2? | Ja; Phase 6 ist bis dahin mit von Hand geschriebenen Texten nutzbar | |
+| 14.2 🟠 | **Schreibanleitung:** Wer pflegt sie künftig, und gelten Skill und Kalkulator parallel weiter, bis Phase 6b läuft? | Vertriebsleitung pflegt; der Skill bleibt bis zur Inbetriebnahme von 6b das Werkzeug | |
+| 14.3 🟠 | **Rohtranskripte:** Sollen neben den Zusammenfassungen in `80_Protokolle` auch die Rohtranskripte einfließen dürfen? | Nur auf ausdrückliche Auswahl je Angebot | |
+| 14.4 🟢 | **Lesezugriff Team „Kundenprojekte“:** App-Registrierung mit `Sites.Selected`, Rolle `read` auf die Website des Teams | IT richtet ihn zusammen mit 12.3 ein | |
+| 14.5 🟠 | **Muster für Tests:** Zwei bis drei Navision-PDFs (Projekt mit Dienstleistung, mit Alternativpositionen) für synthetische Testdateien im selben Layout | Dennis stellt sie bereit; im Repository nur synthetische Fassungen | |
