@@ -38,6 +38,7 @@ gepflegt und ohne Codeänderung ausgetauscht werden können (C-02). ADR-0002 leg
 
 - Vorlagen lassen sich in Word bearbeiten. Ein Test befüllt die echte Vorlage mit einer Referenzkalkulation und prüft
   sie gegen das Word-Schema. Fehler fallen so vor der Auslieferung auf.
-- Formatierung innerhalb eines Platzhalter-Absatzes richtet sich nach dem ersten Textlauf.
+- Ein Platzhalter, den Word auf mehrere Textläufe verteilt, übernimmt die Formatierung des Laufs, in dem er beginnt.
+  Die übrigen Läufe des Absatzes behalten ihre Formatierung (zum Beispiel ein fettes Stichwort vor dem Platzhalter).
 - Die Dateiablage in der Datenbank vereinfacht die Sicherung. Bei sehr vielen Angeboten ist eine Auslagerung in eine
   Dateiablage später möglich.

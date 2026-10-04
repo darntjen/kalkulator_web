@@ -67,6 +67,26 @@ public class WordVorlageTests
     }
 
     [Fact]
+    public void Formatierung_der_uebrigen_Laeufe_bleibt_beim_Zusammenfassen_erhalten()
+    {
+        var vorlage = Dokument("",
+            (object)new[]
+            {
+                new Run(new RunProperties(new Bold()), new Text("Service Requests:")),
+                new Run(new Text(" Ebene 1: {{satz.") { Space = DocumentFormat.OpenXml.SpaceProcessingModeValues.Preserve }),
+                new Run(new Text("ebene1}} je AE.")),
+            });
+
+        var datei = WordVorlage.Befuellen(vorlage, new Datensatz { ["satz.ebene1"] = "23,75 €" });
+
+        using var strom = new MemoryStream(datei);
+        using var dokument = WordprocessingDocument.Open(strom, false);
+        var laeufe = dokument.MainDocumentPart!.Document!.Body!.Elements<Paragraph>().Single().Elements<Run>()
+            .Select(r => (r.InnerText, Fett: r.RunProperties?.Bold is not null)).ToList();
+        Assert.Equal([("Service Requests:", true), (" Ebene 1: 23,75 €", false), (" je AE.", false)], laeufe);
+    }
+
+    [Fact]
     public void Bloecke_werden_je_Eintrag_wiederholt_auch_verschachtelt()
     {
         var vorlage = Dokument("",

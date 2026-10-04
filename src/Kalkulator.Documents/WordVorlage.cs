@@ -36,6 +36,10 @@ public static partial class WordVorlage
     [GeneratedRegex(@"\{\{\s*([^{}#/\s][^{}]*?)\s*\}\}")]
     private static partial Regex Platzhalter();
 
+    /// <summary>Jeder Platzhalter einschließlich Blockmarken, so wie er im Text steht.</summary>
+    [GeneratedRegex(@"\{\{[^{}]*\}\}")]
+    private static partial Regex PlatzhalterRoh();
+
     [GeneratedRegex(@"^\s*\{\{\s*#\s*([^{}]+?)\s*\}\}")]
     private static partial Regex BlockAnfang();
 
@@ -84,21 +88,57 @@ public static partial class WordVorlage
 
     /// <summary>
     /// Word teilt Text oft auf mehrere Läufe auf (Rechtschreibprüfung, Bearbeitungsspuren). Damit ein Platzhalter immer
-    /// in einem Textelement steht, wird der Text betroffener Absätze in den ersten Textlauf übernommen; dessen Formatierung gilt.
+    /// in einem Textelement steht, wird jeder aufgeteilte Platzhalter in das Textelement verschoben, in dem er beginnt;
+    /// dessen Formatierung gilt für den eingesetzten Wert. Alle übrigen Läufe behalten ihre Formatierung.
     /// </summary>
     private static void FasseLaeufeZusammen(OpenXmlElement wurzel)
     {
         foreach (var absatz in wurzel.Descendants<Paragraph>().ToList())
         {
             var texte = absatz.Descendants<Text>().ToList();
-            if (texte.Count < 2 || !string.Concat(texte.Select(t => t.Text)).Contains("{{", StringComparison.Ordinal))
+            var gesamt = string.Concat(texte.Select(t => t.Text));
+            if (texte.Count < 2 || !gesamt.Contains("{{", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            texte[0].Text = string.Concat(texte.Select(t => t.Text));
-            texte[0].Space = SpaceProcessingModeValues.Preserve;
-            foreach (var t in texte.Skip(1))
+            var anfaenge = new int[texte.Count];
+            for (var k = 1; k < texte.Count; k++)
+            {
+                anfaenge[k] = anfaenge[k - 1] + texte[k - 1].Text.Length;
+            }
+
+            int Index(int position) => Array.FindLastIndex(anfaenge, a => a <= position);
+
+            // Von hinten, damit die Positionen der vorderen Platzhalter gültig bleiben.
+            var geaendert = false;
+            foreach (var treffer in PlatzhalterRoh().Matches(gesamt).Reverse())
+            {
+                var von = Index(treffer.Index);
+                var bis = Index(treffer.Index + treffer.Length - 1);
+                if (von == bis)
+                {
+                    continue;
+                }
+
+                texte[von].Text = texte[von].Text[..(treffer.Index - anfaenge[von])] + treffer.Value;
+                for (var k = von + 1; k < bis; k++)
+                {
+                    texte[k].Text = "";
+                }
+
+                texte[bis].Text = texte[bis].Text[(treffer.Index + treffer.Length - anfaenge[bis])..];
+                texte[von].Space = SpaceProcessingModeValues.Preserve;
+                texte[bis].Space = SpaceProcessingModeValues.Preserve;
+                geaendert = true;
+            }
+
+            if (!geaendert)
+            {
+                continue;
+            }
+
+            foreach (var t in texte.Where(t => t.Text.Length == 0))
             {
                 var lauf = t.Parent;
                 t.Remove();

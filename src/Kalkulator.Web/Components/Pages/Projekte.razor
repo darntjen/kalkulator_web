@@ -7,16 +7,22 @@
 <div class="ansicht-kopf">
     <div>
         <h1>Kundenprojekte</h1>
-        <p class="unterzeile">@(Dienst.Recht.SiehtAlleProjekte ? "Alle Kundenprojekte" : "Deine Kundenprojekte")</p>
-    </div>
-    <div class="aktionen">
-        <input type="search" placeholder="Firma, Titel oder Kundennummer" aria-label="Suche"
-               @bind="_suche" @bind:event="oninput" @bind:after="LadeAsync" />
-        @if (Dienst.Recht.DarfKalkulieren)
+        @if (Dienst.Recht.DarfProjekteSehen)
         {
-            <a class="knopf" href="projekte/neu">Neues Kundenprojekt</a>
+            <p class="unterzeile">@(Dienst.Recht.SiehtAlleProjekte ? "Alle Kundenprojekte" : "Deine Kundenprojekte")</p>
         }
     </div>
+    @if (Dienst.Recht.DarfProjekteSehen)
+    {
+        <div class="aktionen">
+            <input type="search" placeholder="Firma, Titel oder Kundennummer" aria-label="Suche"
+                   @bind="_suche" @bind:event="oninput" @bind:after="LadeAsync" />
+            @if (Dienst.Recht.DarfKalkulieren)
+            {
+                <a class="knopf" href="projekte/neu">Neues Kundenprojekt</a>
+            }
+        </div>
+    }
 </div>
 
 @if (_fehler is not null)

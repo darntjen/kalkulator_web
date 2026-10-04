@@ -279,6 +279,10 @@ else
                         </table>
                     </div>
                 }
+                else if (!_daten.DarfBearbeiten)
+                {
+                    <p class="karte-inhalt hinweis">Zu dieser Kalkulation gibt es noch kein Angebot.</p>
+                }
                 @if (_daten.DarfBearbeiten)
                 {
                     <form class="karte-inhalt felder" @onsubmit="AngebotErzeugenAsync">
