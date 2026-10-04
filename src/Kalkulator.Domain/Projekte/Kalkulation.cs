@@ -59,8 +59,8 @@ public class Kalkulation
 
     /// <summary>
     /// Gibt den Arbeitsstand aus Sicht einer Rolle frei. Voraussetzungen: Die Kalkulation ist angebotsfähig (keine
-    /// Fehler, keine offenen Sonderpositionen), wer das Projekt verantwortet, gibt nicht selbst frei, und beide
-    /// Freigaben kommen von verschiedenen Personen (Vier-Augen-Prinzip). Dafür muss das Kundenprojekt geladen sein.
+    /// Fehler, keine offenen Sonderpositionen), und beide Freigaben kommen von verschiedenen Personen. Wer das
+    /// Kundenprojekt verantwortet, darf mit passender Rolle selbst freigeben (Entscheidung 04.10.2026).
     /// </summary>
     public Vertriebsfreigabe VertriebFreigeben(FreigabeRolle rolle, string benutzer, DateTimeOffset zeitpunkt, string? kommentar, KalkulationsErgebnis ergebnis)
     {
@@ -74,15 +74,9 @@ public class Kalkulation
             throw new InvalidOperationException($"Die Freigabe {Text(rolle)} liegt bereits vor ({vorhanden.Benutzer}).");
         }
 
-        var projekt = Kundenprojekt ?? throw new InvalidOperationException("Zum Freigeben muss das Kundenprojekt geladen sein.");
-        if (Gleich(projekt.Verantwortlich, benutzer))
-        {
-            throw new InvalidOperationException("Vier-Augen-Prinzip: Wer das Kundenprojekt verantwortet, gibt die Kalkulation nicht selbst frei.");
-        }
-
         if (Vertriebsfreigaben.Any(f => f.IstAktiv && Gleich(f.Benutzer, benutzer)))
         {
-            throw new InvalidOperationException("Vier-Augen-Prinzip: Die beiden Freigaben müssen von verschiedenen Personen kommen.");
+            throw new InvalidOperationException("Die beiden Freigaben müssen von verschiedenen Personen kommen.");
         }
 
         var freigabe = new Vertriebsfreigabe

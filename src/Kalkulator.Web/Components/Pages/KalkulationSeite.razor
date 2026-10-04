@@ -634,8 +634,7 @@ else
         !_katalog!.PreislisteFreigegeben ? "Freigeben lässt sich erst mit einer freigegebenen Preisliste."
         : _geaendert ? "Es gibt ungespeicherte Änderungen. Freigegeben wird nur der gespeicherte Stand."
         : _ergebnis!.HatFehler ? "Die Kalkulation enthält noch Fehler oder offene Sonderpositionen (siehe Ergebnis)."
-        : IstIch(_daten!.Projekt.Verantwortlich) ? "Vier-Augen-Prinzip: Du verantwortest dieses Kundenprojekt und gibst es daher nicht selbst frei."
-        : _daten.Kalkulation.Vertriebsfreigaben.Any(f => f.IstAktiv && IstIch(f.Benutzer)) ? "Vier-Augen-Prinzip: Die zweite Freigabe muss von einer anderen Person kommen."
+        : _daten!.Kalkulation.Vertriebsfreigaben.Any(f => f.IstAktiv && IstIch(f.Benutzer)) ? "Die zweite Freigabe muss von einer anderen Person kommen."
         : null;
 
     private bool IstIch(string benutzer) => string.Equals(benutzer.Trim(), Benutzer.Name.Trim(), StringComparison.OrdinalIgnoreCase);

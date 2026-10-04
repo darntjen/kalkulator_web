@@ -138,7 +138,7 @@ public class AngebotsDienstTests(SqlServerFixture db)
     }
 
     [Fact]
-    public async Task Vertriebsfreigabe_nur_durch_die_passende_Rolle_und_nach_dem_Vier_Augen_Prinzip()
+    public async Task Vertriebsfreigabe_nur_durch_die_passende_Rolle_und_zwei_verschiedene_Personen()
     {
         var (_, id, vertrieb) = await KalkulationAsync(Rk01, freigeben: false);
         var leitungsBenutzer = Neu(Rollen.Vertriebsleitung);
@@ -176,7 +176,7 @@ public class AngebotsDienstTests(SqlServerFixture db)
     }
 
     [Fact]
-    public async Task Verantwortliche_geben_ihre_eigene_Kalkulation_nicht_frei()
+    public async Task Vertriebsleitung_gibt_auch_ein_eigenes_Projekt_frei()
     {
         var leitungsBenutzer = Neu(Rollen.Vertriebsleitung);
         var leitung = await DiensteAsync(leitungsBenutzer);
@@ -185,10 +185,13 @@ public class AngebotsDienstTests(SqlServerFixture db)
         var geladen = await leitung.Kalkulationen.LadeAsync(id);
         await leitung.Kalkulationen.SpeichernAsync(id, "Variante A", null, Rk01, geladen!.Kalkulation.Zeilenversion);
 
-        var fehler = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
-            await leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, (await leitung.Kalkulationen.LadeAsync(id))!.Stand, null));
+        await leitung.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, (await leitung.Kalkulationen.LadeAsync(id))!.Stand, null);
+        var consultant = await DiensteAsync(Neu(Rollen.Consultant));
+        await consultant.Kalkulationen.VertriebFreigebenAsync(id, FreigabeRolle.SolutionConsultant, (await consultant.Kalkulationen.LadeAsync(id))!.Stand, null);
 
-        Assert.Contains("verantwortet", fehler.Message, StringComparison.Ordinal);
+        Assert.True((await leitung.Kalkulationen.LadeAsync(id))!.Kalkulation.IstVertriebsfreigegeben);
+        await leitung.Angebote.ErzeugenAsync(id, null, null);
+        Assert.Equal("V1", (await leitung.Angebote.ListeAsync(id)).Single().Version);
     }
 
     [Fact]

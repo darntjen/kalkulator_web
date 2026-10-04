@@ -123,8 +123,8 @@ Ein Angebot entsteht im Kalkulationseditor (Bereich „Angebote“). Dabei wird 
 eingefroren, die Angebotsnummer `MS-A-JJJJ-NNNN` vergeben und das Word-Dokument aus
 `templates/angebot/Angebotsvorlage.docx` und `textbausteine.json` erzeugt und archiviert. Das geht nur mit einer
 freigegebenen Preisliste und mit der **Vertriebsfreigabe** von Vertriebsleitung und Solution Consultant (Rolle
-„Consultant“): Beide geben im Bereich „Vertriebsfreigabe“ den gespeicherten Stand frei, nach dem Vier-Augen-Prinzip
-(nicht die verantwortliche Person, zwei verschiedene Personen). Jede inhaltliche Änderung hebt die Freigaben auf.
+„Consultant“): Beide geben im Bereich „Vertriebsfreigabe“ den gespeicherten Stand frei, und zwar zwei verschiedene
+Personen; wer das Projekt verantwortet, darf mit passender Rolle selbst freigeben. Jede inhaltliche Änderung hebt die Freigaben auf.
 Nimmt der Kunde an, setzt der Vertrieb das Projekt auf „Gewonnen“ und wählt dabei das angenommene Angebot. Die Vorlagen werden mit dem Programm ausgeliefert (`Vorlagen/angebot`); der Ordner lässt
 sich über `Angebot:Vorlagenordner` umstellen. Platzhalter: `docs/08_angebotsvorlage.md`, Technik: ADR-0004.
 
