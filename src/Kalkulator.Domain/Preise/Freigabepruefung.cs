@@ -34,7 +34,7 @@ public static class Freigabepruefung
         }
 
         var schwellen = Margenschwellen.Aus(preisliste);
-        if (!(schwellen.RotUnter <= schwellen.GruenAb && schwellen.GruenAb <= schwellen.GruenBis))
+        if (!(schwellen.RotUnter <= schwellen.GruenAb && (schwellen.GruenBis is null || schwellen.GruenAb <= schwellen.GruenBis)))
         {
             Fehler("Die Margen-Ampel braucht: rot unter ≤ grün ab ≤ grün bis.");
         }

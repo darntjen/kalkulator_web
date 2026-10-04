@@ -193,6 +193,16 @@ Onboarding Standard XS 900 €). Daraus folgt:
 
 ## 6. Einkaufspreise, Marge und Forecast
 
+**Margen-Ampel (Entscheidung 04.10.2026):**
+
+| Bereich | Grün | Gelb | Rot |
+|---|---|---|---|
+| Managed Services | ab 45 % | 38 % bis unter 45 % | unter 38 % |
+| alles andere (Hardware, Software, Dienstleistung der Transformationsprojekte) | ab 22,5 % | 12,5 % bis unter 22,5 % | unter 12,5 % |
+
+Die Schwellen der Managed Services sind umgesetzt (Parameter der Preisliste). Die Schwellen der
+Transformationsprojekte kommen mit Phase 5.
+
 Sichtbarkeit (Entscheidung 29.09.2026):
 
 - Der **Vertrieb** sieht EK, DB und Marge **seiner Transformationsprojekte**, weil er die EK selbst pflegt.
@@ -245,9 +255,13 @@ Vorschlag für die Rechnung:
 - Rate = Finanzierungsbetrag × Faktor. Der Faktor kommt je Laufzeit aus einer Faktortabelle, die das Produktmanagement pflegt, oder wird je Angebot vom Partner übernommen.
 - Die Rate wird im Angebot mit den Managed Services zu einer **monatlichen Gesamtbelastung** zusammengefasst.
 
-Die Details sind offen (Fragen 13.1 bis 13.4). Bis dahin plant das Konzept die
-Finanzierung als Variante mit manuell eingetragener Rate. Das funktioniert
-unabhängig davon, wie die Rate zustande kommt.
+**Entscheidungen 04.10.2026 (Fragen 13.1 bis 13.4):**
+
+- Die Rate kommt von außen und wird je Angebot eingetragen; in Version 1 gibt es keine Faktortabelle.
+- Neben Leasing gibt es die **Miete**.
+- Finanziert werden dürfen Hardware, Software **und Dienstleistung**.
+- Bei Miete erscheint im Angebot **eine** monatliche Gesamtrate aus Miete und Managed Services. Im Kalkulator (für
+  Vertrieb, Auswertung und Marge) bleiben beide Anteile getrennt ausgewiesen.
 
 ## 9. Aufbau des Gesamtangebots
 
@@ -350,8 +364,8 @@ Beantwortet bei der Freigabe am 29.09.2026:
 
 | Nr. | Frage | Warum wichtig |
 |-----|-------|---------------|
-| 13.1 | **Leasing:** Mit welchen Partnern arbeiten wir, und wer rechnet heute die Rate aus (z. B. Fabian)? Gibt es feste Faktoren je Laufzeit, oder kommt jedes Mal ein individuelles Angebot des Partners? | Rechenweg der Finanzierungsvariante |
-| 13.2 | **Finanzierung:** Welche Formen gibt es außer Leasing, z. B. Mietkauf, eigene Vorfinanzierung oder Ratenzahlung über Nösse? | Umfang des Moduls |
-| 13.3 | Welche Positionen dürfen finanziert werden? Nur Hardware und Software oder auch Dienstleistung? | Rechenweg |
-| 13.4 | Soll die Leasingrate im Angebot mit den Managed Services zu **einer** Monatsrate zusammengefasst werden („IT als monatliche Pauschale“)? | Aufbau des Angebots |
-| 13.7 | Endgültige Liste: Navision-Artikelnummern je Managed Service sowie Dienstleistungsrollen mit Artikelnummer und internem Stundensatz (Excel). Bis dahin Platzhalter aus [11_navision-zuordnung.md](11_navision-zuordnung.md) | Katalog, EK der Dienstleistung |
+| 13.1 | **Leasing:** Mit welchen Partnern arbeiten wir, und wer rechnet heute die Rate aus (z. B. Fabian)? Gibt es feste Faktoren je Laufzeit, oder kommt jedes Mal ein individuelles Angebot des Partners? | Rechenweg der Finanzierungsvariante — **Antwort:** In V1 keine Faktoren; die Rate kommt von außen (04.10.2026) |
+| 13.2 | **Finanzierung:** Welche Formen gibt es außer Leasing, z. B. Mietkauf, eigene Vorfinanzierung oder Ratenzahlung über Nösse? | Umfang des Moduls — **Antwort:** Miete (04.10.2026) |
+| 13.3 | Welche Positionen dürfen finanziert werden? Nur Hardware und Software oder auch Dienstleistung? | Rechenweg — **Antwort:** Auch Dienstleistung (04.10.2026) |
+| 13.4 | Soll die Leasingrate im Angebot mit den Managed Services zu **einer** Monatsrate zusammengefasst werden („IT als monatliche Pauschale“)? | Aufbau des Angebots — **Antwort:** Ja bei Miete; im Kalkulator getrennt ausgewiesen (04.10.2026) |
+| 13.7 | Endgültige Liste: Navision-Artikelnummern je Managed Service sowie Dienstleistungsrollen mit Artikelnummer und internem Stundensatz (Excel). Bis dahin Platzhalter aus [11_navision-zuordnung.md](11_navision-zuordnung.md) | Katalog, EK der Dienstleistung — **Antwort:** Liefert Dennis zu gegebener Zeit (04.10.2026) |

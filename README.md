@@ -111,8 +111,8 @@ Vertragsvorlagen sowie die Preislisten; die Führung sieht alles nur lesend, and
   Darin werden Preise, Staffeln, Parameter und EK gepflegt. Vor der Freigabe prüft die Anwendung Pflichtparameter,
   fehlende Preise und das Gültigkeitsdatum; fehlende EK-Werte und rote Margen sind Hinweise. Freigegebene
   Preislisten sind unveränderlich (ADR-0005).
-- **Margen-Ampel:** grün von `MARGE_GRUEN_AB` bis `MARGE_GRUEN_BIS`, rot unter `MARGE_ROT_UNTER`, sonst gelb;
-  ohne EK grau. Die Schwellen sind Parameter der Preisliste.
+- **Margen-Ampel:** grün ab `MARGE_GRUEN_AB` (45 %), rot unter `MARGE_ROT_UNTER` (38 %), sonst gelb; ohne EK grau.
+  `MARGE_GRUEN_BIS` setzt bei Bedarf eine Obergrenze für Grün. Die Schwellen sind Parameter der Preisliste.
 - **Katalog:** Codes sind nach dem Anlegen fest. Gelöscht wird nur, was weder in einer freigegebenen Preisliste
   noch in einer Kalkulation vorkommt; sonst den Vertriebsstatus auf „geparkt“ setzen.
 - **Excel-Export** je Preisliste unter `/katalog/export/{id}` mit Services, Preisen, Staffeln, Parametern, Regeln

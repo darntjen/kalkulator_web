@@ -57,18 +57,13 @@
     },
     {
       "schluessel": "MARGE_GRUEN_AB",
-      "wert": 0.55,
-      "beschreibung": "Margen-Ampel: grün ab (Preisprüfung: „gesund 55–72 %“)"
-    },
-    {
-      "schluessel": "MARGE_GRUEN_BIS",
-      "wert": 0.72,
-      "beschreibung": "Margen-Ampel: grün bis; darüber gelb (Preis prüfen)"
+      "wert": 0.45,
+      "beschreibung": "Margen-Ampel: grün ab 45 % (Entscheidung 04.10.2026)"
     },
     {
       "schluessel": "MARGE_ROT_UNTER",
-      "wert": 0.45,
-      "beschreibung": "Margen-Ampel: rot unter (Entscheidung nötig); Annahme, im Excel von Hand gesetzt"
+      "wert": 0.38,
+      "beschreibung": "Margen-Ampel: rot unter 38 %, dazwischen gelb (Entscheidung 04.10.2026)"
     }
   ],
   "dokumentVorlagen": [

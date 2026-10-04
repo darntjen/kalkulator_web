@@ -126,7 +126,8 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 | § 3 „Gesamtbetrag (netto, monatlich)“ 1.391,80 € | `{{summe.monatlich}}` |
 | § 3 einmalige Leistungen (neu, falls gewünscht) | eigene Tabellenzeile `{{#einmalig}}{{position.code}}` … `{{position.gesamtpreis}}{{/einmalig}}`, Summe `{{summe.einmalig}}` |
 | § 6 die beiden Zeilen `[ggf. weitere Bundle-Leistungsscheine …]` und `[ggf. weitere Einzel-Leistungsscheine …]` samt der festen Anlagen davor | Absatz `{{#anlagen}}`, Aufzählungspunkt `{{anlage.code}} — {{anlage.bezeichnung}}`, Absatz `{{/anlagen}}` |
-| „Ort, Datum: ____“, „Unterschrift: ____“ | bleiben; unterschrieben wird in Paperless |
+| „Ort, Datum: ____“ | „Ort, Datum: `{{vertrag.datum}}`“ oder unverändert |
+| „Unterschrift: ____“ beim Auftraggeber bzw. bei Nösse | `{{unterschrift.Kunde}}____` bzw. `{{unterschrift.Nösse}}____` am Anfang der Linie (Abschnitt 7) |
 
 ### Leistungsschein S14 (Vorlage V5.7)
 

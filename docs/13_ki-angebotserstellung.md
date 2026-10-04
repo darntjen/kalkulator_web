@@ -64,7 +64,7 @@ erfundene Werte sind ausgeschlossen.
 - **Managed-Services-Kalkulation** wie bisher. Ein Navision-Angebot über Managed Services wird nicht gebraucht.
 - **Varianten:** je Variante ein Projektanteil und eine Kalkulation, z. B. „Weg A: Branchensoftware im Haus“ und
   „Weg B: Branchensoftware in der Cloud des Herstellers“. Eine Variante ist die Empfehlung.
-- **Leasingrate** je Variante als Eingabe mit Laufzeit; ohne Rate nennt das Angebot die Mietvariante „auf Wunsch“.
+- **Miet- oder Leasingrate** je Variante als Eingabe mit Laufzeit (sie kommt von außen); ohne Rate nennt das Angebot die Mietvariante „auf Wunsch“. Bei Miete zeigt das Angebot eine gemeinsame Monatsrate mit den Managed Services, der Kalkulator weist beide getrennt aus.
 
 **Später:** HubSpot (Notizen, Deals), Outlook (Mailverkehr) und Miro als weitere Quellen.
 

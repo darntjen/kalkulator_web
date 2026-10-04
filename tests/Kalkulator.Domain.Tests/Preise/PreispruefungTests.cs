@@ -40,14 +40,14 @@ public class PreispruefungTests
 
     [Theory]
     [InlineData(null, Ampel.Grau)]
-    [InlineData(0.35, Ampel.Rot)]
-    [InlineData(0.4499, Ampel.Rot)]
-    [InlineData(0.45, Ampel.Gelb)]
-    [InlineData(0.51, Ampel.Gelb)]
-    [InlineData(0.55, Ampel.Gruen)]
+    [InlineData(0.30, Ampel.Rot)]
+    [InlineData(0.3799, Ampel.Rot)]
+    [InlineData(0.38, Ampel.Gelb)]
+    [InlineData(0.449, Ampel.Gelb)]
+    [InlineData(0.45, Ampel.Gruen)]
     [InlineData(0.72, Ampel.Gruen)]
-    [InlineData(0.73, Ampel.Gelb)]
-    public void Standard_Ampel_gruen_55_bis_72_rot_unter_45(double? marge, Ampel erwartet) =>
+    [InlineData(0.95, Ampel.Gruen)]
+    public void Standard_Ampel_gruen_ab_45_gelb_ab_38_sonst_rot(double? marge, Ampel erwartet) =>
         Assert.Equal(erwartet, Margenschwellen.Standard.Bewerte(marge is null ? null : (decimal)marge.Value));
 
     [Fact]
@@ -62,6 +62,8 @@ public class PreispruefungTests
         Assert.Equal(new Margenschwellen(0.60m, 0.80m, 0.50m), schwellen);
         Assert.Equal(Ampel.Gelb, schwellen.Bewerte(0.55m));
         Assert.Equal(Ampel.Gruen, schwellen.Bewerte(0.75m));
+        Assert.Equal(Ampel.Gelb, schwellen.Bewerte(0.85m));
+        Assert.Equal("grün ab 60 %, rot unter 50 %, sonst gelb", (schwellen with { GruenBis = null }).Text(p => $"{p * 100:0} %"));
     }
 
     [Fact]

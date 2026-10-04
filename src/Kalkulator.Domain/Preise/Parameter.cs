@@ -27,7 +27,7 @@ public static class ParameterSchluessel
     public const string VkVerrechnungssatzProStunde = "VK_VERRECHNUNGSSATZ_PRO_STUNDE";
     public const string EkKostensatzProStunde = "EK_KOSTENSATZ_PRO_STUNDE";
 
-    /// <summary>Margen-Ampel der Preisprüfung: grün von … bis … (Anteil, z. B. 0,55), rot unterhalb der Schwelle.</summary>
+    /// <summary>Margen-Ampel der Preisprüfung: grün ab … (Anteil, z. B. 0,45), optional bis …, rot unterhalb der Schwelle.</summary>
     public const string MargeGruenAb = "MARGE_GRUEN_AB";
     public const string MargeGruenBis = "MARGE_GRUEN_BIS";
     public const string MargeRotUnter = "MARGE_ROT_UNTER";
@@ -52,8 +52,8 @@ public static class ParameterSchluessel
         [CloudServerMargenteiler] = "S61: VK = EK ÷ Margenteiler",
         [VkVerrechnungssatzProStunde] = "Verrechnungssatz Dienstleistung (VK) je Stunde",
         [EkKostensatzProStunde] = "EK-Kostensatz Dienstleistung je Stunde (Basis der Betriebskosten)",
-        [MargeGruenAb] = "Margen-Ampel: grün ab (Anteil, z. B. 0,55)",
-        [MargeGruenBis] = "Margen-Ampel: grün bis (Anteil, z. B. 0,72)",
-        [MargeRotUnter] = "Margen-Ampel: rot unter (Anteil, z. B. 0,45)",
+        [MargeGruenAb] = "Margen-Ampel: grün ab (Anteil, z. B. 0,45)",
+        [MargeGruenBis] = "Margen-Ampel: grün bis (Anteil, optional; ohne Eintrag keine Obergrenze)",
+        [MargeRotUnter] = "Margen-Ampel: rot unter (Anteil, z. B. 0,38)",
     };
 }
