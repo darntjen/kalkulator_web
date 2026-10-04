@@ -1,0 +1,64 @@
+@using System.Globalization
+@using Kalkulator.Domain.Katalog
+
+<div class="regel">
+    @if (Pflegen)
+    {
+        <div class="felder">
+            <div class="feld">
+                <label>Regel</label>
+                <select aria-label="Regeltyp" @bind="Regel.Typ">
+                    @foreach (var t in Enum.GetValues<RegelTyp>())
+                    {
+                        <option value="@t">@KatalogTexte.Regel(t)</option>
+                    }
+                </select>
+            </div>
+            <div class="feld">
+                <label>Ziel-Services (Strg/⌘ für mehrere)</label>
+                <select multiple size="5" aria-label="Ziel-Services" @bind="Regel.Ziele">
+                    @foreach (var s in Services)
+                    {
+                        <option value="@s.Id">@s.Code · @s.Bezeichnung</option>
+                    }
+                </select>
+            </div>
+            <div class="feld breit"><label>Meldung für den Vertrieb</label><input type="text" aria-label="Meldung" @bind="Regel.Meldung" /></div>
+            <div class="aktionen breit">
+                <button type="button" class="knopf klein" @onclick="Speichern">@(Regel.Id == 0 ? "Regel anlegen" : "Speichern")</button>
+                @if (Regel.Id != 0 && Loeschen.HasDelegate)
+                {
+                    <button type="button" class="knopf zweit klein" @onclick="Loeschen">Löschen</button>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <p>
+            <strong>@KatalogTexte.Regel(Regel.Typ):</strong>
+            @string.Join(", ", Services.Where(s => Regel.Ziele.Contains(s.Id.ToString(CultureInfo.InvariantCulture))).Select(s => s.Code))
+            <br /><span class="unterzeile">„@Regel.Meldung“</span>
+        </p>
+    }
+</div>
+
+@code {
+    /// <summary>Bearbeitungsstand einer Regel; die Ziele als Texte, weil die Mehrfachauswahl an Texte bindet.</summary>
+    public sealed class Modell
+    {
+        public int Id { get; init; }
+        public RegelTyp Typ { get; set; } = RegelTyp.ErfordertAlle;
+        public string? Meldung { get; set; }
+        public string[] Ziele { get; set; } = [];
+
+        public RegelStammdaten AlsStammdaten() =>
+            new(Typ, Meldung ?? "", [.. Ziele.Select(z => int.Parse(z, CultureInfo.InvariantCulture))]);
+    }
+
+    [Parameter, EditorRequired] public Modell Regel { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Service> Services { get; set; } = [];
+    [Parameter] public bool Pflegen { get; set; }
+    [Parameter] public EventCallback Speichern { get; set; }
+    [Parameter] public EventCallback Loeschen { get; set; }
+}

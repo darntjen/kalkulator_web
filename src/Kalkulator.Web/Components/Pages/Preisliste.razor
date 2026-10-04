@@ -1,0 +1,551 @@
+@page "/katalog/preislisten/{Id:int}"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Katalog
+@using Kalkulator.Domain.Preise
+@inject PreislistenDienst Dienst
+@inject NavigationManager Navigation
+
+<PageTitle>@(_a?.Preisliste.Bezeichnung ?? "Preisliste") · Managed-Services-Kalkulator</PageTitle>
+
+@if (_ladefehler is not null)
+{
+    <h1>Preisliste</h1>
+    <p class="meldung fehler">@_ladefehler</p>
+}
+else if (_a is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    var liste = _a.Preisliste;
+    <div class="ansicht-kopf">
+        <div>
+            <h1>@liste.Bezeichnung</h1>
+            <p class="unterzeile">
+                <span class="pille pl-@liste.Status">@(liste.Status == PreislistenStatus.Freigegeben ? "freigegeben" : "Entwurf")</span>
+                · gültig ab @liste.GueltigAb.ToString("dd.MM.yyyy")
+                @if (_a.Vorgaenger is not null)
+                {
+                    <span> · kopiert aus „@_a.Vorgaenger“</span>
+                }
+                @if (liste.FreigegebenAm is { } am)
+                {
+                    <span> · freigegeben @Texte.Zeitpunkt(am) von @liste.FreigegebenVon</span>
+                }
+            </p>
+        </div>
+        <div class="aktionen">
+            <a class="knopf zweit" href="katalog/export/@liste.Id" download>Excel-Export</a>
+            <a class="knopf zweit" href="katalog">Zur Übersicht</a>
+        </div>
+    </div>
+
+    <KatalogReiter />
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    @if (!_editierbar)
+    {
+        <p class="meldung info">
+            @(liste.Status == PreislistenStatus.Freigegeben
+                ? "Diese Preisliste ist freigegeben und unveränderlich. Änderungen laufen über einen neuen Entwurf (Übersicht „Preislisten“)."
+                : "Nur das Produktmanagement kann diesen Entwurf bearbeiten.")
+        </p>
+    }
+    else
+    {
+        <section class="karte">
+            <div class="karte-kopf"><h2>Entwurf</h2><span class="unterzeile">Jeder Reiter hat seinen eigenen Knopf „Speichern“. Bitte vor dem Wechsel speichern.</span></div>
+            <form class="karte-inhalt felder" @onsubmit="StammdatenAsync">
+                <div class="feld"><label for="bez">Bezeichnung</label><input id="bez" type="text" @bind="_bezeichnung" /></div>
+                <div class="feld"><label for="ab">Gültig ab</label><input id="ab" type="date" @bind="_gueltigAb" /></div>
+                <div class="aktionen breit"><button class="knopf klein" type="submit">Bezeichnung und Datum speichern</button></div>
+            </form>
+        </section>
+    }
+
+    <nav class="reiter abstand-oben" aria-label="Bereiche der Preisliste">
+        @foreach (var (schluessel, titel) in Reiter)
+        {
+            <button type="button" class="@(_reiter == schluessel ? "aktiv" : null)" @onclick="() => _reiter = schluessel">@titel</button>
+        }
+    </nav>
+
+    @switch (_reiter)
+    {
+        case "preise":
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Verkaufspreise (netto)</h2>
+                    <span class="unterzeile">Leer = auf Anfrage bzw. Sonderrechner. Gestaffelte Preise stehen im Reiter „Staffeln“.</span>
+                </div>
+                <div class="tab-rahmen">
+                    <table class="liste">
+                        <thead><tr><th>Komponente</th><th>Bezeichnung</th><th>Einheit</th><th>Abrechnung</th><th>Navision</th><th class="num">VK netto</th></tr></thead>
+                        <tbody>
+                            @foreach (var gruppe in _a.Services.GroupBy(s => s.Kategorie!.Name))
+                            {
+                                <tr class="gruppe"><td colspan="6">@gruppe.Key</td></tr>
+                                @foreach (var s in gruppe)
+                                {
+                                    <tr class="untergruppe"><td colspan="6"><span class="code">@s.Code</span> @s.Bezeichnung · @KatalogTexte.Vertriebsstatus(s.Vertriebsstatus)</td></tr>
+                                    @foreach (var k in s.Preiskomponenten.OrderBy(k => k.Sortierung))
+                                    {
+                                        <tr>
+                                            <td>@k.Code</td>
+                                            <td>@k.Bezeichnung</td>
+                                            <td>@KatalogTexte.Einheit(k.Einheit)</td>
+                                            <td>@KatalogTexte.Abrechnungsart(k.Abrechnungsart)</td>
+                                            <td>@(k.NavisionArtikelnummer ?? "–")</td>
+                                            <td class="num">
+                                                @if (k.StaffelBezug != StaffelBezug.Keine)
+                                                {
+                                                    <button type="button" class="knopf zweit klein" @onclick='() => _reiter = "staffeln"'>Staffel</button>
+                                                }
+                                                else if (_editierbar)
+                                                {
+                                                    <input class="zahl" type="number" min="0" step="0.01" aria-label="VK @k.Code"
+                                                           placeholder="@(_mitEintrag.Contains(k.Id) ? "auf Anfrage" : "nicht hinterlegt")" @bind="_vk[k.Id]" />
+                                                }
+                                                else
+                                                {
+                                                    @(_vk[k.Id] is { } vk ? Texte.Euro(vk) : _mitEintrag.Contains(k.Id) ? "auf Anfrage" : "nicht hinterlegt")
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (_editierbar)
+                {
+                    <div class="karte-inhalt aktionen"><button class="knopf" type="button" @onclick="PreiseAsync">Preise speichern</button></div>
+                }
+            </section>
+            break;
+
+        case "staffeln":
+            <div class="stapel">
+                @foreach (var k in _a.Services.SelectMany(s => s.Preiskomponenten).Where(k => k.StaffelBezug != StaffelBezug.Keine))
+                {
+                    var stufen = _staffeln[k.Id];
+                    <section class="karte">
+                        <div class="karte-kopf">
+                            <h2>@k.Code · @k.Bezeichnung</h2>
+                            <span class="unterzeile">@KatalogTexte.StaffelBezug(k.StaffelBezug); es gilt die Stufe mit der größten Untergrenze, die erreicht ist. Leerer Preis = individuell.</span>
+                        </div>
+                        <div class="tab-rahmen">
+                            <table class="liste">
+                                <thead><tr><th class="num">ab Menge</th><th>Stufe</th><th class="num">VK netto</th><th>Navision</th>@if (_editierbar) { <th class="eng"></th> }</tr></thead>
+                                <tbody>
+                                    @foreach (var st in stufen)
+                                    {
+                                        <tr>
+                                            @if (_editierbar)
+                                            {
+                                                <td class="num"><input class="zahl" type="number" min="0" step="1" aria-label="ab Menge" @bind="st.AbMenge" /></td>
+                                                <td><input type="text" aria-label="Stufe" @bind="st.Bezeichnung" /></td>
+                                                <td class="num"><input class="zahl" type="number" min="0" step="0.01" aria-label="VK" placeholder="individuell" @bind="st.Vk" /></td>
+                                                <td><input type="text" aria-label="Navision" @bind="st.Navision" /></td>
+                                                <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => stufen.Remove(st)">Entfernen</button></td>
+                                            }
+                                            else
+                                            {
+                                                <td class="num">@st.AbMenge</td>
+                                                <td>@st.Bezeichnung</td>
+                                                <td class="num">@(st.Vk is { } v ? Texte.Euro(v) : "individuell")</td>
+                                                <td>@(st.Navision ?? "–")</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (_editierbar)
+                        {
+                            <div class="karte-inhalt aktionen">
+                                <button type="button" class="knopf zweit klein" @onclick="() => stufen.Add(new StaffelZeile { AbMenge = (stufen.Count == 0 ? 1 : stufen.Max(s => s.AbMenge) + 1) })">Stufe hinzufügen</button>
+                                <button type="button" class="knopf klein" @onclick="() => StaffelAsync(k)">Staffel speichern</button>
+                            </div>
+                        }
+                    </section>
+                }
+            </div>
+            break;
+
+        case "parameter":
+            <section class="karte">
+                <div class="karte-kopf"><h2>Parameter</h2><span class="unterzeile">Zentrale Werte für Rechenkern, Sonderrechner und Preisprüfung. Anteile als Dezimalzahl (0,55 = 55 %).</span></div>
+                <div class="tab-rahmen">
+                    <table class="liste">
+                        <thead><tr><th>Schlüssel</th><th>Beschreibung</th><th class="num">Wert</th>@if (_editierbar) { <th class="eng"></th> }</tr></thead>
+                        <tbody>
+                            @foreach (var p in _parameter)
+                            {
+                                <tr>
+                                    <td><span class="code">@p.Schluessel</span>@if (p.Pflicht) { <br /><span class="unterzeile">Pflicht</span> }</td>
+                                    @if (_editierbar)
+                                    {
+                                        <td><input type="text" aria-label="Beschreibung @p.Schluessel" @bind="p.Beschreibung" /></td>
+                                        <td class="num"><input class="zahl" type="number" step="0.0001" aria-label="Wert @p.Schluessel" @bind="p.Wert" /></td>
+                                        <td class="eng">
+                                            @if (!p.Pflicht)
+                                            {
+                                                <button type="button" class="knopf zweit klein" @onclick="() => _parameter.Remove(p)">Entfernen</button>
+                                            }
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td>@p.Beschreibung</td>
+                                        <td class="num">@Texte.Menge(p.Wert)</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (_editierbar)
+                {
+                    <div class="karte-inhalt felder">
+                        <div class="feld">
+                            <label for="neu-param">Parameter ergänzen</label>
+                            <select id="neu-param" @bind="_neuerParameter">
+                                <option value="">Bitte wählen</option>
+                                @foreach (var (schluessel, text) in ParameterSchluessel.Bekannte.Where(b => _parameter.All(p => p.Schluessel != b.Key)))
+                                {
+                                    <option value="@schluessel">@schluessel – @text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="aktionen breit">
+                            <button type="button" class="knopf zweit klein" disabled="@string.IsNullOrEmpty(_neuerParameter)" @onclick="ParameterErgaenzen">Ergänzen</button>
+                            <button type="button" class="knopf" @onclick="ParameterAsync">Parameter speichern</button>
+                        </div>
+                    </div>
+                }
+            </section>
+            break;
+
+        case "ek":
+            var schwellen = Margenschwellen.Aus(liste);
+            var satz = liste.ParameterWertOder(ParameterSchluessel.EkKostensatzProStunde, 0m);
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Einkauf, Deckungsbeitrag und Marge</h2>
+                    <span class="unterzeile">
+                        Kosten = EK/Lizenz + Betrieb (Aufwand × @Texte.Euro(satz)/h bzw. fester Betrag) + Overhead + Korrektur.
+                        Ampel: grün @Texte.Prozent(schwellen.GruenAb)–@Texte.Prozent(schwellen.GruenBis), rot unter @Texte.Prozent(schwellen.RotUnter), sonst gelb.
+                    </span>
+                </div>
+                <div class="karte-inhalt">
+                    <label class="schalter"><input type="checkbox" @bind="_nurAuffaellige" /> Nur gelb, rot und ohne EK zeigen</label>
+                    <p class="unterzeile">¹ VK der ersten Staffelstufe.</p>
+                </div>
+                <div class="tab-rahmen">
+                    <table class="liste kompakt">
+                        <thead>
+                            <tr>
+                                <th>Komponente</th><th class="num">VK</th><th class="num">EK/Lizenz</th><th class="num">Aufwand Min.</th><th class="num">Betrieb fest</th>
+                                <th class="num">Overhead</th><th class="num">Korrektur</th><th title="Kosten aus den Bestandteilen des Bundles">Bundle</th>
+                                <th class="num">Kosten</th><th class="num">DB</th><th class="num">Marge</th><th>Ampel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in _a.Services)
+                            {
+                                @foreach (var k in s.Preiskomponenten.Where(k => k.Abrechnungsart == Abrechnungsart.Monatlich).OrderBy(k => k.Sortierung))
+                                {
+                                    var pruefung = KomponentenPruefung.Fuer(liste, k, schwellen);
+                                    if (_nurAuffaellige && pruefung.Ampel == Ampel.Gruen)
+                                    {
+                                        continue;
+                                    }
+
+                                    var ek = liste.EkPositionen.SingleOrDefault(e => ReferenceEquals(e.Preiskomponente, k));
+                                    var mitAnmerkung = ek is not null && (_editierbar || !string.IsNullOrWhiteSpace(ek.Anmerkung));
+                                    <tr class="@(mitAnmerkung ? "ohne-linie" : null)">
+                                        <td>
+                                            <span class="code">@k.Code</span> <span class="unterzeile">@k.Bezeichnung</span>
+                                            @if (_editierbar)
+                                            {
+                                                <br />
+                                                @if (ek is null)
+                                                {
+                                                    <button type="button" class="knopf zweit klein" @onclick="() => EkAnlegen(k, s)">EK anlegen</button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="knopf zweit klein" @onclick="() => liste.EkPositionen.Remove(ek)">EK entfernen</button>
+                                                }
+                                            }
+                                        </td>
+                                        <td class="num">@(pruefung.Vk is { } vk ? Texte.Euro(vk) : "–")@(pruefung.VkAusStaffel ? " ¹" : "")</td>
+                                        @if (ek is null)
+                                        {
+                                            <td colspan="6" class="unterzeile">kein EK hinterlegt</td>
+                                        }
+                                        else if (_editierbar)
+                                        {
+                                            <td class="num"><input class="zahl" type="number" min="0" step="0.01" aria-label="EK @k.Code" @bind="ek.EkLizenz" /></td>
+                                            <td class="num"><input class="zahl" type="number" min="0" step="1" aria-label="Aufwand @k.Code" @bind="ek.AufwandMinuten" /></td>
+                                            <td class="num"><input class="zahl" type="number" min="0" step="0.01" aria-label="Betrieb fest @k.Code" @bind="ek.BetriebFix" /></td>
+                                            <td class="num"><input class="zahl" type="number" min="0" step="0.01" aria-label="Overhead @k.Code" @bind="ek.Overhead" /></td>
+                                            <td class="num"><input class="zahl" type="number" step="0.01" aria-label="Korrektur @k.Code" @bind="ek.KostenKorrektur" /></td>
+                                            <td>
+                                                @if (s.Typ == ServiceTyp.Bundle)
+                                                {
+                                                    <input type="checkbox" aria-label="Aus Bestandteilen @k.Code" @bind="ek.AusBestandteilen" />
+                                                }
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="num">@Texte.Euro(ek.EkLizenz)</td>
+                                            <td class="num">@(ek.AufwandMinuten is { } m ? Texte.Menge(m) : "–")</td>
+                                            <td class="num">@(ek.BetriebFix is { } f ? Texte.Euro(f) : "–")</td>
+                                            <td class="num">@Texte.Euro(ek.Overhead)</td>
+                                            <td class="num">@Texte.Euro(ek.KostenKorrektur)</td>
+                                            <td>@(ek.AusBestandteilen ? "ja" : "")</td>
+                                        }
+                                        <td class="num">@(pruefung.Kosten is { } kosten ? Texte.Euro(kosten) : "–")</td>
+                                        <td class="num">@(pruefung.Deckungsbeitrag is { } db ? Texte.Euro(db) : "–")</td>
+                                        <td class="num">@(pruefung.Marge is { } marge ? Texte.Prozent(marge) : "–")</td>
+                                        <td><AmpelPille Wert="pruefung.Ampel" /></td>
+                                    </tr>
+                                    @if (mitAnmerkung)
+                                    {
+                                        <tr>
+                                            <td></td>
+                                            <td colspan="11">
+                                                @if (_editierbar)
+                                                {
+                                                    <input type="text" aria-label="Anmerkung @k.Code" placeholder="Anmerkung / Befund" @bind="ek!.Anmerkung" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="unterzeile">@ek!.Anmerkung</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (_editierbar)
+                {
+                    <div class="karte-inhalt aktionen"><button class="knopf" type="button" @onclick="EkAsync">EK speichern</button></div>
+                }
+            </section>
+            break;
+
+        case "freigabe":
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Prüfung und Freigabe</h2>
+                    <button type="button" class="knopf zweit klein" @onclick="PruefenAsync">Erneut prüfen</button>
+                </div>
+                <div class="karte-inhalt stapel">
+                    @if (_hinweise is null)
+                    {
+                        <p>Prüfe …</p>
+                    }
+                    else
+                    {
+                        var fehler = _hinweise.Where(h => h.IstFehler).ToList();
+                        var sonstige = _hinweise.Where(h => !h.IstFehler).ToList();
+                        @if (liste.Status == PreislistenStatus.Freigegeben)
+                        {
+                            <p class="meldung erfolg">Freigegeben am @Texte.Zeitpunkt(liste.FreigegebenAm!.Value) von @liste.FreigegebenVon. Die Hinweise dienen nur der Information.</p>
+                        }
+                        else if (fehler.Count == 0)
+                        {
+                            <p class="meldung erfolg">Keine Fehler. Die Preisliste kann freigegeben werden.</p>
+                        }
+                        else
+                        {
+                            <div class="meldung fehler">
+                                <strong>Vor der Freigabe zu beheben:</strong>
+                                <ul class="hinweisliste">@foreach (var h in fehler) { <li>@h.Text</li> }</ul>
+                            </div>
+                        }
+                        @if (sonstige.Count > 0)
+                        {
+                            <div class="meldung info">
+                                <strong>Hinweise:</strong>
+                                <ul class="hinweisliste">@foreach (var h in sonstige) { <li>@h.Text</li> }</ul>
+                            </div>
+                        }
+
+                        @if (_editierbar)
+                        {
+                            <div class="stapel">
+                                <label class="schalter"><input type="checkbox" @bind="_bestaetigt" /> Ich habe die Preisliste geprüft. Nach der Freigabe ist sie unveränderlich und gilt ab dem @liste.GueltigAb.ToString("dd.MM.yyyy").</label>
+                                <div class="aktionen">
+                                    <button type="button" class="knopf" disabled="@(fehler.Count > 0 || !_bestaetigt)" @onclick="FreigebenAsync">Preisliste freigeben</button>
+                                </div>
+                            </div>
+                            <hr />
+                            <div class="stapel">
+                                <label class="schalter"><input type="checkbox" @bind="_loeschenBestaetigt" /> Diesen Entwurf endgültig löschen</label>
+                                <div class="aktionen">
+                                    <button type="button" class="knopf zweit" disabled="@(!_loeschenBestaetigt)" @onclick="LoeschenAsync">Entwurf löschen</button>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </section>
+            break;
+    }
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private static readonly (string Schluessel, string Titel)[] Reiter =
+        [("preise", "Preise"), ("staffeln", "Staffeln"), ("parameter", "Parameter"), ("ek", "Einkauf und Marge"), ("freigabe", "Prüfung und Freigabe")];
+
+    private sealed class StaffelZeile
+    {
+        public int AbMenge { get; set; }
+        public string? Bezeichnung { get; set; }
+        public decimal? Vk { get; set; }
+        public string? Navision { get; set; }
+    }
+
+    private sealed class ParameterZeile
+    {
+        public required string Schluessel { get; init; }
+        public decimal Wert { get; set; }
+        public string? Beschreibung { get; set; }
+        public bool Pflicht { get; init; }
+    }
+
+    private PreislistenAnsicht? _a;
+    private bool _editierbar, _meldungIstFehler, _nurAuffaellige, _bestaetigt, _loeschenBestaetigt;
+    private string? _ladefehler, _meldung, _bezeichnung, _neuerParameter;
+    private DateTime _gueltigAb;
+    private string _reiter = "preise";
+    private Dictionary<int, decimal?> _vk = [];
+    private HashSet<int> _mitEintrag = [];
+    private Dictionary<int, List<StaffelZeile>> _staffeln = [];
+    private List<ParameterZeile> _parameter = [];
+    private IReadOnlyList<PruefHinweis>? _hinweise;
+
+    protected override Task OnParametersSetAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _a = await Dienst.LadeAsync(Id);
+            if (_a is null)
+            {
+                _ladefehler = "Diese Preisliste gibt es nicht.";
+                return;
+            }
+
+            var liste = _a.Preisliste;
+            _editierbar = liste.IstAenderbar && Dienst.Recht.DarfKatalogPflegen;
+            _bezeichnung = liste.Bezeichnung;
+            _gueltigAb = liste.GueltigAb.ToDateTime(TimeOnly.MinValue);
+            var komponenten = _a.Services.SelectMany(s => s.Preiskomponenten).ToList();
+            _vk = komponenten.ToDictionary(k => k.Id, k => liste.PreisFuer(k.Id));
+            _mitEintrag = [.. liste.Preise.Select(p => p.PreiskomponenteId)];
+            _staffeln = komponenten.ToDictionary(k => k.Id, k => liste.Staffeln.Where(s => s.PreiskomponenteId == k.Id).OrderBy(s => s.AbMenge)
+                .Select(s => new StaffelZeile { AbMenge = s.AbMenge, Bezeichnung = s.Bezeichnung, Vk = s.VkNetto, Navision = s.NavisionArtikelnummer })
+                .ToList());
+            _parameter = [.. liste.Parameter.OrderBy(p => p.Schluessel)
+                .Select(p => new ParameterZeile { Schluessel = p.Schluessel, Wert = p.Wert / 1.000000000000000000000000000000000m, Beschreibung = p.Beschreibung, Pflicht = ParameterSchluessel.Pflicht.Contains(p.Schluessel) })];
+            _hinweise = await Dienst.PruefenAsync(Id);
+            _bestaetigt = false;
+            _loeschenBestaetigt = false;
+        }
+        catch (KeinZugriffException e)
+        {
+            _ladefehler = e.Message;
+        }
+    }
+
+    private Task StammdatenAsync() =>
+        AusfuehrenAsync(() => Dienst.StammdatenSpeichernAsync(Id, _bezeichnung ?? "", DateOnly.FromDateTime(_gueltigAb)), "Bezeichnung und Datum gespeichert.");
+
+    private Task PreiseAsync() => AusfuehrenAsync(() => Dienst.PreiseSpeichernAsync(Id,
+        [.. _a!.Services.SelectMany(s => s.Preiskomponenten).Where(k => k.StaffelBezug == StaffelBezug.Keine).Select(k => new PreisWert(k.Id, _vk[k.Id]))]),
+        "Preise gespeichert.");
+
+    private Task StaffelAsync(Preiskomponente k) => AusfuehrenAsync(() => Dienst.StaffelSpeichernAsync(Id, k.Id,
+        [.. _staffeln[k.Id].Select(s => new StaffelWert(s.AbMenge, s.Vk, s.Bezeichnung, s.Navision))]),
+        $"Staffel von {k.Code} gespeichert.");
+
+    private void ParameterErgaenzen()
+    {
+        if (!string.IsNullOrEmpty(_neuerParameter))
+        {
+            _parameter.Add(new ParameterZeile { Schluessel = _neuerParameter, Beschreibung = ParameterSchluessel.Bekannte.GetValueOrDefault(_neuerParameter) });
+            _neuerParameter = null;
+        }
+    }
+
+    private Task ParameterAsync() => AusfuehrenAsync(() => Dienst.ParameterSpeichernAsync(Id,
+        [.. _parameter.Select(p => new ParameterWert(p.Schluessel, p.Wert, p.Beschreibung))]),
+        "Parameter gespeichert.");
+
+    private void EkAnlegen(Preiskomponente k, Service s) =>
+        _a!.Preisliste.EkPositionen.Add(new EkPosition { PreislisteId = Id, PreiskomponenteId = k.Id, Preiskomponente = k, AusBestandteilen = s.Typ == ServiceTyp.Bundle });
+
+    private Task EkAsync()
+    {
+        var liste = _a!.Preisliste;
+        var werte = _a.Services.SelectMany(s => s.Preiskomponenten).Where(k => k.Abrechnungsart == Abrechnungsart.Monatlich)
+            .ToDictionary(k => k.Id, k => liste.EkPositionen.SingleOrDefault(e => ReferenceEquals(e.Preiskomponente, k)) is { } ek
+                ? new EkWert(ek.EkLizenz, ek.AufwandMinuten, ek.BetriebFix, ek.Overhead, ek.AusBestandteilen, ek.KostenKorrektur, ek.Anmerkung)
+                : null);
+        return AusfuehrenAsync(() => Dienst.EkSpeichernAsync(Id, werte), "EK-Werte gespeichert.");
+    }
+
+    private async Task PruefenAsync()
+    {
+        _hinweise = null;
+        _hinweise = await Dienst.PruefenAsync(Id);
+    }
+
+    private Task FreigebenAsync() => AusfuehrenAsync(() => Dienst.FreigebenAsync(Id), "Die Preisliste ist freigegeben.");
+
+    private async Task LoeschenAsync()
+    {
+        try
+        {
+            await Dienst.EntwurfLoeschenAsync(Id);
+            Navigation.NavigateTo("katalog");
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+
+    /// <summary>Führt eine Änderung aus, zeigt Erfolg oder die fachliche Meldung und lädt die Preisliste neu.</summary>
+    private async Task AusfuehrenAsync(Func<Task> aktion, string erfolg)
+    {
+        try
+        {
+            await aktion();
+            (_meldung, _meldungIstFehler) = (erfolg, false);
+            await LadeAsync();
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+}

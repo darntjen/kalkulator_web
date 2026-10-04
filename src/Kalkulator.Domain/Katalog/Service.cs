@@ -31,5 +31,32 @@ public class Service
 
     public List<ServiceRegel> Regeln { get; } = [];
 
+    /// <summary>
+    /// Ob <paramref name="gesucht"/> dieser Service selbst ist oder direkt bzw. über verschachtelte Bundles in ihm steckt.
+    /// Dafür müssen die Bestandteile samt ihrer Bestandteile geladen sein.
+    /// </summary>
+    public bool Enthaelt(Service gesucht)
+    {
+        var besucht = new HashSet<Service>(ReferenceEqualityComparer.Instance);
+        var offen = new Stack<Service>([this]);
+        while (offen.TryPop(out var service))
+        {
+            if (ReferenceEquals(service, gesucht) || (gesucht.Id != 0 && service.Id == gesucht.Id))
+            {
+                return true;
+            }
+
+            if (besucht.Add(service))
+            {
+                foreach (var b in service.Bestandteile)
+                {
+                    offen.Push(b.Bestandteil ?? throw new InvalidOperationException($"Ein Bestandteil von „{service.Code}“ ist nicht geladen."));
+                }
+            }
+        }
+
+        return false;
+    }
+
     public bool DarfAngebotenWerden => Vertriebsstatus is not (Vertriebsstatus.Zukuenftig or Vertriebsstatus.Geparkt);
 }

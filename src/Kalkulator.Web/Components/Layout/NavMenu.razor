@@ -1,6 +1,11 @@
+@inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
+
 <nav class="app-nav" aria-label="Hauptnavigation">
     <NavLink href="" Match="NavLinkMatch.All">Start</NavLink>
     <NavLink href="projekte">Kundenprojekte</NavLink>
-    <NavLink href="katalog">Katalog</NavLink>
+    @if (new Berechtigung(Benutzer).DarfKatalogSehen)
+    {
+        <NavLink href="katalog">Katalog</NavLink>
+    }
     <NavLink href="statistik">Statistik</NavLink>
 </nav>

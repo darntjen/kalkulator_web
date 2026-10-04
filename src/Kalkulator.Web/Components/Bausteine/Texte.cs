@@ -31,18 +31,7 @@ public static class Texte
         _ => grund.ToString(),
     };
 
-    public static string Einheit(Domain.Katalog.Einheit einheit) => einheit switch
-    {
-        Domain.Katalog.Einheit.Pauschal => "pauschal",
-        Domain.Katalog.Einheit.AdUmgebung => "je AD-Umgebung",
-        Domain.Katalog.Einheit.AccessPoint => "je Access Point",
-        Domain.Katalog.Einheit.Netzwerkgeraet => "je Netzwerkgerät",
-        Domain.Katalog.Einheit.Nas => "je NAS",
-        Domain.Katalog.Einheit.Abrechnungseinheit => "je AE",
-        Domain.Katalog.Einheit.Backupumgebung => "je Backupumgebung",
-        Domain.Katalog.Einheit.Terabyte => "je TB",
-        _ => "je " + einheit,
-    };
+    public static string Einheit(Domain.Katalog.Einheit einheit) => Domain.Katalog.KatalogTexte.Einheit(einheit);
 
     public static string Freigabe(Freigabestatus status) => status switch
     {

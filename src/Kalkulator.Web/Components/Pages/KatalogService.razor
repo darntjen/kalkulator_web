@@ -1,0 +1,366 @@
+@page "/katalog/services/{Id:int}"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Katalog
+@inject KatalogDienst Dienst
+@inject NavigationManager Navigation
+
+<PageTitle>@(_a?.Service.Code ?? "Service") · Katalog · Managed-Services-Kalkulator</PageTitle>
+
+@if (_ladefehler is not null)
+{
+    <h1>Service</h1>
+    <p class="meldung fehler">@_ladefehler</p>
+}
+else if (_a is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    var s = _a.Service;
+    <div class="ansicht-kopf">
+        <div>
+            <h1>@s.Code · @s.Bezeichnung</h1>
+            <p class="unterzeile">@KatalogTexte.Typ(s.Typ) · @s.Kategorie!.Name · @KatalogTexte.Vertriebsstatus(s.Vertriebsstatus)</p>
+        </div>
+        <a class="knopf zweit" href="katalog/services">Zur Übersicht</a>
+    </div>
+
+    <KatalogReiter />
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    <section class="karte">
+        <div class="karte-kopf"><h2>Preiskomponenten</h2><span class="unterzeile">Abrechenbare Einheiten; die Preise stehen in der Preisliste.</span></div>
+        <div class="tab-rahmen">
+            <table class="liste">
+                <thead><tr><th>Code</th><th>Bezeichnung</th><th>Einheit</th><th>Abrechnung</th><th>Staffel</th><th>Navision</th><th class="num">Reihenf.</th>@if (_pflegen) { <th class="eng"></th> }</tr></thead>
+                <tbody>
+                    @foreach (var k in s.Preiskomponenten.OrderBy(k => k.Sortierung))
+                    {
+                        <tr>
+                            <td><span class="code">@k.Code</span></td>
+                            @if (_pflegen)
+                            {
+                                <td><input type="text" aria-label="Bezeichnung @k.Code" @bind="k.Bezeichnung" /></td>
+                                <td><select aria-label="Einheit @k.Code" @bind="k.Einheit">@foreach (var e in Enum.GetValues<Einheit>()) { <option value="@e">@KatalogTexte.Einheit(e)</option> }</select></td>
+                                <td><select aria-label="Abrechnung @k.Code" @bind="k.Abrechnungsart">@foreach (var a in Enum.GetValues<Abrechnungsart>()) { <option value="@a">@KatalogTexte.Abrechnungsart(a)</option> }</select></td>
+                                <td><select aria-label="Staffel @k.Code" @bind="k.StaffelBezug">@foreach (var b in Enum.GetValues<StaffelBezug>()) { <option value="@b">@KatalogTexte.StaffelBezug(b)</option> }</select></td>
+                                <td><input type="text" aria-label="Navision @k.Code" @bind="k.NavisionArtikelnummer" /></td>
+                                <td class="num"><input class="zahl" type="number" step="1" aria-label="Reihenfolge @k.Code" @bind="k.Sortierung" /></td>
+                                <td class="eng">
+                                    <div class="aktionen">
+                                        <button type="button" class="knopf zweit klein" @onclick="() => KomponenteAsync(k)">Speichern</button>
+                                        @if (_a.LoeschbareKomponenten.Contains(k.Id))
+                                        {
+                                            <button type="button" class="knopf zweit klein" @onclick="() => KomponenteLoeschenAsync(k)">Löschen</button>
+                                        }
+                                    </div>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>@k.Bezeichnung</td>
+                                <td>@KatalogTexte.Einheit(k.Einheit)</td>
+                                <td>@KatalogTexte.Abrechnungsart(k.Abrechnungsart)</td>
+                                <td>@KatalogTexte.StaffelBezug(k.StaffelBezug)</td>
+                                <td>@(k.NavisionArtikelnummer ?? "–")</td>
+                                <td class="num">@k.Sortierung</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (_pflegen)
+        {
+            <form class="karte-inhalt felder" @onsubmit="KomponenteAnlegenAsync">
+                <div class="feld"><label for="k-code">Neue Komponente: Code</label><input id="k-code" type="text" placeholder="@($"{s.Code}-USER")" @bind="_neu.Code" /></div>
+                <div class="feld"><label for="k-bez">Bezeichnung</label><input id="k-bez" type="text" @bind="_neu.Bezeichnung" /></div>
+                <div class="feld"><label for="k-einheit">Einheit</label><select id="k-einheit" @bind="_neu.Einheit">@foreach (var e in Enum.GetValues<Einheit>()) { <option value="@e">@KatalogTexte.Einheit(e)</option> }</select></div>
+                <div class="feld"><label for="k-art">Abrechnung</label><select id="k-art" @bind="_neu.Abrechnungsart">@foreach (var a in Enum.GetValues<Abrechnungsart>()) { <option value="@a">@KatalogTexte.Abrechnungsart(a)</option> }</select></div>
+                <div class="feld"><label for="k-staffel">Staffel</label><select id="k-staffel" @bind="_neu.StaffelBezug">@foreach (var b in Enum.GetValues<StaffelBezug>()) { <option value="@b">@KatalogTexte.StaffelBezug(b)</option> }</select></div>
+                <div class="feld"><label for="k-nav">Navision-Artikel</label><input id="k-nav" type="text" @bind="_neu.Navision" /></div>
+                <div class="aktionen breit"><button class="knopf klein" type="submit">Komponente anlegen</button></div>
+            </form>
+        }
+    </section>
+
+    <div class="spalten abstand-oben">
+        <div class="stapel">
+
+
+            @if (s.Typ == ServiceTyp.Bundle)
+            {
+                <section class="karte">
+                    <div class="karte-kopf"><h2>Bundle-Bestandteile</h2><span class="unterzeile">Grundlage für Regelprüfung, Kostenrechnung und Vertragspaket (A-10).</span></div>
+                    <div class="karte-inhalt stapel">
+                        @if (s.Bestandteile.Count == 0)
+                        {
+                            <p class="unterzeile">Noch keine Bestandteile.</p>
+                        }
+                        <ul class="hinweisliste">
+                            @foreach (var b in s.Bestandteile.OrderBy(b => b.Bestandteil!.Code))
+                            {
+                                <li>
+                                    <a href="katalog/services/@b.BestandteilId">@b.Bestandteil!.Code</a> @b.Bestandteil.Bezeichnung
+                                    @if (_pflegen)
+                                    {
+                                        <button type="button" class="knopf zweit klein" @onclick="() => BestandteilEntfernenAsync(b.BestandteilId)">Entfernen</button>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                        @if (_pflegen)
+                        {
+                            <div class="aktionen">
+                                <select aria-label="Bestandteil" @bind="_neuerBestandteil">
+                                    <option value="0">Service wählen</option>
+                                    @foreach (var x in _a.AlleServices.Where(x => x.Id != s.Id && x.Typ != ServiceTyp.Connect && s.Bestandteile.All(b => b.BestandteilId != x.Id)))
+                                    {
+                                        <option value="@x.Id">@x.Code · @x.Bezeichnung</option>
+                                    }
+                                </select>
+                                <button type="button" class="knopf klein" disabled="@(_neuerBestandteil == 0)" @onclick="BestandteilAsync">Hinzufügen</button>
+                            </div>
+                        }
+                    </div>
+                </section>
+            }
+
+            <section class="karte">
+                <div class="karte-kopf"><h2>Regeln</h2><span class="unterzeile">Werden in der Kalkulation geprüft; die Meldung sieht der Vertrieb.</span></div>
+                <div class="karte-inhalt stapel">
+                    @if (_regeln.Count == 0)
+                    {
+                        <p class="unterzeile">Keine Regeln.</p>
+                    }
+                    @foreach (var r in _regeln)
+                    {
+                        <RegelEditor Regel="r" Services="ZielAuswahl" Pflegen="_pflegen"
+                                     Speichern="() => RegelAsync(r)" Loeschen="() => RegelLoeschenAsync(r)" />
+                    }
+                    @if (_pflegen)
+                    {
+                        <h3>Neue Regel</h3>
+                        <RegelEditor Regel="_neueRegel" Services="ZielAuswahl" Pflegen="true" Speichern="RegelAnlegenAsync" />
+                    }
+                </div>
+            </section>
+        </div>
+
+        <div class="stapel">
+            <section class="karte">
+                <div class="karte-kopf"><h2>Stammdaten</h2></div>
+                <div class="karte-inhalt">
+                    @if (_pflegen)
+                    {
+                        <form class="stapel" @onsubmit="StammdatenAsync">
+                            <div class="feld"><label for="s-bez">Bezeichnung</label><input id="s-bez" type="text" @bind="_stamm.Bezeichnung" /></div>
+                            <div class="feld"><label for="s-nr">Service-ID (Mastersheet)</label><input id="s-nr" type="text" @bind="_stamm.ServiceNummer" /></div>
+                            <div class="feld"><label for="s-kurz">Kurzbeschreibung</label><textarea id="s-kurz" rows="3" @bind="_stamm.Kurzbeschreibung"></textarea></div>
+                            <div class="feld">
+                                <label for="s-kat">Kategorie</label>
+                                <select id="s-kat" @bind="_stamm.KategorieId">@foreach (var k in _a.Kategorien) { <option value="@k.Id">@k.Name</option> }</select>
+                            </div>
+                            <div class="feld">
+                                <label for="s-status">Vertriebsstatus</label>
+                                <select id="s-status" @bind="_stamm.Vertriebsstatus">@foreach (var v in Enum.GetValues<Vertriebsstatus>()) { <option value="@v">@KatalogTexte.Vertriebsstatus(v)</option> }</select>
+                            </div>
+                            <div class="feld"><label for="s-sort">Reihenfolge in der Kategorie</label><input id="s-sort" type="number" step="1" @bind="_stamm.Sortierung" /></div>
+                            <div class="feld">
+                                <label for="s-ls">Leistungsschein (A-12)</label>
+                                <select id="s-ls" @bind="_stamm.LeistungsscheinId">
+                                    <option value="">keiner</option>
+                                    @foreach (var d in _a.Leistungsscheine)
+                                    {
+                                        <option value="@d.Id">@d.Code V@(d.Version) · @d.Bezeichnung</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="aktionen"><button class="knopf klein" type="submit">Stammdaten speichern</button></div>
+                        </form>
+                    }
+                    else
+                    {
+                        <dl class="daten">
+                            <dt>Service-ID</dt><dd>@(s.ServiceNummer ?? "–")</dd>
+                            <dt>Kurzbeschreibung</dt><dd>@(s.Kurzbeschreibung ?? "–")</dd>
+                            <dt>Reihenfolge</dt><dd>@s.Sortierung</dd>
+                            <dt>Leistungsschein</dt><dd>@(s.Leistungsschein is { } l ? $"{l.Code} V{l.Version}" : "–")</dd>
+                        </dl>
+                    }
+                </div>
+            </section>
+
+            <section class="karte">
+                <div class="karte-kopf"><h2>Verwendung</h2></div>
+                <div class="karte-inhalt stapel">
+                    @if (_a.VerwendetIn.Count == 0)
+                    {
+                        <p class="unterzeile">In keinem Bundle und keiner Regel eines anderen Service.</p>
+                    }
+                    else
+                    {
+                        <ul class="hinweisliste">@foreach (var v in _a.VerwendetIn) { <li>@v</li> }</ul>
+                    }
+                    @if (_pflegen)
+                    {
+                        @if (_a.GrundNichtLoeschbar is { } grund)
+                        {
+                            <p class="unterzeile">Löschen nicht möglich. @grund Zum Stilllegen den Vertriebsstatus auf „geparkt“ setzen.</p>
+                        }
+                        else
+                        {
+                            <label class="schalter"><input type="checkbox" @bind="_loeschenBestaetigt" /> @s.Code endgültig löschen</label>
+                            <div class="aktionen"><button type="button" class="knopf zweit klein" disabled="@(!_loeschenBestaetigt)" @onclick="LoeschenAsync">Service löschen</button></div>
+                        }
+                    }
+                </div>
+            </section>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private sealed class Stamm
+    {
+        public string Bezeichnung { get; set; } = "";
+        public string? ServiceNummer { get; set; }
+        public string? Kurzbeschreibung { get; set; }
+        public int KategorieId { get; set; }
+        public Vertriebsstatus Vertriebsstatus { get; set; }
+        public int Sortierung { get; set; }
+        public int? LeistungsscheinId { get; set; }
+    }
+
+    private sealed class NeueKomponente
+    {
+        public string? Code { get; set; }
+        public string? Bezeichnung { get; set; }
+        public Einheit Einheit { get; set; } = Einheit.User;
+        public Abrechnungsart Abrechnungsart { get; set; } = Abrechnungsart.Monatlich;
+        public StaffelBezug StaffelBezug { get; set; }
+        public string? Navision { get; set; }
+    }
+
+    private ServiceAnsicht? _a;
+    private bool _pflegen, _meldungIstFehler, _loeschenBestaetigt;
+    private string? _ladefehler, _meldung;
+    private Stamm _stamm = new();
+    private NeueKomponente _neu = new();
+    private int _neuerBestandteil;
+    private List<RegelEditor.Modell> _regeln = [];
+    private RegelEditor.Modell _neueRegel = new();
+
+    private IReadOnlyList<Service> ZielAuswahl => [.. _a!.AlleServices.Where(x => x.Id != Id)];
+
+    protected override Task OnParametersSetAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _a = await Dienst.ServiceAsync(Id);
+            if (_a is null)
+            {
+                _ladefehler = "Diesen Service gibt es nicht.";
+                return;
+            }
+
+            var s = _a.Service;
+            _pflegen = Dienst.Recht.DarfKatalogPflegen;
+            _stamm = new Stamm
+            {
+                Bezeichnung = s.Bezeichnung,
+                ServiceNummer = s.ServiceNummer,
+                Kurzbeschreibung = s.Kurzbeschreibung,
+                KategorieId = s.KategorieId,
+                Vertriebsstatus = s.Vertriebsstatus,
+                Sortierung = s.Sortierung,
+                LeistungsscheinId = s.LeistungsscheinId,
+            };
+            _regeln = [.. s.Regeln.OrderBy(r => r.Id).Select(r => new RegelEditor.Modell
+            {
+                Id = r.Id,
+                Typ = r.Typ,
+                Meldung = r.Meldung,
+                Ziele = [.. r.Ziele.Select(z => z.ZielServiceId.ToString(System.Globalization.CultureInfo.InvariantCulture))],
+            })];
+            _loeschenBestaetigt = false;
+        }
+        catch (KeinZugriffException e)
+        {
+            _ladefehler = e.Message;
+        }
+    }
+
+    private Task StammdatenAsync() => AusfuehrenAsync(() => Dienst.ServiceSpeichernAsync(Id, new ServiceStammdaten(
+        _stamm.Bezeichnung, _stamm.ServiceNummer, _stamm.Kurzbeschreibung, _stamm.KategorieId, _stamm.Vertriebsstatus, _stamm.Sortierung, _stamm.LeistungsscheinId)),
+        "Stammdaten gespeichert.");
+
+    private Task KomponenteAsync(Preiskomponente k) => AusfuehrenAsync(() => Dienst.KomponenteSpeichernAsync(k.Id,
+        new KomponentenStammdaten(k.Bezeichnung, k.Einheit, k.Abrechnungsart, k.StaffelBezug, k.NavisionArtikelnummer, k.Sortierung)),
+        $"{k.Code} gespeichert.");
+
+    private Task KomponenteLoeschenAsync(Preiskomponente k) => AusfuehrenAsync(() => Dienst.KomponenteLoeschenAsync(k.Id), $"{k.Code} gelöscht.");
+
+    private Task KomponenteAnlegenAsync() => AusfuehrenAsync(async () =>
+    {
+        var sortierung = _a!.Service.Preiskomponenten.Select(k => k.Sortierung).DefaultIfEmpty(0).Max() + 1;
+        await Dienst.KomponenteAnlegenAsync(Id, _neu.Code ?? "",
+            new KomponentenStammdaten(_neu.Bezeichnung ?? "", _neu.Einheit, _neu.Abrechnungsart, _neu.StaffelBezug, _neu.Navision, sortierung));
+        _neu = new NeueKomponente();
+    }, "Komponente angelegt. Preis und EK bitte im Entwurf einer Preisliste pflegen.");
+
+    private Task BestandteilAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.BestandteilHinzufuegenAsync(Id, _neuerBestandteil);
+        _neuerBestandteil = 0;
+    }, "Bestandteil hinzugefügt.");
+
+    private Task BestandteilEntfernenAsync(int bestandteil) => AusfuehrenAsync(() => Dienst.BestandteilEntfernenAsync(Id, bestandteil), "Bestandteil entfernt.");
+
+    private Task RegelAsync(RegelEditor.Modell r) => AusfuehrenAsync(() => Dienst.RegelSpeichernAsync(r.Id, r.AlsStammdaten()), "Regel gespeichert.");
+
+    private Task RegelLoeschenAsync(RegelEditor.Modell r) => AusfuehrenAsync(() => Dienst.RegelLoeschenAsync(r.Id), "Regel gelöscht.");
+
+    private Task RegelAnlegenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.RegelAnlegenAsync(Id, _neueRegel.AlsStammdaten());
+        _neueRegel = new();
+    }, "Regel angelegt.");
+
+    private async Task LoeschenAsync()
+    {
+        try
+        {
+            await Dienst.ServiceLoeschenAsync(Id);
+            Navigation.NavigateTo("katalog/services");
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+
+    private async Task AusfuehrenAsync(Func<Task> aktion, string erfolg)
+    {
+        try
+        {
+            await aktion();
+            (_meldung, _meldungIstFehler) = (erfolg, false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

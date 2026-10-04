@@ -29,10 +29,27 @@ public class AnmeldungTests(WebApplicationFactory<Program> factory) : IClassFixt
         var cookie = Assert.Single(antwort.Headers.GetValues("Set-Cookie"));
         Assert.StartsWith($"{Anmeldung.Anmeldung.RollenCookie}=Fuehrung", cookie, StringComparison.Ordinal);
 
-        using var anfrage = new HttpRequestMessage(HttpMethod.Get, "/katalog");
+        // Startseite statt /katalog: Sie braucht keine Datenbank, und es geht hier nur um die Anmeldung mit der neuen Rolle.
+        using var anfrage = new HttpRequestMessage(HttpMethod.Get, "/");
         anfrage.Headers.Add("Cookie", $"{Anmeldung.Anmeldung.RollenCookie}=Fuehrung");
         var html = await (await client.SendAsync(anfrage)).Content.ReadAsStringAsync();
         Assert.Contains("fuehrung@noesse.de", html);
+    }
+
+    [Theory]
+    [InlineData("Vertrieb", false)]
+    [InlineData("Vertriebsleitung", false)]
+    [InlineData("Consultant", false)]
+    [InlineData("Admin", false)]
+    [InlineData("Produktmanagement", true)]
+    [InlineData("Fuehrung", true)]
+    public async Task Den_Katalog_sehen_nur_Produktmanagement_und_Fuehrung(string rolle, bool sichtbar)
+    {
+        using var anfrage = new HttpRequestMessage(HttpMethod.Get, "/");
+        anfrage.Headers.Add("Cookie", $"{Anmeldung.Anmeldung.RollenCookie}={rolle}");
+        var html = await (await Client().SendAsync(anfrage)).Content.ReadAsStringAsync();
+
+        Assert.Equal(sichtbar, html.Contains("href=\"katalog\"", StringComparison.Ordinal));
     }
 
     [Theory]

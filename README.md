@@ -100,6 +100,23 @@ Die Preisliste „Preisstand 15.07.2026“ entsteht als **Entwurf** und muss vom
 freigegeben werden. Enthält der Katalog schon Services, passiert nichts. Navision-Artikelnummern
 mit `9999…` sind Platzhalter (siehe `docs/11_navision-zuordnung.md`).
 
+### Katalog und Preislisten pflegen
+
+Unter „Katalog“ pflegt das Produktmanagement Services, Preiskomponenten, Bundles, Regeln, Kategorien und
+Vertragsvorlagen sowie die Preislisten; die Führung sieht alles nur lesend, andere Rollen sehen den Katalog nicht.
+
+- **Preislisten:** Eine Änderung beginnt mit einem Entwurf, der alle Werte einer bestehenden Preisliste kopiert.
+  Darin werden Preise, Staffeln, Parameter und EK gepflegt. Vor der Freigabe prüft die Anwendung Pflichtparameter,
+  fehlende Preise und das Gültigkeitsdatum; fehlende EK-Werte und rote Margen sind Hinweise. Freigegebene
+  Preislisten sind unveränderlich (ADR-0005).
+- **Margen-Ampel:** grün von `MARGE_GRUEN_AB` bis `MARGE_GRUEN_BIS`, rot unter `MARGE_ROT_UNTER`, sonst gelb;
+  ohne EK grau. Die Schwellen sind Parameter der Preisliste.
+- **Katalog:** Codes sind nach dem Anlegen fest. Gelöscht wird nur, was weder in einer freigegebenen Preisliste
+  noch in einer Kalkulation vorkommt; sonst den Vertriebsstatus auf „geparkt“ setzen.
+- **Excel-Export** je Preisliste unter `/katalog/export/{id}` mit Services, Preisen, Staffeln, Parametern, Regeln
+  und EK-Kalkulation.
+- **Änderungsprotokoll:** wer wann was geändert hat, mit altem und neuem Wert.
+
 ### Angebote
 
 Ein Angebot entsteht im Kalkulationseditor (Bereich „Angebote“). Dabei wird der gespeicherte Stand als Version

@@ -1,7 +1,146 @@
 @page "/katalog"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Preise
+@inject PreislistenDienst Dienst
+@inject NavigationManager Navigation
 
 <PageTitle>Katalog · Managed-Services-Kalkulator</PageTitle>
 
-<h1>Katalog</h1>
+<div class="ansicht-kopf">
+    <div>
+        <h1>Katalog</h1>
+        @if (Dienst.Recht.DarfKatalogSehen)
+        {
+            <p class="unterzeile">@(Dienst.Recht.DarfKatalogPflegen ? "Preislisten, Services und Vorlagen pflegen" : "Preislisten, Services und Vorlagen ansehen (nur lesen)")</p>
+        }
+    </div>
+</div>
 
-<p class="hinweis">Die Pflege von Services, Bundles und Preislisten entsteht in Phase 1 (Issue #6).</p>
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else if (_listen is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    <KatalogReiter />
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung fehler">@_meldung</p>
+    }
+
+    <div class="stapel">
+        <section class="karte">
+            <div class="karte-kopf">
+                <h2>Preislisten</h2>
+                <span class="unterzeile">Gerechnet wird mit der freigegebenen Preisliste, die am jeweiligen Tag gilt.</span>
+            </div>
+            <div class="tab-rahmen">
+                <table class="liste">
+                    <thead>
+                        <tr>
+                            <th>Bezeichnung</th>
+                            <th>Gültig ab</th>
+                            <th>Status</th>
+                            <th>Freigegeben</th>
+                            <th>Kopiert aus</th>
+                            <th class="eng"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in _listen)
+                        {
+                            <tr>
+                                <td><a href="katalog/preislisten/@p.Id">@p.Bezeichnung</a></td>
+                                <td>@p.GueltigAb.ToString("dd.MM.yyyy")</td>
+                                <td>
+                                    <span class="pille pl-@p.Status">@(p.Status == PreislistenStatus.Freigegeben ? "freigegeben" : "Entwurf")</span>
+                                    @if (p.Aktuell)
+                                    {
+                                        <span class="pille pl-Aktuell" title="Diese Preisliste gilt heute.">gilt heute</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (p.FreigegebenAm is { } am)
+                                    {
+                                        @Texte.Zeitpunkt(am)<br /><span class="unterzeile">@p.FreigegebenVon</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="unterzeile">–</span>
+                                    }
+                                </td>
+                                <td>@(p.Vorgaenger ?? "–")</td>
+                                <td class="eng"><a class="knopf zweit klein" href="katalog/export/@p.Id" download>Excel</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        @if (Dienst.Recht.DarfKatalogPflegen && _listen.Count > 0)
+        {
+            <section class="karte">
+                <div class="karte-kopf">
+                    <h2>Neue Preisliste vorbereiten</h2>
+                    <span class="unterzeile">Der Entwurf übernimmt alle Preise, Staffeln, Parameter und EK-Werte der Vorlage.</span>
+                </div>
+                <form class="karte-inhalt felder" @onsubmit="EntwurfAsync">
+                    <div class="feld">
+                        <label for="vorlage">Kopieren aus</label>
+                        <select id="vorlage" @bind="_vorlage">
+                            @foreach (var p in _listen)
+                            {
+                                <option value="@p.Id">@p.Bezeichnung</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld"><label for="bezeichnung">Bezeichnung</label><input id="bezeichnung" type="text" @bind="_bezeichnung" /></div>
+                    <div class="feld"><label for="gueltig">Gültig ab</label><input id="gueltig" type="date" @bind="_gueltigAb" /></div>
+                    <div class="aktionen breit"><button class="knopf" type="submit">Entwurf anlegen</button></div>
+                </form>
+            </section>
+        }
+    </div>
+}
+
+@code {
+    private IReadOnlyList<PreislistenZeile>? _listen;
+    private string? _fehler, _meldung, _bezeichnung;
+    private int _vorlage;
+    private DateTime _gueltigAb;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _listen = await Dienst.ListeAsync();
+            _vorlage = (_listen.FirstOrDefault(p => p.Aktuell) ?? _listen.FirstOrDefault())?.Id ?? 0;
+            var ab = Dienst.Heute.AddDays(1);
+            _gueltigAb = ab.ToDateTime(TimeOnly.MinValue);
+            _bezeichnung = $"Preisstand {ab:dd.MM.yyyy}";
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+
+    private async Task EntwurfAsync()
+    {
+        try
+        {
+            var id = await Dienst.EntwurfAnlegenAsync(_vorlage, _bezeichnung ?? "", DateOnly.FromDateTime(_gueltigAb));
+            Navigation.NavigateTo($"katalog/preislisten/{id}");
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            _meldung = e.Message;
+        }
+    }
+}
