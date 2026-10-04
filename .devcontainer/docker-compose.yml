@@ -1,0 +1,24 @@
+# Das SA-Kennwort erzeugt kennwort.sh beim Anlegen des Codespaces in .devcontainer/.env (nicht im Repository).
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/dotnet:10.0
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Kalkulator: "Server=db,1433;Database=Kalkulator;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Kennwort fehlt, siehe kennwort.sh};TrustServerCertificate=True"
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Kennwort fehlt, siehe kennwort.sh}
+    volumes:
+      - sqldaten:/var/opt/mssql
+
+volumes:
+  sqldaten:

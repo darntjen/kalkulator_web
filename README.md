@@ -57,7 +57,16 @@ dotnet run --project src/Kalkulator.Web
 ```
 
 Die Anwendung ist danach unter der in der Konsole angezeigten Adresse erreichbar
-(Standard: `http://localhost:5226`). Der Health-Check liegt unter `/health`.
+(Standard: `http://localhost:5186`). Der Health-Check liegt unter `/health`.
+
+### In GitHub Codespaces testen
+
+Ohne Installation im Browser: im Repository **Code → Codespaces → Create codespace** (gewünschten Branch wählen).
+Der Codespace startet .NET 10 und einen SQL Server, spielt beim ersten Start Datenbank und Musterkatalog ein und
+startet die App auf Port **5226**; der Browser öffnet sie automatisch (sonst Reiter „Ports“). Die Teams-Ablage
+ersetzt `.devcontainer/beispielablage` mit erfundenen Kanalordnern. Das Protokoll der App liegt in
+`/tmp/kalkulator.log`. Die Adresse ist privat (nur mit dem eigenen GitHub-Konto); bitte keine echten Kundendaten
+eingeben. Das SA-Kennwort des SQL Servers erzeugt der Codespace selbst (`.devcontainer/.env`, nicht im Repository).
 
 ### Anmeldung bis zur Einrichtung von Entra ID
 
