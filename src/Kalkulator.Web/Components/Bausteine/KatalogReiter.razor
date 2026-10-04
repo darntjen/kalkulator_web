@@ -1,0 +1,31 @@
+@inject NavigationManager Navigation
+@implements IDisposable
+
+<nav class="reiter" aria-label="Katalog">
+    @foreach (var (pfad, titel, praefix) in Eintraege)
+    {
+        <a href="@pfad" class="@(Aktiv(pfad, praefix) ? "active" : null)">@titel</a>
+    }
+</nav>
+
+@code {
+    private static readonly (string Pfad, string Titel, string? Praefix)[] Eintraege =
+    [
+        ("katalog", "Preislisten", "katalog/preislisten"),
+        ("katalog/services", "Services", "katalog/services"),
+        ("katalog/vorlagen", "Vertragsvorlagen", null),
+        ("katalog/protokoll", "Änderungsprotokoll", null),
+    ];
+
+    protected override void OnInitialized() => Navigation.LocationChanged += Neu;
+
+    private void Neu(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e) => InvokeAsync(StateHasChanged);
+
+    private bool Aktiv(string pfad, string? praefix)
+    {
+        var aktuell = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?', '#')[0].TrimEnd('/');
+        return aktuell == pfad || (praefix is not null && aktuell.StartsWith(praefix, StringComparison.Ordinal));
+    }
+
+    public void Dispose() => Navigation.LocationChanged -= Neu;
+}

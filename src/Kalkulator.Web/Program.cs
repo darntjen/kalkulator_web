@@ -88,6 +88,24 @@ app.MapGet("/angebote/{id:int}/datei", async (int id, AngebotsDienst dienst, Can
         return Results.NotFound();
     }
 });
+
+// Katalog und Preisliste als Excel (A-09); nur Produktmanagement und Führung, weil die EK-Kalkulation enthalten ist.
+app.MapGet("/katalog/export/{id:int}", async (int id, PreislistenDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, inhalt) = await dienst.ExportAsync(id, abbruch);
+        return Results.File(inhalt, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

@@ -1,0 +1,16 @@
+@using Kalkulator.Domain.Katalog
+@using Kalkulator.Domain.Preise
+
+<span class="pille ampel-@Wert" title="@KatalogTexte.Ampel(Wert)">@Kurz</span>
+
+@code {
+    [Parameter, EditorRequired] public Ampel Wert { get; set; }
+
+    private string Kurz => Wert switch
+    {
+        Ampel.Gruen => "grün",
+        Ampel.Gelb => "gelb",
+        Ampel.Rot => "rot",
+        _ => "EK offen",
+    };
+}

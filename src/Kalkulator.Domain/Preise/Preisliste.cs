@@ -98,6 +98,10 @@ public class Preisliste
     private static bool Gehoert(Preiskomponente? referenz, int id, Preiskomponente komponente) =>
         ReferenceEquals(referenz, komponente) || (komponente.Id != 0 && id == komponente.Id);
 
+    /// <summary>Parameterwert oder <paramref name="standard"/>, wenn der Parameter in dieser Preisliste fehlt.</summary>
+    public decimal ParameterWertOder(string schluessel, decimal standard) =>
+        Parameter.SingleOrDefault(p => p.Schluessel == schluessel)?.Wert ?? standard;
+
     public decimal ParameterWert(string schluessel) =>
         Parameter.SingleOrDefault(p => p.Schluessel == schluessel)?.Wert
         ?? throw new KeyNotFoundException($"Parameter „{schluessel}“ ist in der Preisliste „{Bezeichnung}“ nicht gepflegt.");

@@ -1,0 +1,213 @@
+@page "/katalog/services"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Katalog
+@inject KatalogDienst Dienst
+@inject NavigationManager Navigation
+
+<PageTitle>Services · Katalog · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Katalog</h1>
+        <p class="unterzeile">Services, Bundles und Kategorien</p>
+    </div>
+    @if (_services is not null)
+    {
+        <div class="aktionen">
+            <input type="search" placeholder="Code oder Bezeichnung" aria-label="Suche" @bind="_suche" @bind:event="oninput" />
+            <select aria-label="Vertriebsstatus" @bind="_status">
+                <option value="">alle Status</option>
+                @foreach (var s in Enum.GetValues<Vertriebsstatus>())
+                {
+                    <option value="@s">@KatalogTexte.Vertriebsstatus(s)</option>
+                }
+            </select>
+        </div>
+    }
+</div>
+
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else if (_services is null || _kategorien is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    <KatalogReiter />
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    <div class="spalten">
+        <section class="karte">
+            <div class="karte-kopf"><h2>Services</h2><span class="unterzeile">@Gefiltert.Count() von @_services.Count</span></div>
+            <div class="tab-rahmen">
+                <table class="liste">
+                    <thead><tr><th>Code</th><th>Bezeichnung</th><th>Typ</th><th>Vertriebsstatus</th><th class="num">Komponenten</th><th>Leistungsschein</th><th>Enthält</th></tr></thead>
+                    <tbody>
+                        @foreach (var gruppe in Gefiltert.GroupBy(s => s.Kategorie))
+                        {
+                            <tr class="gruppe"><td colspan="7">@gruppe.Key</td></tr>
+                            @foreach (var s in gruppe)
+                            {
+                                <tr>
+                                    <td class="eng"><a href="katalog/services/@s.Id">@s.Code</a></td>
+                                    <td>@s.Bezeichnung</td>
+                                    <td>@KatalogTexte.Typ(s.Typ)</td>
+                                    <td>@KatalogTexte.Vertriebsstatus(s.Vertriebsstatus)</td>
+                                    <td class="num">@s.Komponenten</td>
+                                    <td>@(s.Leistungsschein ?? "–")</td>
+                                    <td>@(s.Bestandteile.Count == 0 ? "" : string.Join(", ", s.Bestandteile))</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <div class="stapel">
+            @if (Dienst.Recht.DarfKatalogPflegen)
+            {
+                <section class="karte">
+                    <div class="karte-kopf"><h2>Neuer Service</h2></div>
+                    <form class="karte-inhalt stapel" @onsubmit="AnlegenAsync">
+                        <div class="feld"><label for="code">Code</label><input id="code" type="text" placeholder="z. B. S34" @bind="_code" /></div>
+                        <div class="feld"><label for="bez">Bezeichnung</label><input id="bez" type="text" @bind="_bezeichnung" /></div>
+                        <div class="feld">
+                            <label for="typ">Typ</label>
+                            <select id="typ" @bind="_typ">
+                                @foreach (var t in Enum.GetValues<ServiceTyp>())
+                                {
+                                    <option value="@t">@KatalogTexte.Typ(t)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="feld">
+                            <label for="kat">Kategorie</label>
+                            <select id="kat" @bind="_kategorie">
+                                @foreach (var k in _kategorien)
+                                {
+                                    <option value="@k.Id">@k.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <p class="unterzeile">Code und Typ sind nach dem Anlegen fest. Neue Services sind zunächst „zukünftig“ und werden erst nach Pflege von Komponenten und Preisen auf „verkaufsfähig“ gesetzt.</p>
+                        <div class="aktionen"><button class="knopf klein" type="submit">Anlegen</button></div>
+                    </form>
+                </section>
+            }
+
+            <section class="karte">
+                <div class="karte-kopf"><h2>Kategorien</h2></div>
+                <div class="tab-rahmen">
+                    <table class="liste">
+                        <thead><tr><th>Name</th><th class="num">Reihenfolge</th>@if (Dienst.Recht.DarfKatalogPflegen) { <th class="eng"></th> }</tr></thead>
+                        <tbody>
+                            @foreach (var k in _kategorien)
+                            {
+                                <tr>
+                                    @if (Dienst.Recht.DarfKatalogPflegen)
+                                    {
+                                        <td><input type="text" aria-label="Name" @bind="k.Name" /></td>
+                                        <td class="num"><input class="zahl" type="number" step="1" aria-label="Reihenfolge" @bind="k.Sortierung" /></td>
+                                        <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => KategorieAsync(k)">Speichern</button></td>
+                                    }
+                                    else
+                                    {
+                                        <td>@k.Name</td>
+                                        <td class="num">@k.Sortierung</td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (Dienst.Recht.DarfKatalogPflegen)
+                {
+                    <form class="karte-inhalt aktionen" @onsubmit="KategorieAnlegenAsync">
+                        <input type="text" aria-label="Neue Kategorie" placeholder="Neue Kategorie" @bind="_neueKategorie" />
+                        <button class="knopf klein" type="submit">Anlegen</button>
+                    </form>
+                }
+            </section>
+        </div>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<ServiceZeile>? _services;
+    private IReadOnlyList<ServiceKategorie>? _kategorien;
+    private string? _fehler, _meldung, _suche, _code, _bezeichnung, _neueKategorie;
+    private bool _meldungIstFehler;
+    private Vertriebsstatus? _status;
+    private ServiceTyp _typ = ServiceTyp.Einzelservice;
+    private int _kategorie;
+
+    private IEnumerable<ServiceZeile> Gefiltert => _services!
+        .Where(s => _status is null || s.Vertriebsstatus == _status)
+        .Where(s => string.IsNullOrWhiteSpace(_suche)
+            || s.Code.Contains(_suche.Trim(), StringComparison.OrdinalIgnoreCase)
+            || s.Bezeichnung.Contains(_suche.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    protected override Task OnInitializedAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _services = await Dienst.ServicesAsync();
+            _kategorien = await Dienst.KategorienAsync();
+            if (_kategorie == 0)
+            {
+                _kategorie = _kategorien.FirstOrDefault()?.Id ?? 0;
+            }
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+
+    private async Task AnlegenAsync()
+    {
+        try
+        {
+            var id = await Dienst.ServiceAnlegenAsync(new NeuerService(_code ?? "", _bezeichnung ?? "", _typ, _kategorie));
+            Navigation.NavigateTo($"katalog/services/{id}");
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+
+    private Task KategorieAsync(ServiceKategorie k) =>
+        AusfuehrenAsync(() => Dienst.KategorieSpeichernAsync(k.Id, k.Name, k.Sortierung), $"Kategorie „{k.Name}“ gespeichert.");
+
+    private Task KategorieAnlegenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.KategorieAnlegenAsync(_neueKategorie ?? "");
+        _neueKategorie = null;
+    }, "Kategorie angelegt.");
+
+    private async Task AusfuehrenAsync(Func<Task> aktion, string erfolg)
+    {
+        try
+        {
+            await aktion();
+            (_meldung, _meldungIstFehler) = (erfolg, false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

@@ -147,6 +147,9 @@ public class ErstbefuellungTests(SqlServerFixture db)
     [InlineData(ParameterSchluessel.CloudServerMargenteiler, 0.55)]
     [InlineData(ParameterSchluessel.VkVerrechnungssatzProStunde, 135)]
     [InlineData(ParameterSchluessel.EkKostensatzProStunde, 60.75)]
+    [InlineData(ParameterSchluessel.MargeGruenAb, 0.55)]
+    [InlineData(ParameterSchluessel.MargeGruenBis, 0.72)]
+    [InlineData(ParameterSchluessel.MargeRotUnter, 0.45)]
     public async Task Parameter_sind_gepflegt(string schluessel, decimal wert)
     {
         await using var kontext = await BefuellteDatenbankAsync();

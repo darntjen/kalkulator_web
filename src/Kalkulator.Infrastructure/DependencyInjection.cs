@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<KundenprojektDienst>();
         services.AddScoped<KalkulationsDienst>();
         services.AddScoped<AngebotsDienst>();
+        services.AddScoped<KatalogDienst>();
+        services.AddScoped<PreislistenDienst>();
         services.AddOptions<AngebotsEinstellungen>();
         return services;
     }

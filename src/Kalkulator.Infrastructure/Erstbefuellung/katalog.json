@@ -54,6 +54,21 @@
       "schluessel": "EK_KOSTENSATZ_PRO_STUNDE",
       "wert": 60.75,
       "beschreibung": "Interner Vollkostensatz je produktiver Stunde (45 % vom VK)"
+    },
+    {
+      "schluessel": "MARGE_GRUEN_AB",
+      "wert": 0.55,
+      "beschreibung": "Margen-Ampel: grün ab (Preisprüfung: „gesund 55–72 %“)"
+    },
+    {
+      "schluessel": "MARGE_GRUEN_BIS",
+      "wert": 0.72,
+      "beschreibung": "Margen-Ampel: grün bis; darüber gelb (Preis prüfen)"
+    },
+    {
+      "schluessel": "MARGE_ROT_UNTER",
+      "wert": 0.45,
+      "beschreibung": "Margen-Ampel: rot unter (Entscheidung nötig); Annahme, im Excel von Hand gesetzt"
     }
   ],
   "dokumentVorlagen": [

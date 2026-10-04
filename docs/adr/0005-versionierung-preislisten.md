@@ -23,3 +23,15 @@ wird nach dem Go-live die maßgebliche Preisquelle (offene Frage 8.12).
 
 - Alte Angebote und Statistiken bleiben unverändert, auch wenn sich Preise ändern.
 - Für eine Preisänderung sind zwei Schritte nötig (Entwurf anlegen, freigeben). Das ist bewusst so gewollt: Es verhindert versehentliche Änderungen an gültigen Preisen.
+
+## Nachtrag 04.10.2026: Pflegeoberfläche (#6)
+
+- Ein Entwurf wird nur freigegeben, wenn die Prüfung keine Fehler meldet: Pflichtparameter vorhanden, jede
+  anbietbare Komponente hat einen Preiseintrag oder eine Staffel, und „Gültig ab“ liegt nach der zuletzt
+  freigegebenen Preisliste und nicht in der Vergangenheit. Die erste Preisliste nach der Erstbefüllung ist davon
+  ausgenommen.
+- Weil der Katalog nicht versioniert ist, sind Codes von Services und Preiskomponenten nach dem Anlegen fest
+  (Kalkulationen verweisen darauf). Gelöscht wird nur, was in keiner freigegebenen Preisliste, keinem Arbeitsstand
+  und keinem eingefrorenen Angebotsstand vorkommt. Alles andere wird über den Vertriebsstatus stillgelegt.
+- Beim Anlegen und Löschen von Katalog- und Preisdaten hält das Änderungsprotokoll alle Werte fest, damit
+  gelöschte Einträge nachvollziehbar bleiben.

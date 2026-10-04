@@ -40,6 +40,12 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
 
     public bool DarfSonderpositionenFreigeben => Leitung;
 
+    /// <summary>Katalog, Preislisten, EK-Kalkulation und Änderungsprotokoll einsehen: Produktmanagement und Führung.</summary>
+    public bool DarfKatalogSehen => benutzer.IstInRolle(Rollen.Produktmanagement) || benutzer.IstInRolle(Rollen.Fuehrung);
+
+    /// <summary>Katalog und Preislisten pflegen und Preislisten freigeben: nur das Produktmanagement (A-07).</summary>
+    public bool DarfKatalogPflegen => benutzer.IstInRolle(Rollen.Produktmanagement);
+
     public bool DarfSehen(Kundenprojekt projekt) => SiehtAlleProjekte || (Vertrieb && IstVerantwortlich(projekt));
 
     public bool DarfBearbeiten(Kundenprojekt projekt) => Leitung || (Vertrieb && IstVerantwortlich(projekt));

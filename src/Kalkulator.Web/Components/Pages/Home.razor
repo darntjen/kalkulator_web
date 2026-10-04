@@ -1,4 +1,5 @@
 @page "/"
+@inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
 
 <PageTitle>Start · Managed-Services-Kalkulator</PageTitle>
 
@@ -11,10 +12,13 @@
         <h2>Kundenprojekte</h2>
         <p>Kundenprojekte und Kalkulationen anlegen, Projektstatus und Forecast pflegen.</p>
     </a>
-    <a class="kachel" href="katalog">
-        <h2>Katalog</h2>
-        <p>Services, Bundles, Preislisten und Parameter pflegen.</p>
-    </a>
+    @if (new Berechtigung(Benutzer).DarfKatalogSehen)
+    {
+        <a class="kachel" href="katalog">
+            <h2>Katalog</h2>
+            <p>Services, Bundles, Preislisten und Parameter pflegen.</p>
+        </a>
+    }
     <a class="kachel" href="statistik">
         <h2>Statistik</h2>
         <p>Kennzahlen zu Kalkulationen, Angeboten und Abschlüssen.</p>

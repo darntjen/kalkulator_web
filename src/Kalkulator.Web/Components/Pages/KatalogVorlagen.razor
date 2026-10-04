@@ -1,0 +1,141 @@
+@page "/katalog/vorlagen"
+@rendermode InteractiveServer
+@using Kalkulator.Domain.Katalog
+@inject KatalogDienst Dienst
+
+<PageTitle>Vertragsvorlagen · Katalog · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Katalog</h1>
+        <p class="unterzeile">Vertragsvorlagen: Grundvertrag, AVB, SLA, AVV und Leistungsscheine mit Version</p>
+    </div>
+</div>
+
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else if (_vorlagen is null)
+{
+    <p>Lade …</p>
+}
+else
+{
+    <KatalogReiter />
+
+    @if (_meldung is not null)
+    {
+        <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    <p class="meldung info">
+        Hier stehen Code, Version und Dateiname der Vorlagen. Welcher Leistungsschein zu welchem Service gehört, wird beim Service
+        unter „Stammdaten“ gewählt. Die Word-Dateien selbst kommen mit dem Vertragspaket (#13).
+    </p>
+
+    <section class="karte">
+        <div class="tab-rahmen">
+            <table class="liste">
+                <thead><tr><th>Typ</th><th>Code</th><th>Version</th><th>Bezeichnung</th><th>Dateiname</th><th>Zugeordnet</th>@if (_pflegen) { <th class="eng"></th> }</tr></thead>
+                <tbody>
+                    @foreach (var z in _vorlagen)
+                    {
+                        var v = z.Vorlage;
+                        <tr>
+                            @if (_pflegen)
+                            {
+                                <td><select aria-label="Typ @v.Code" @bind="v.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></td>
+                                <td><input type="text" aria-label="Code" @bind="v.Code" /></td>
+                                <td><input type="text" aria-label="Version" @bind="v.Version" /></td>
+                                <td><input type="text" aria-label="Bezeichnung" @bind="v.Bezeichnung" /></td>
+                                <td><input type="text" aria-label="Dateiname" @bind="v.Dateiname" /></td>
+                            }
+                            else
+                            {
+                                <td>@KatalogTexte.Dokument(v.Typ)</td>
+                                <td>@v.Code</td>
+                                <td>@v.Version</td>
+                                <td>@v.Bezeichnung</td>
+                                <td>@(v.Dateiname ?? "–")</td>
+                            }
+                            <td>@(z.Services.Count == 0 ? "–" : string.Join(", ", z.Services))</td>
+                            @if (_pflegen)
+                            {
+                                <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => SpeichernAsync(v)">Speichern</button></td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        @if (_pflegen)
+        {
+            <form class="karte-inhalt felder" @onsubmit="AnlegenAsync">
+                <div class="feld"><label for="n-typ">Neue Vorlage: Typ</label><select id="n-typ" @bind="_neu.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></div>
+                <div class="feld"><label for="n-code">Code</label><input id="n-code" type="text" placeholder="z. B. S34" @bind="_neu.Code" /></div>
+                <div class="feld"><label for="n-version">Version</label><input id="n-version" type="text" placeholder="1.0" @bind="_neu.Version" /></div>
+                <div class="feld"><label for="n-bez">Bezeichnung</label><input id="n-bez" type="text" @bind="_neu.Bezeichnung" /></div>
+                <div class="feld"><label for="n-datei">Dateiname</label><input id="n-datei" type="text" @bind="_neu.Dateiname" /></div>
+                <div class="aktionen breit"><button class="knopf klein" type="submit">Vorlage anlegen</button></div>
+            </form>
+        }
+    </section>
+}
+
+@code {
+    private static readonly DokumentTyp[] Typen = [.. Enum.GetValues<DokumentTyp>().Where(t => t != DokumentTyp.Angebot)];
+
+    private sealed class Neu
+    {
+        public DokumentTyp Typ { get; set; } = DokumentTyp.Leistungsschein;
+        public string? Code { get; set; }
+        public string? Version { get; set; } = "1.0";
+        public string? Bezeichnung { get; set; }
+        public string? Dateiname { get; set; }
+    }
+
+    private IReadOnlyList<VorlagenZeile>? _vorlagen;
+    private bool _pflegen, _meldungIstFehler;
+    private string? _fehler, _meldung;
+    private Neu _neu = new();
+
+    protected override Task OnInitializedAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _vorlagen = await Dienst.VorlagenAsync();
+            _pflegen = Dienst.Recht.DarfKatalogPflegen;
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+
+    private Task SpeichernAsync(DokumentVorlage v) =>
+        AusfuehrenAsync(() => Dienst.VorlageSpeichernAsync(v.Id, new VorlagenStammdaten(v.Typ, v.Code, v.Bezeichnung, v.Version, v.Dateiname)), $"{v.Code} gespeichert.");
+
+    private Task AnlegenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.VorlageAnlegenAsync(new VorlagenStammdaten(_neu.Typ, _neu.Code ?? "", _neu.Bezeichnung ?? "", _neu.Version ?? "", _neu.Dateiname));
+        _neu = new Neu();
+    }, "Vorlage angelegt.");
+
+    private async Task AusfuehrenAsync(Func<Task> aktion, string erfolg)
+    {
+        try
+        {
+            await aktion();
+            (_meldung, _meldungIstFehler) = (erfolg, false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

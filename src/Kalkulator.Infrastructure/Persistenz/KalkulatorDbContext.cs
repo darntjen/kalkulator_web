@@ -152,7 +152,27 @@ public class KalkulatorDbContext(
                 EntityState.Added => "Angelegt",
                 EntityState.Deleted => "Gelöscht",
                 _ => "Geändert",
-            }, e.State == EntityState.Modified ? GeaenderteWerte(e) : null))];
+            }, e.State switch
+            {
+                EntityState.Modified => GeaenderteWerte(e),
+                // Gelöschte Katalog- und Preisdaten mit ihren letzten Werten festhalten, sonst ist nicht mehr erkennbar, was es war.
+                EntityState.Deleted when IstStammdatum(e) => Momentaufnahme(e, alt: true),
+                _ => null,
+            }))];
+
+    /// <summary>Katalog und Preislisten: Hier hält das Protokoll beim Anlegen und Löschen alle Werte fest (A-08).</summary>
+    private static bool IstStammdatum(EntityEntry eintrag) =>
+        eintrag.Metadata.ClrType.Namespace is "Kalkulator.Domain.Katalog" or "Kalkulator.Domain.Preise";
+
+    private static string Momentaufnahme(EntityEntry eintrag, bool alt)
+    {
+        var werte = eintrag.Properties
+            .Where(p => !p.Metadata.IsPrimaryKey())
+            .Select(p => (p.Metadata.Name, Wert: alt ? p.OriginalValue : p.CurrentValue))
+            .Where(p => p.Wert is not null)
+            .ToDictionary(p => p.Name, p => alt ? new { Alt = p.Wert, Neu = (object?)null } : new { Alt = (object?)null, Neu = p.Wert });
+        return JsonSerializer.Serialize(werte, ProtokollJson);
+    }
 
     // Aufzählungen als Text, damit das Protokoll ohne Nachschlagen lesbar ist (z. B. „AngebotVersendet“ statt 2).
     private static readonly JsonSerializerOptions ProtokollJson = new() { Converters = { new JsonStringEnumConverter() } };
@@ -181,7 +201,8 @@ public class KalkulatorDbContext(
                 Entitaet = eintrag.Metadata.ClrType.Name,
                 Schluessel = string.Join("|", schluessel),
                 Aktion = aktion,
-                Aenderungen = werte,
+                // Neu angelegte Stammdaten erst hier erfassen: Jetzt stehen die echten Schlüssel fest.
+                Aenderungen = werte ?? (aktion == "Angelegt" && IstStammdatum(eintrag) ? Momentaufnahme(eintrag, alt: false) : null),
             });
         }
     }

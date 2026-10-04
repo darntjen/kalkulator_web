@@ -1,0 +1,115 @@
+@page "/katalog/protokoll"
+@rendermode InteractiveServer
+@inject KatalogDienst Dienst
+
+<PageTitle>Änderungsprotokoll · Katalog · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Katalog</h1>
+        <p class="unterzeile">Änderungsprotokoll: wer hat wann was geändert (A-08)</p>
+    </div>
+</div>
+
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else
+{
+    <KatalogReiter />
+
+    <section class="karte">
+        <form class="karte-inhalt felder" @onsubmit="LadeAsync">
+            <div class="feld">
+                <label for="bereich">Bereich</label>
+                <select id="bereich" @bind="_bereich">
+                    <option value="@ProtokollBereich.Alle">alles</option>
+                    <option value="@ProtokollBereich.Katalog">Katalog (Services, Komponenten, Bundles, Regeln, Vorlagen)</option>
+                    <option value="@ProtokollBereich.Preise">Preislisten, Preise, Staffeln, Parameter</option>
+                    <option value="@ProtokollBereich.Einkauf">EK-Werte</option>
+                </select>
+            </div>
+            <div class="feld"><label for="von">von</label><input id="von" type="date" @bind="_von" /></div>
+            <div class="feld"><label for="bis">bis</label><input id="bis" type="date" @bind="_bis" /></div>
+            <div class="feld">
+                <label for="anzahl">Einträge</label>
+                <select id="anzahl" @bind="_anzahl"><option value="100">100</option><option value="200">200</option><option value="500">500</option><option value="1000">1000</option></select>
+            </div>
+            <div class="aktionen breit"><button class="knopf klein" type="submit">Anzeigen</button></div>
+        </form>
+
+        @if (_zeilen is null)
+        {
+            <div class="karte-inhalt"><p>Lade …</p></div>
+        }
+        else if (_zeilen.Count == 0)
+        {
+            <div class="karte-inhalt"><p class="unterzeile">Keine Einträge im gewählten Zeitraum.</p></div>
+        }
+        else
+        {
+            <div class="tab-rahmen">
+                <table class="liste">
+                    <thead><tr><th>Zeitpunkt</th><th>Benutzer</th><th>Objekt</th><th>Bezug</th><th>Aktion</th><th>Änderungen</th></tr></thead>
+                    <tbody>
+                        @foreach (var z in _zeilen)
+                        {
+                            <tr>
+                                <td>@Texte.Zeitpunkt(z.Zeitpunkt)</td>
+                                <td>@z.Benutzer</td>
+                                <td>@z.Objekt</td>
+                                <td>@z.Bezug</td>
+                                <td>@z.Aktion</td>
+                                <td>
+                                    @if (z.Aenderungen.Count > 0)
+                                    {
+                                        <ul class="aenderungen">
+                                            @foreach (var f in z.Aenderungen)
+                                            {
+                                                @if (z.Aktion == "Geändert")
+                                                {
+                                                    <li>@f.Feld: <del>@(f.Alt ?? "leer")</del> → <ins>@(f.Neu ?? "leer")</ins></li>
+                                                }
+                                                else
+                                                {
+                                                    <li>@f.Feld: @(f.Neu ?? f.Alt)</li>
+                                                }
+                                            }
+                                        </ul>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
+
+@code {
+    private IReadOnlyList<ProtokollZeile>? _zeilen;
+    private string? _fehler;
+    private ProtokollBereich _bereich;
+    private DateTime? _von, _bis;
+    private int _anzahl = 200;
+
+    protected override Task OnInitializedAsync() => LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _zeilen = null;
+            _zeilen = await Dienst.ProtokollAsync(_bereich,
+                _von is { } v ? DateOnly.FromDateTime(v) : null,
+                _bis is { } b ? DateOnly.FromDateTime(b) : null,
+                _anzahl);
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+}

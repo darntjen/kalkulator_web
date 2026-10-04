@@ -126,3 +126,10 @@
 | 10.4 🟠 | **§ 1 Abs. 2 Grundvertrag bei reinen S41-Verträgen:** Der Absatz vereinbart S01 automatisch mit. Soll er bei reinen S41-Verträgen entfallen, oder soll der Absatz so umformuliert werden, dass er nur gilt, wenn andere Leistungsscheine als S41 gebucht sind? | Umformulierung im Grundvertrag, damit es nur eine Fassung gibt | ⏳ Bleibt vorerst so; wird intern abgestimmt. Für die Entwicklung nicht blockierend: Der Kalkulator legt bei reinen S41-Verträgen den Grundvertrag unverändert bei, bis eine angepasste Fassung vorliegt |
 | 10.5 🟠 | **SLA bei reinen S41-Verträgen:** S41 verweist auf die Anlage SLA (Ziffer 2.5). Die Reaktionszeiten hängen aber von der Connect-Stufe ab, die es hier nicht gibt. Welche Stufe gilt? | Anlage SLA beilegen; es gelten die Werte der Stufe Standard | ✅ Ja |
 | 10.6 🟢 | **Bezugsgröße S41:** „Mitarbeitende“ ist eine eigene Eingabe, nicht die Zahl der User (die für das Onboarding zählt)? | Eigene Eingabe „Anzahl Mitarbeitende“ | ✅ Ja |
+
+## 11. Neue Fragen aus der Pflegeoberfläche (04.10.2026)
+
+| Nr. | Frage | Vorschlag | Antwort |
+|-----|-------|-----------|---------|
+| 11.1 🟠 | **Schwellen der Margen-Ampel:** Das Blatt „Preisprüfung“ nennt nur „grün = gesund (55–72 %)“; Gelb und Rot sind dort von Hand gesetzt. Welche Schwellen sollen gelten? | Grün 55–72 %, rot unter 45 %, sonst gelb (auch über 72 %: Preis prüfen). Die Werte sind als Parameter pflegbar. Abweichungen zum Excel: S05 (52 %), S06 (54 %), S11 (52 %) und S01 Enterprise (72,9 %) werden gelb statt grün, S24 (70 %) grün statt gelb | |
+| 11.2 🟠 | **Fehlende EK-Werte:** Für S41, S60, S35, B04 und die S14-Bausteine gibt es in der EK-Kalkulation keine Werte; Marge und Ampel bleiben dort offen. Wer liefert sie? | Produktmanagement pflegt sie im nächsten Preislisten-Entwurf. S60: 15 Minuten Aufwand je AE. S61 bleibt ohne Katalog-EK, weil der EK je Kalkulation aus dem TERRA-Kalkulator kommt | |
