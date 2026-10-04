@@ -1,24 +1,37 @@
-# Das SA-Kennwort erzeugt kennwort.sh beim Anlegen des Codespaces in .devcontainer/.env (nicht im Repository).
+# Das SA-Kennwort erzeugt der Datenbank-Container beim ersten Start zufällig und legt es im Volume „geheim“ ab;
+# die App liest es von dort (umgebung.sh). Es steht nirgends im Repository.
 services:
   app:
     image: mcr.microsoft.com/devcontainers/dotnet:10.0
     command: sleep infinity
     volumes:
       - ../..:/workspaces:cached
+      - geheim:/geheim:ro
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__Kalkulator: "Server=db,1433;Database=Kalkulator;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Kennwort fehlt, siehe kennwort.sh};TrustServerCertificate=True"
     depends_on:
       - db
 
   db:
     image: mcr.microsoft.com/mssql/server:2022-latest
     restart: unless-stopped
+    user: root
     environment:
       ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Kennwort fehlt, siehe kennwort.sh}
     volumes:
       - sqldaten:/var/opt/mssql
+      - geheim:/geheim
+    command:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -s /geheim/sa-kennwort ]; then
+          echo "Kx9!$$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)" > /geheim/sa-kennwort
+          chmod 644 /geheim/sa-kennwort
+        fi
+        export MSSQL_SA_PASSWORD="$$(cat /geheim/sa-kennwort)"
+        exec /opt/mssql/bin/sqlservr
 
 volumes:
   sqldaten:
+  geheim:

@@ -2,6 +2,7 @@
 # Einmalig nach dem Anlegen: bauen, Datenbank anlegen und Musterkatalog einspielen.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source .devcontainer/umgebung.sh
 dotnet build src/Kalkulator.Web --nologo -v q
 
 # SQL Server braucht nach dem ersten Start etwas Zeit; die Erstbefüllung spielt auch die Migrationen ein.

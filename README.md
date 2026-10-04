@@ -66,7 +66,7 @@ Der Codespace startet .NET 10 und einen SQL Server, spielt beim ersten Start Dat
 startet die App auf Port **5226**; der Browser öffnet sie automatisch (sonst Reiter „Ports“). Die Teams-Ablage
 ersetzt `.devcontainer/beispielablage` mit erfundenen Kanalordnern. Das Protokoll der App liegt in
 `/tmp/kalkulator.log`. Die Adresse ist privat (nur mit dem eigenen GitHub-Konto); bitte keine echten Kundendaten
-eingeben. Das SA-Kennwort des SQL Servers erzeugt der Codespace selbst (`.devcontainer/.env`, nicht im Repository).
+eingeben. Das SA-Kennwort des SQL Servers erzeugt der Datenbank-Container beim ersten Start selbst; es steht nicht im Repository.
 
 ### Anmeldung bis zur Einrichtung von Entra ID
 

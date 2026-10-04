@@ -6,7 +6,6 @@
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
-  "initializeCommand": "bash .devcontainer/kennwort.sh",
   "postCreateCommand": "bash .devcontainer/einrichten.sh",
   "postStartCommand": "bash .devcontainer/starten.sh",
   "forwardPorts": [5226],
