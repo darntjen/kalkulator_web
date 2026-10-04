@@ -133,3 +133,11 @@
 |-----|-------|-----------|---------|
 | 11.1 🟠 | **Schwellen der Margen-Ampel:** Das Blatt „Preisprüfung“ nennt nur „grün = gesund (55–72 %)“; Gelb und Rot sind dort von Hand gesetzt. Welche Schwellen sollen gelten? | Grün 55–72 %, rot unter 45 %, sonst gelb (auch über 72 %: Preis prüfen). Die Werte sind als Parameter pflegbar. Abweichungen zum Excel: S05 (52 %), S06 (54 %), S11 (52 %) und S01 Enterprise (72,9 %) werden gelb statt grün, S24 (70 %) grün statt gelb | |
 | 11.2 🟠 | **Fehlende EK-Werte:** Für S41, S60, S35, B04 und die S14-Bausteine gibt es in der EK-Kalkulation keine Werte; Marge und Ampel bleiben dort offen. Wer liefert sie? | Produktmanagement pflegt sie im nächsten Preislisten-Entwurf. S60: 15 Minuten Aufwand je AE. S61 bleibt ohne Katalog-EK, weil der EK je Kalkulation aus dem TERRA-Kalkulator kommt | |
+
+## 12. Fragen zu den Vertragsvorlagen (04.10.2026, #26)
+
+| Nr. | Frage | Vorschlag | Antwort |
+|-----|-------|-----------|---------|
+| 12.1 🟠 | **AVV:** Im Ordner `03_Vertragswerk (EXTERN)/Rahmen` liegt keine Auftragsverarbeitungsvereinbarung, laut Grundvertrag § 1 Abs. 3 ist sie aber Teil des Vertragswerks. Wo liegt sie, und wie heißt die Datei? | Ablage als `Rahmen/Rahmenvertrag 04 - AVV V1.0.docx`; der Abgleich erkennt sie dann von selbst | ⏳ Wird mit Matthias geklärt |
+| 12.2 🟠 | **Markierung der Vorlagen:** Die Fassungen in SharePoint kennzeichnen variable Stellen mit `[…]` und `____`. Wer stellt Grundvertrag und S14 auf `{{…}}`-Platzhalter um? | Produktmanagement nach der Anleitung in `docs/12_vertragsvorlagen.md`, Abschnitt 4 | |
+| 12.3 🟢 | **Zugriff auf SharePoint:** App-Registrierung mit `Sites.Selected` (Lesen auf „Service-Katalog“, später Schreiben auf einen Arbeitsordner für die PDF-Umwandlung). | IT richtet sie nach `docs/12_vertragsvorlagen.md`, Abschnitt 5 ein | |

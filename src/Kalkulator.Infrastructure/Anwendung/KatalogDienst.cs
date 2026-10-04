@@ -49,7 +49,8 @@ public sealed record KomponentenStammdaten(
 
 public sealed record RegelStammdaten(RegelTyp Typ, string Meldung, IReadOnlyList<int> ZielServiceIds);
 
-public sealed record VorlagenStammdaten(DokumentTyp Typ, string Code, string Bezeichnung, string Version, string? Dateiname);
+/// <summary>Stammdaten einer Vorlage; Version und Dateiname ergeben sich aus der aktiven Fassung (#26, Teil B).</summary>
+public sealed record VorlagenStammdaten(DokumentTyp Typ, string Code, string Bezeichnung);
 
 public sealed record VorlagenZeile(DokumentVorlage Vorlage, IReadOnlyList<string> Services);
 
@@ -80,7 +81,7 @@ public sealed record ProtokollZeile(
 public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext> kontexte, IBenutzerKontext benutzer)
 {
     private static readonly string[] KatalogObjekte =
-        [nameof(ServiceKategorie), nameof(Service), nameof(Preiskomponente), nameof(BundleBestandteil), nameof(ServiceRegel), nameof(ServiceRegelZiel), nameof(DokumentVorlage)];
+        [nameof(ServiceKategorie), nameof(Service), nameof(Preiskomponente), nameof(BundleBestandteil), nameof(ServiceRegel), nameof(ServiceRegelZiel), nameof(DokumentVorlage), nameof(Vorlagenversion)];
 
     private static readonly string[] PreisObjekte = [nameof(Preisliste), nameof(Preis), nameof(Preisstaffel), nameof(Parameter)];
 
@@ -508,7 +509,8 @@ public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext>
         IReadOnlyDictionary<int, (int Liste, int Komponente)> Ek,
         IReadOnlyDictionary<int, string> Kategorien,
         IReadOnlyDictionary<int, string> Vorlagen,
-        IReadOnlyDictionary<int, int> Regeln)
+        IReadOnlyDictionary<int, int> Regeln,
+        IReadOnlyDictionary<int, string> Fassungen)
     {
         /// <summary>
         /// Lesbarer Bezug eines Protokolleintrags. Existiert das Objekt nicht mehr, helfen die beim Löschen
@@ -534,6 +536,7 @@ public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext>
                 nameof(Preiskomponente) => Komponenten.GetValueOrDefault(Zahl(0)) ?? Benannt("Komponente", Zahl(0)),
                 nameof(ServiceKategorie) => Kategorien.GetValueOrDefault(Zahl(0)) ?? Benannt("Kategorie", Zahl(0)),
                 nameof(DokumentVorlage) => Vorlagen.GetValueOrDefault(Zahl(0)) ?? Benannt("Vorlage", Zahl(0)),
+                nameof(Vorlagenversion) => Fassungen.GetValueOrDefault(Zahl(0)) ?? $"Fassung {Zahl(0)}",
                 nameof(BundleBestandteil) => $"{S(Zahl(0))} enthält {S(Zahl(1))}",
                 nameof(ServiceRegel) => Regeln.TryGetValue(Zahl(0), out var r) ? $"Regel {Zahl(0)} von {S(r)}"
                     : FeldZahl("ServiceId") is > 0 and var rs ? $"Regel {Zahl(0)} von {S(rs)}" : $"Regel {Zahl(0)}",
@@ -558,8 +561,11 @@ public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext>
         await kontext.Parameter.AsNoTracking().ToDictionaryAsync(p => p.Id, p => (p.PreislisteId, p.Schluessel), abbruch),
         await kontext.EkPositionen.AsNoTracking().ToDictionaryAsync(p => p.Id, p => (p.PreislisteId, p.PreiskomponenteId), abbruch),
         await kontext.Kategorien.AsNoTracking().ToDictionaryAsync(k => k.Id, k => k.Name, abbruch),
-        await kontext.DokumentVorlagen.AsNoTracking().ToDictionaryAsync(d => d.Id, d => $"{d.Code} V{d.Version}", abbruch),
-        await kontext.Regeln.AsNoTracking().ToDictionaryAsync(r => r.Id, r => r.ServiceId, abbruch));
+        await kontext.DokumentVorlagen.AsNoTracking().ToDictionaryAsync(d => d.Id, d => d.Code, abbruch),
+        await kontext.Regeln.AsNoTracking().ToDictionaryAsync(r => r.Id, r => r.ServiceId, abbruch),
+        await kontext.Vorlagenversionen.AsNoTracking()
+            .Join(kontext.DokumentVorlagen, v => v.DokumentVorlageId, d => d.Id, (v, d) => new { v.Id, d.Code, v.Nummer })
+            .ToDictionaryAsync(v => v.Id, v => $"{v.Code} V{v.Nummer}", abbruch));
 
     private static string Objektname(string objekt) => objekt switch
     {
@@ -570,6 +576,7 @@ public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext>
         nameof(ServiceRegel) => "Regel",
         nameof(ServiceRegelZiel) => "Regel-Ziel",
         nameof(DokumentVorlage) => "Vorlage",
+        nameof(Vorlagenversion) => "Vorlagenfassung",
         nameof(Preisliste) => "Preisliste",
         nameof(Preis) => "Preis",
         nameof(Preisstaffel) => "Staffelstufe",
@@ -686,17 +693,14 @@ public sealed partial class KatalogDienst(IDbContextFactory<KalkulatorDbContext>
     private static async Task UebernimmAsync(KalkulatorDbContext kontext, DokumentVorlage vorlage, VorlagenStammdaten daten, CancellationToken abbruch)
     {
         var code = Pflicht(daten.Code, "Code").ToUpperInvariant();
-        var version = Pflicht(daten.Version, "Version");
-        if (await kontext.DokumentVorlagen.AnyAsync(d => d.Code == code && d.Version == version && d.Id != vorlage.Id, abbruch))
+        if (await kontext.DokumentVorlagen.AnyAsync(d => d.Code == code && d.Id != vorlage.Id, abbruch))
         {
-            throw new ArgumentException($"Die Vorlage {code} in Version {version} gibt es schon.");
+            throw new ArgumentException($"Die Vorlage {code} gibt es schon. Neue Fassungen kommen über den Abgleich mit SharePoint.");
         }
 
         vorlage.Typ = daten.Typ;
         vorlage.Code = code;
-        vorlage.Version = version;
         vorlage.Bezeichnung = Pflicht(daten.Bezeichnung, "Bezeichnung");
-        vorlage.Dateiname = Leer(daten.Dateiname);
     }
 
     private static string Code(string? code)

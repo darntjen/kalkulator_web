@@ -177,7 +177,7 @@ else
                                     <option value="">keiner</option>
                                     @foreach (var d in _a.Leistungsscheine)
                                     {
-                                        <option value="@d.Id">@d.Code V@(d.Version) · @d.Bezeichnung</option>
+                                        <option value="@d.Id">@d.Code · @d.Bezeichnung</option>
                                     }
                                 </select>
                             </div>

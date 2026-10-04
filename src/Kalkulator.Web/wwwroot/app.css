@@ -609,6 +609,16 @@ details.bereich {
 .freigabe-Freigegeben { background: var(--gut-bg); color: var(--gut); }
 .freigabe-Abgelehnt { background: var(--kritisch-bg); color: var(--kritisch); }
 
+/* Vorlagenfassungen (#26, Teil B) */
+.fassung-ZurPruefung { background: var(--warn-bg); color: var(--warn); }
+.fassung-Aktiv { background: var(--gut-bg); color: var(--gut); }
+.fassung-Abgelehnt { background: var(--kritisch-bg); color: var(--kritisch); }
+.fassung-Abgeloest { background: var(--flaeche-2); color: #44555b; }
+.hinweisliste { margin: 0; padding-left: 1.2rem; }
+.hinweisliste li.fehler { color: var(--kritisch); }
+.bericht { white-space: pre-wrap; font-size: .85rem; margin: 0; }
+tr.gewaehlt td { background: var(--petrol-hell); }
+
 .aktionen.breit {
     grid-column: 1 / -1;
 }
@@ -748,3 +758,16 @@ table.liste tr.ohne-linie td {
 .hinweisliste .knopf {
     margin-left: 0.5rem;
 }
+
+/* Fließtext auf Hilfeseiten, z. B. Platzhalter der Vertragsvorlagen */
+.lesetext { max-width: 75ch; }
+.lesetext p { margin: 0; }
+code { font-family: Consolas, "Cascadia Mono", monospace; font-size: .85em; background: var(--flaeche-2); padding: .05rem .3rem; border-radius: 3px; }
+
+tr.fassungszeile > td { background: var(--flaeche-2); padding: .75rem; }
+.fassungen { background: var(--weiss); border: 1px solid var(--linie); border-radius: 4px; white-space: normal; }
+.fassungen-kopf { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .5rem; padding: .75rem 1rem; border-bottom: 1px solid var(--linie); color: var(--petrol-dunkel); }
+.fassungen .fassung { padding: .75rem 1rem; }
+.fassungen input[type=text] { width: 100%; box-sizing: border-box; }
+dl.daten dd { overflow-wrap: anywhere; }
+.fassungen .fassung + .fassung { border-top: 1px solid var(--linie); }

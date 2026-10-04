@@ -241,14 +241,13 @@ public class KatalogDienstTests(SqlServerFixture db)
         var dienst = await DienstAsync();
         var code = NeuerCode();
 
-        var id = await dienst.VorlageAnlegenAsync(new VorlagenStammdaten(DokumentTyp.Leistungsschein, code.ToLowerInvariant(), "Leistungsschein " + code, "1.0", null));
-        await Assert.ThrowsAsync<ArgumentException>(() => dienst.VorlageAnlegenAsync(new VorlagenStammdaten(DokumentTyp.Leistungsschein, code, "doppelt", "1.0", null)));
-        await dienst.VorlageAnlegenAsync(new VorlagenStammdaten(DokumentTyp.Leistungsschein, code, "Leistungsschein " + code, "1.1", "LS.docx"));
+        var id = await dienst.VorlageAnlegenAsync(new VorlagenStammdaten(DokumentTyp.Leistungsschein, code.ToLowerInvariant(), "Leistungsschein " + code));
+        await Assert.ThrowsAsync<ArgumentException>(() => dienst.VorlageAnlegenAsync(new VorlagenStammdaten(DokumentTyp.Leistungsschein, code, "doppelt")));
         Assert.Equal(code, (await dienst.VorlagenAsync()).Single(v => v.Vorlage.Id == id).Vorlage.Code);
 
         var s02 = await IdVorlageAsync("S02");
         var fehler = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            dienst.VorlageSpeichernAsync(s02, new VorlagenStammdaten(DokumentTyp.Avb, "S02", "Leistungsschein S02", "1.0", null)));
+            dienst.VorlageSpeichernAsync(s02, new VorlagenStammdaten(DokumentTyp.Avb, "S02", "Leistungsschein S02")));
         Assert.Contains("zugeordnet", fehler.Message, StringComparison.Ordinal);
 
         var kategorie = await dienst.KategorieAnlegenAsync("Kategorie " + code);

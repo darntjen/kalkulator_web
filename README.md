@@ -41,6 +41,7 @@ Gesamtangebot (siehe `docs/05_roadmap.md`).
 | [docs/09_feedback-clickdummy.md](docs/09_feedback-clickdummy.md) | Auswertung des Feedbacks von Geschäftsführung und Geschäftsleitung zum Clickdummy |
 | [docs/10_gesamtkonzept.md](docs/10_gesamtkonzept.md) | Gesamtkonzept: Kundensituation, Navision-Import, Managed Services und Gesamtangebot (freigegebener Arbeitsstand) |
 | [docs/11_navision-zuordnung.md](docs/11_navision-zuordnung.md) | Navision-Artikelnummern und Dienstleistungsrollen (vorläufig mit Platzhaltern) |
+| [docs/12_vertragsvorlagen.md](docs/12_vertragsvorlagen.md) | Vertragsvorlagen aus SharePoint: Abgleich, Freigabe, Platzhalter, Markierungsanleitung, Einrichtung |
 | [docs/adr/](docs/adr/) | Architekturentscheidungen (Architecture Decision Records) |
 | [docs/vorlagen-referenz/](docs/vorlagen-referenz/) | Ablage für Referenzmaterial (Preislisten, Angebots- und Vertragsvorlagen) |
 
@@ -127,6 +128,18 @@ freigegebenen Preisliste und mit der **Vertriebsfreigabe** von Vertriebsleitung 
 Personen; wer das Projekt verantwortet, darf mit passender Rolle selbst freigeben. Jede inhaltliche Änderung hebt die Freigaben auf.
 Nimmt der Kunde an, setzt der Vertrieb das Projekt auf „Gewonnen“ und wählt dabei das angenommene Angebot. Die Vorlagen werden mit dem Programm ausgeliefert (`Vorlagen/angebot`); der Ordner lässt
 sich über `Angebot:Vorlagenordner` umstellen. Platzhalter: `docs/08_angebotsvorlage.md`, Technik: ADR-0004.
+
+### Vertragsvorlagen
+
+Grundvertrag, AVB, SLA, AVV und Leistungsscheine kommen aus SharePoint (#26). Unter Katalog › Vertragsvorlagen sieht
+das Produktmanagement jede neue Fassung mit Prüfergebnis und gibt sie frei; erst dann wird sie verwendet. Abgeglichen
+wird jede Nacht und auf Knopfdruck. Zum Ausprobieren ohne SharePoint genügt ein Ordner mit derselben Struktur:
+
+```bash
+Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_Vertragswerk dotnet run --project src/Kalkulator.Web
+```
+
+Ablage, Platzhalter und Einrichtung des Graph-Zugriffs: `docs/12_vertragsvorlagen.md`, Technik: ADR-0006.
 
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.
