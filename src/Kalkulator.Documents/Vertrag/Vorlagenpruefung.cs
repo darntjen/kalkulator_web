@@ -15,13 +15,15 @@ public enum VorlagenRolle
 
 /// <summary>
 /// Ergebnis der Prüfung einer Vertragsvorlage: Hinweise (Fehler zuerst), erkannte Eingaben, verwendete Platzhalter des
-/// Kalkulators (ohne Eingaben) und die Codes der Preiskomponenten aus <c>{{preis.…}}</c>, jeweils sortiert.
+/// Kalkulators (ohne Eingaben), die Codes der Preiskomponenten aus <c>{{preis.…}}</c> und die Rollen der
+/// Unterschriftsfelder aus <c>{{unterschrift.…}}</c>, jeweils sortiert.
 /// </summary>
 public sealed record Vorlagenanalyse(
     IReadOnlyList<VorlagenHinweis> Hinweise,
     IReadOnlyList<EingabeDefinition> Eingaben,
     IReadOnlyList<string> Platzhalter,
-    IReadOnlyList<string> Komponenten)
+    IReadOnlyList<string> Komponenten,
+    IReadOnlyList<string> Unterschriften)
 {
     public bool HatFehler => Hinweise.Any(h => h.IstFehler);
 }
@@ -71,11 +73,11 @@ public static partial class Vorlagenpruefung
         }
         catch (Exception e) when (e is OpenXmlPackageException or InvalidDataException or FileFormatException)
         {
-            return new Vorlagenanalyse([new VorlagenHinweis(true, "Die Datei ist kein lesbares Word-Dokument (.docx).")], [], [], []);
+            return new Vorlagenanalyse([new VorlagenHinweis(true, "Die Datei ist kein lesbares Word-Dokument (.docx).")], [], [], [], []);
         }
         catch (VorlagenFehler e)
         {
-            return new Vorlagenanalyse([new VorlagenHinweis(true, e.Message)], [], [], []);
+            return new Vorlagenanalyse([new VorlagenHinweis(true, e.Message)], [], [], [], []);
         }
 
         if (rolle == VorlagenRolle.Grundvertrag)
@@ -99,6 +101,7 @@ public static partial class Vorlagenpruefung
         private readonly Dictionary<string, (EingabeArt Art, List<string> Optionen)> _eingaben = new(StringComparer.Ordinal);
         private readonly List<string> _eingabeReihenfolge = [];
         private readonly SortedSet<string> _komponenten = new(StringComparer.Ordinal);
+        private readonly SortedSet<string> _unterschriften = new(StringComparer.Ordinal);
         private int _klammern, _linien;
 
         public SortedSet<string> Verwendet { get; } = new(StringComparer.Ordinal);
@@ -122,7 +125,11 @@ public static partial class Vorlagenpruefung
                 }
             }
 
-            _linien += Linie().Matches(text).Count;
+            // Linien neben einem Unterschriftsfeld sind die Unterschriftslinie selbst, keine vergessene Ausfüllstelle.
+            if (!text.Contains("{{" + Vertragsplatzhalter.UnterschriftPraefix, StringComparison.Ordinal))
+            {
+                _linien += Linie().Matches(text).Count;
+            }
 
             foreach (Match m in Roh().Matches(text))
             {
@@ -188,7 +195,8 @@ public static partial class Vorlagenpruefung
                 [.. _hinweise.OrderByDescending(h => h.IstFehler)],
                 eingaben,
                 [.. Verwendet],
-                [.. _komponenten]);
+                [.. _komponenten],
+                [.. _unterschriften]);
         }
 
         private void BlockAnfang(string name)
@@ -218,6 +226,10 @@ public static partial class Vorlagenpruefung
                 {
                     Eingabe(rest, EingabeArt.Liste, null);
                 }
+            }
+            else if (name.StartsWith(Vertragsplatzhalter.UnterschriftPraefix, StringComparison.Ordinal))
+            {
+                Fehler($"{{{{{name}}}}} ist ein Unterschriftsfeld und kein Block.");
             }
             else
             {
@@ -271,6 +283,21 @@ public static partial class Vorlagenpruefung
                 else if (GueltigerName(rest, schluessel))
                 {
                     Eingabe(rest, EingabeArt.Text, null);
+                }
+
+                return;
+            }
+
+            if (schluessel.StartsWith(Vertragsplatzhalter.UnterschriftPraefix, StringComparison.Ordinal))
+            {
+                var rolle = schluessel[Vertragsplatzhalter.UnterschriftPraefix.Length..];
+                if (rolle.Length == 0 || rolle.Length > MaxNameLaenge || rolle.Contains('.', StringComparison.Ordinal) || rolle != rolle.Trim())
+                {
+                    Fehler($"{{{{{schluessel}}}}}: Die Rolle eines Unterschriftsfelds braucht 1 bis {MaxNameLaenge} Zeichen, ohne Punkt und ohne Leerzeichen am Rand.");
+                }
+                else
+                {
+                    _unterschriften.Add(rolle);
                 }
 
                 return;

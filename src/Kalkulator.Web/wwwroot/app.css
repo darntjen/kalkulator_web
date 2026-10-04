@@ -283,7 +283,7 @@ table.liste {
         grid-column: 1 / -1;
     }
 
-input[type="text"], input[type="number"], input[type="month"], input[type="date"], input[type="search"], select, textarea {
+input[type="text"], input[type="email"], input[type="number"], input[type="month"], input[type="date"], input[type="search"], select, textarea {
     font: inherit;
     background: var(--weiss);
     border: 1px solid var(--linie);

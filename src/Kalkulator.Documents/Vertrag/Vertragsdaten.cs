@@ -104,10 +104,16 @@ public static class Vertragsdaten
 
     /// <summary>
     /// Füllt eine Vorlage. Preisfelder nicht gebuchter Komponenten bleiben leer und ihre Blöcke entfallen; dafür werden
-    /// die Komponenten der Vorlage vorab leer eingetragen.
+    /// die Komponenten der Vorlage vorab leer eingetragen. An jedes Unterschriftsfeld der Vorlage kommt eine unsichtbare
+    /// Marke, die <see cref="Unterschriftsfelder.Finde"/> im PDF wiederfindet.
     /// </summary>
-    public static byte[] Erzeuge(byte[] vorlage, Datensatz daten, IEnumerable<string> komponentenDerVorlage)
+    public static byte[] Erzeuge(byte[] vorlage, Datensatz daten, IEnumerable<string> komponentenDerVorlage, IEnumerable<string>? unterschriftenDerVorlage = null)
     {
+        foreach (var rolle in unterschriftenDerVorlage ?? [])
+        {
+            daten[Vertragsplatzhalter.UnterschriftPraefix + rolle] = new UnsichtbareMarke(Unterschriftsfelder.Marke(rolle));
+        }
+
         foreach (var k in komponentenDerVorlage.Where(k => !daten.ContainsKey($"preis.{k}")))
         {
             daten[$"preis.{k}"] = false;

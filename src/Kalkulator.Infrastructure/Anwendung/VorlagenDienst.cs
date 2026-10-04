@@ -202,6 +202,7 @@ public sealed class VorlagenDienst(IDbContextFactory<KalkulatorDbContext> kontex
                 Hinweise = analyse.Hinweise,
                 Eingaben = analyse.Eingaben,
                 Komponenten = analyse.Komponenten,
+                Unterschriften = analyse.Unterschriften,
                 Datei = new VorlagenDatei { Inhalt = inhalt },
             }, zeit.GetUtcNow());
 

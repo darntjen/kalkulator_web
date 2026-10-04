@@ -180,4 +180,23 @@ public class VorlagenpruefungTests
 
         public int GetHashCode(EingabeDefinition obj) => HashCode.Combine(obj.Art, obj.Name);
     }
+
+    [Fact]
+    public void Unterschriftsfelder_werden_als_Rollen_erkannt_und_falsche_Schreibweisen_gemeldet()
+    {
+        var analyse = Pruefe(Dokument(
+            "Auftraggeber: {{unterschrift.Kunde}}____________________",
+            "Auftragnehmer: {{unterschrift.Geschäftsführung}}",
+            "{{#preis.S14-SRV}}",
+            "Zusatz: {{unterschrift.Kunde}}",
+            "{{/preis.S14-SRV}}"));
+        Assert.Empty(analyse.Hinweise);
+        Assert.Equal(["Geschäftsführung", "Kunde"], analyse.Unterschriften);
+        Assert.DoesNotContain(analyse.Platzhalter, p => p.StartsWith("unterschrift", StringComparison.Ordinal));
+
+        var falsch = Pruefe(Dokument("{{unterschrift.}}", "{{unterschrift.Kunde.Name}}", "{{#unterschrift.Kunde}}", "{{/unterschrift.Kunde}}"));
+        Assert.Equal(3, falsch.Hinweise.Count(h => h.IstFehler));
+        Assert.Contains(falsch.Hinweise, h => h.Text.Contains("Unterschriftsfeld und kein Block", StringComparison.Ordinal));
+        Assert.Empty(falsch.Unterschriften);
+    }
 }

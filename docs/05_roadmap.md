@@ -126,6 +126,16 @@ So kann der Vertrieb früh Rückmeldung geben.
 
 **Ergebnis – Inbetriebnahme Stufe 2:** Ein ansehnliches Gesamtangebot per Knopfdruck.
 
+## Phase 6b – KI-gestützte Angebotstexte (Vorschlag 04.10.2026)
+
+Konzept: [13_ki-angebotserstellung.md](13_ki-angebotserstellung.md), Frage 14.1
+
+- Verknüpfung des Kundenprojekts mit dem Kanalordner im Team „Kundenprojekte“, Auswahl der Unterlagen
+- Schreibanleitung aus den heutigen Skills, versioniert
+- Abgleich, Entwurf je Kapitel mit Quellen, Bearbeiten, automatische Prüfungen, Protokoll der Aufrufe
+
+**Ergebnis:** Das ausführliche Kundenangebot entsteht im Kalkulator statt per Skill.
+
 ## Phase 7 – Statistik und Forecast (Modul 4)
 
 **Issue:** [darntjen/kalkulator_web#17](https://github.com/darntjen/kalkulator_web/issues/17)

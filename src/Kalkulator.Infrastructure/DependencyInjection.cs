@@ -1,5 +1,6 @@
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Berechnung;
+using Kalkulator.Infrastructure.Paperless;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Infrastructure.Vorlagen;
 using Microsoft.EntityFrameworkCore;
@@ -33,6 +34,9 @@ public static class DependencyInjection
         services.AddScoped<VorlagenDienst>();
         services.AddScoped<VertragswerkDienst>();
         services.AddOptions<VertragswerkEinstellungen>();
+        services.AddOptions<PaperlessEinstellungen>();
+        services.TryAddSingleton<IPaperlessUebergabe>(d =>
+            new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
         services.AddHostedService<NaechtlicherVorlagenabgleich>();
         return services;
     }

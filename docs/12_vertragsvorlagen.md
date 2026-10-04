@@ -1,11 +1,11 @@
 # Vertragsvorlagen aus SharePoint
 
-Stand: 04.10.2026 · Issue #26, Teile B und C
+Stand: 04.10.2026 · Issue #26, Teile B, C und D
 
 Die Word-Vorlagen des Vertragswerks liegen zentral in SharePoint. Dazu gehören Grundvertrag, AVB, SLA, AVV,
 Leistungsscheine und Bundle-Scheine. Der Kalkulator übernimmt neue Fassungen von dort automatisch, prüft sie und
 verwendet sie erst, wenn das Produktmanagement sie freigegeben hat. Aus den freigegebenen Fassungen entsteht in
-Teil C das Vertragswerk.
+Teil C das Vertragswerk; Teil D übergibt es mit Unterschriftsfeldern an Paperless (Abschnitt 7).
 
 ## 1. Ablage und Dateinamen
 
@@ -103,6 +103,8 @@ Vertragsvorlagen“. Die Grundregeln:
   - `{{#eingabe.Server}}` mit `{{Server.Servername}}`, `{{Server.Zweck}}` … `{{/eingabe.Server}}`: Tabelle mit
     beliebig vielen Zeilen
   - Namen dürfen Leerzeichen und Umlaute enthalten, aber keinen Punkt.
+- **Unterschriftsfelder:** `{{unterschrift.Kunde}}` an der Stelle, an der unterschrieben wird (Abschnitt 7). Im
+  Dokument bleibt die Stelle unsichtbar.
 
 Pflicht im Grundvertrag: `{{kunde.firma}}` oder `{{kunde.anschrift}}`, `{{vertrag.nummer}}`, `{{vertrag.beginn}}`,
 die Liste `{{#positionen}}` und `{{summe.monatlich}}`.
@@ -168,5 +170,59 @@ die Prüfung nach dem ersten Abgleich je Vorlage an.
    | `Vorlagen:Ordner` | nur bei Quelle `Ordner`: lokaler Ordner mit derselben Struktur |
    | `Pdf:Wandler` | `Graph` (oder `LibreOffice` zum Testen, leer = keine Vertragswerke) |
    | `Pdf:Ordnerpfad` | Arbeitsordner für die Umwandlung, z. B. `Kalkulator/PDF-Umwandlung` |
+   | `Paperless:…` | Übergabe an Paperless, siehe Abschnitt 7 |
 
 Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgleich meldet dann, was fehlt.
+
+## 7. Übergabe an Paperless (Teil D)
+
+Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt im Kalkulator, die technische Freigabe in
+Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kunden.
+
+**Ablauf** (Entscheidungen 04.10.2026):
+- Die Übergabe geschieht **automatisch beim Erzeugen** des Vertragswerks, sobald Paperless eingerichtet ist.
+  Voraussetzungen wie bisher: beide Vertriebsfreigaben und das Projekt mit angenommenem Angebot auf „Gewonnen“.
+- Übergeben wird die **Gesamtdatei** (Deckblatt und alle Dokumente) mit den Unterschriftsfeldern.
+- **Unterschriftsfelder aus den Vorlagen:** Das Produktmanagement setzt in Word `{{unterschrift.Rolle}}` an die
+  Unterschriftslinie, z. B. `{{unterschrift.Kunde}}` beim Auftraggeber. Der Kalkulator schreibt dort eine
+  unsichtbare Marke (weiß, 1 pt), findet sie nach der PDF-Umwandlung wieder und gibt Paperless je Marke ein
+  Unterschriftsfeld mit Seite und Lage. Die linke untere Ecke des Felds liegt auf der Marke; der Platzhalter gehört
+  deshalb an den Anfang der Unterschriftslinie.
+- **Rollen und Personen:** Die Rolle ist der Slot in Paperless, sofern `Paperless:Rollen` nichts anderes sagt.
+  Rollen, die nicht fest eingestellt sind (in der Regel „Kunde“), fragt die Projektansicht vor dem Erzeugen ab:
+  Name und E-Mail-Adresse. Für „Kunde“ ist der Ansprechpartner vorbelegt.
+- **Paperless-Vorlage regelt den Ablauf:** Mit `Paperless:VorlageId` wird die Paperless-Vorlage mitgegeben. Rollen
+  mit `AusVorlage = true` (z. B. die Geschäftsführung) bekommen nur das Feld; die Person legt die Vorlage fest.
+- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, den die technische Freigabe prüft und von dort
+  versendet. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
+- **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
+- **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
+  Vertragswerk gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“. Jede Ausfertigung geht
+  höchstens einmal an Paperless.
+
+**Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
+
+| Schlüssel | Wert |
+|---|---|
+| `Paperless:ApiSchluessel` | API-Schlüssel aus Paperless (Umgebungsvariable `Paperless__ApiSchluessel`); leer = Übergabe aus |
+| `Paperless:ArbeitsbereichId` | Arbeitsbereich (workspace_id); leer = Übergabe aus |
+| `Paperless:Adresse` | `https://api.paperless.io/api/v1/` |
+| `Paperless:VorlageId` | optionale Paperless-Vorlage (template_id) |
+| `Paperless:Versenden` | `false` = Entwurf für die technische Freigabe, `true` = sofort versenden |
+| `Paperless:Rollen:<Rolle>:Slot` | Slot-Name in Paperless, falls er vom Rollennamen abweicht |
+| `Paperless:Rollen:<Rolle>:AusVorlage` | `true`: Die Person legt die Paperless-Vorlage fest |
+| `Paperless:Rollen:<Rolle>:Name`, `EMail` | fest eingestellte Person, z. B. für die Geschäftsführung |
+| `Paperless:FeldBreite`, `FeldHoehe` | Größe des Felds in Punkt (Standard 180 × 56) |
+| `Paperless:YVonOben` | Koordinaten ab oberem Seitenrand (Standard) oder ab unterem (`false`) |
+
+**Mit dem echten API-Schlüssel zu prüfen** (die Paperless-Dokumentation war bei der Umsetzung nicht abrufbar; die
+Anfragen folgen den veröffentlichten Beispielen):
+- Hochladen über `POST blobs` mit Name, Größe und MD5-Prüfsumme und anschließendem Upload an `direct_upload.url`.
+- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` vom Typ
+  `Block::Input::SignatureInput` (`owner_participants_slot_names`, `pdf_page_number`, `settings.absolutePosition`,
+  `settings.absoluteSize`).
+- Einheit und Ursprung der Koordinaten (Punkt, oben links) und ob `template_id` zusammen mit einer eigenen PDF-Datei
+  wirkt.
+
+Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
+dort und über die Einstellungen anpassen.

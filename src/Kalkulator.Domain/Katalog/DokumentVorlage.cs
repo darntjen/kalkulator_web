@@ -151,6 +151,9 @@ public class Vorlagenversion
     /// <summary>Preiskomponenten, die die Vorlage über <c>{{preis.…}}</c> verwendet.</summary>
     public IReadOnlyList<string> Komponenten { get; init; } = [];
 
+    /// <summary>Rollen der Unterschriftsfelder <c>{{unterschrift.…}}</c> für Paperless (#26, Teil D).</summary>
+    public IReadOnlyList<string> Unterschriften { get; init; } = [];
+
     public bool HatFehler => Hinweise.Any(h => h.IstFehler);
 
     public VorlagenStatus Status { get; internal set; } = VorlagenStatus.ZurPruefung;

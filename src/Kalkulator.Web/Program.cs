@@ -2,6 +2,7 @@ using System.Globalization;
 using Kalkulator.Infrastructure;
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Erstbefuellung;
+using Kalkulator.Infrastructure.Paperless;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Infrastructure.Vorlagen;
 using Kalkulator.Web.Anmeldung;
@@ -30,6 +31,7 @@ builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionS
 builder.Services.Configure<AngebotsEinstellungen>(builder.Configuration.GetSection("Angebot"));
 builder.Services.Configure<VorlagenEinstellungen>(builder.Configuration.GetSection(VorlagenEinstellungen.Abschnitt));
 builder.Services.Configure<PdfEinstellungen>(builder.Configuration.GetSection(PdfEinstellungen.Abschnitt));
+builder.Services.Configure<PaperlessEinstellungen>(builder.Configuration.GetSection(PaperlessEinstellungen.Abschnitt));
 builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
 {
     if (string.IsNullOrWhiteSpace(e.Vorlagenordner))

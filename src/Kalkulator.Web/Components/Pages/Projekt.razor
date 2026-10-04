@@ -66,11 +66,35 @@ else
                         {
                             <p class="meldung info">@grund</p>
                         }
+                        @if (b.Paperless && b.Hinweis is { } hinweis)
+                        {
+                            <p class="meldung info">@hinweis</p>
+                        }
+                        @if (b.DarfErzeugen && b.Sperrgrund is null && b.Unterzeichnerrollen is { Count: > 0 } rollen)
+                        {
+                            <fieldset class="stapel" disabled="@_erzeugt">
+                                <legend class="unterzeile">Unterzeichner für Paperless</legend>
+                                @foreach (var rolle in rollen)
+                                {
+                                    var eingabe = Unterzeichner(rolle);
+                                    <div class="felder">
+                                        <div class="feld">
+                                            <label for="uz-name-@FeldId(rolle)">@rolle: Name *</label>
+                                            <input id="uz-name-@FeldId(rolle)" type="text" @bind="eingabe.Name" autocomplete="off" />
+                                        </div>
+                                        <div class="feld">
+                                            <label for="uz-mail-@FeldId(rolle)">@rolle: E-Mail *</label>
+                                            <input id="uz-mail-@FeldId(rolle)" type="email" @bind="eingabe.EMail" autocomplete="off" />
+                                        </div>
+                                    </div>
+                                }
+                            </fieldset>
+                        }
                         @if (b.DarfErzeugen)
                         {
                             <div class="aktionen">
                                 <button type="button" class="knopf" disabled="@(b.Sperrgrund is not null || _erzeugt)" @onclick="VertragswerkErzeugenAsync">@(_erzeugt ? "Erzeuge Vertragswerk …" : "Vertragswerk erzeugen")</button>
-                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen.</span>
+                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen@(b.Paperless ? "; danach geht die Gesamtdatei mit den Unterschriftsfeldern an Paperless zur technischen Freigabe" : "").</span>
                             </div>
                         }
                     </div>
@@ -78,7 +102,7 @@ else
                     {
                         <div class="tab-rahmen">
                             <table class="liste">
-                                <thead><tr><th>Ausfertigung</th><th>Erstellt</th><th>Dokumente</th><th></th></tr></thead>
+                                <thead><tr><th>Ausfertigung</th><th>Erstellt</th><th>Dokumente</th>@if (MitPaperless) {<th>Paperless</th>}<th></th></tr></thead>
                                 <tbody>
                                     @foreach (var w in _vertragswerke)
                                     {
@@ -86,10 +110,33 @@ else
                                             <td><strong>@w.Nummer</strong> · @w.Ausfertigung.</td>
                                             <td>@Texte.Zeitpunkt(w.ErstelltAm)<br /><span class="unterzeile">@w.ErstelltVon</span></td>
                                             <td>@w.Dokumente.Count</td>
+                                            @if (MitPaperless)
+                                            {
+                                                <td>
+                                                    @if (w.PaperlessDokumentId is { } pid)
+                                                    {
+                                                        <span class="pille st-Gewonnen">übergeben</span><br />
+                                                        <span class="unterzeile">@Texte.Zeitpunkt(w.UebergebenAm!.Value) · Dokument @pid</span>
+                                                    }
+                                                    else if (w.UebergabeFehler is { } fehler)
+                                                    {
+                                                        <span class="pille st-Verloren">fehlgeschlagen</span><br />
+                                                        <span class="unterzeile">@Texte.Zeitpunkt(w.UebergabeVersuchtAm!.Value): @fehler</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="unterzeile">nicht übergeben</span>
+                                                    }
+                                                </td>
+                                            }
                                             <td>
                                                 <div class="aktionen">
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
+                                                    @if (_bereitschaft?.Paperless == true && _bereitschaft.DarfErzeugen && w.PaperlessDokumentId is null && w == _vertragswerke[0])
+                                                    {
+                                                        <button type="button" class="knopf zweit klein" disabled="@_erzeugt" @onclick="() => ErneutUebergebenAsync(w.Id)">@(w.UebergabeFehler is null ? "An Paperless übergeben" : "Erneut übergeben")</button>
+                                                    }
                                                 </div>
                                             </td>
                                         </tr>
@@ -320,6 +367,33 @@ else
     private VertragswerkBereitschaft? _bereitschaft;
     private IReadOnlyList<VertragswerkZeile> _vertragswerke = [];
     private bool _erzeugt;
+    private readonly Dictionary<string, UnterzeichnerEingabe> _unterzeichner = new(StringComparer.Ordinal);
+
+    private sealed class UnterzeichnerEingabe
+    {
+        public string Name { get; set; } = "";
+        public string EMail { get; set; } = "";
+    }
+
+    /// <summary>Paperless-Spalte, sobald die Übergabe eingerichtet ist oder schon einmal versucht wurde.</summary>
+    private bool MitPaperless => _bereitschaft?.Paperless == true || _vertragswerke.Any(w => w.UebergabeVersuchtAm is not null);
+
+    /// <summary>Eingabe je Rolle; für den Kunden mit dem Ansprechpartner vorbelegt.</summary>
+    private UnterzeichnerEingabe Unterzeichner(string rolle)
+    {
+        if (!_unterzeichner.TryGetValue(rolle, out var eingabe))
+        {
+            eingabe = new UnterzeichnerEingabe
+            {
+                Name = string.Equals(rolle, "Kunde", StringComparison.OrdinalIgnoreCase) ? _projekt?.Kunde?.Ansprechpartner ?? "" : "",
+            };
+            _unterzeichner[rolle] = eingabe;
+        }
+
+        return eingabe;
+    }
+
+    private static string FeldId(string rolle) => Convert.ToHexString(System.Text.Encoding.UTF8.GetBytes(rolle));
 
     private IReadOnlyList<ProjektStatus> Moegliche =>
         _projekt is null ? [] : [.. Enum.GetValues<ProjektStatus>().Where(_projekt.KannWechselnZu)];
@@ -387,7 +461,12 @@ else
         _erzeugt = true;
         try
         {
-            await AusfuehrenAsync(() => Vertragswerk.ErzeugenAsync(Id), "Vertragswerk erzeugt. Gesamt-PDF und ZIP stehen zum Herunterladen bereit.");
+            var personen = _bereitschaft?.Unterzeichnerrollen?.Select(r => new Unterzeichner(r, Unterzeichner(r).Name, Unterzeichner(r).EMail)).ToList();
+            await AusfuehrenAsync(async () =>
+            {
+                var werkId = await Vertragswerk.ErzeugenAsync(Id, personen);
+                return await Uebergabemeldung(werkId, neu: true);
+            });
         }
         finally
         {
@@ -395,13 +474,48 @@ else
         }
     }
 
+    private async Task ErneutUebergebenAsync(int werkId)
+    {
+        _erzeugt = true;
+        try
+        {
+            await AusfuehrenAsync(async () =>
+            {
+                await Vertragswerk.ErneutUebergebenAsync(werkId);
+                return await Uebergabemeldung(werkId, neu: false);
+            });
+        }
+        finally
+        {
+            _erzeugt = false;
+        }
+    }
+
+    /// <summary>Meldung nach dem Erzeugen bzw. Übergeben; eine fehlgeschlagene Übergabe erscheint als Fehler.</summary>
+    private async Task<(string? Text, bool Fehler)> Uebergabemeldung(int werkId, bool neu)
+    {
+        var werk = (await Vertragswerk.ListeAsync(Id)).FirstOrDefault(w => w.Id == werkId);
+        return werk switch
+        {
+            { PaperlessDokumentId: { } pid } => ($"Vertragswerk {(neu ? "erzeugt und " : "")}an Paperless übergeben (Dokument {pid}). Technische Freigabe und Versand an den Kunden laufen dort.", false),
+            { UebergabeFehler: { } fehler } when neu => ($"Vertragswerk erzeugt und gespeichert, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Bitte später „Erneut übergeben“.", true),
+            { UebergabeFehler: { } fehler } => ($"Die Übergabe an Paperless ist erneut fehlgeschlagen: {fehler}", true),
+            _ => ("Vertragswerk erzeugt. Gesamt-PDF und ZIP stehen zum Herunterladen bereit.", false),
+        };
+    }
+
     /// <summary>Führt eine Aktion aus, zeigt Erfolg oder die fachliche Fehlermeldung und lädt das Projekt neu.</summary>
-    private async Task AusfuehrenAsync(Func<Task> aktion, string? erfolg)
+    private Task AusfuehrenAsync(Func<Task> aktion, string? erfolg) => AusfuehrenAsync(async () =>
+    {
+        await aktion();
+        return (erfolg, false);
+    });
+
+    private async Task AusfuehrenAsync(Func<Task<(string? Text, bool Fehler)>> aktion)
     {
         try
         {
-            await aktion();
-            (_meldung, _meldungIstFehler) = (erfolg, false);
+            (_meldung, _meldungIstFehler) = await aktion();
         }
         catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or KeinZugriffException or Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException)
         {

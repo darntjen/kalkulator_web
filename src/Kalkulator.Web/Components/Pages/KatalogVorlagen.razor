@@ -179,6 +179,10 @@ else
                             </ul>
                         </div>
                     }
+                    @if (f.Unterschriften.Count > 0)
+                    {
+                        <p class="unterzeile">Unterschriftsfelder für Paperless: @string.Join(", ", f.Unterschriften)</p>
+                    }
                     @if (f.Komponenten.Count > 0)
                     {
                         <p class="unterzeile">Preisfelder für: @string.Join(", ", f.Komponenten)</p>

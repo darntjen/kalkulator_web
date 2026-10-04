@@ -128,12 +128,13 @@ internal sealed class VorlagenversionKonfiguration : IEntityTypeConfiguration<Vo
         Liste(builder.Property(v => v.Hinweise));
         Liste(builder.Property(v => v.Eingaben));
         Liste(builder.Property(v => v.Komponenten));
+        Liste(builder.Property(v => v.Unterschriften));
         builder.Ignore(v => v.HatFehler);
         builder.HasOne(v => v.Datei).WithOne().HasForeignKey<VorlagenDatei>(d => d.VorlagenversionId).OnDelete(DeleteBehavior.Restrict);
     }
 
     /// <summary>Listen als JSON-Text; sie werden einmal beim Abgleich geschrieben und danach nur gelesen.</summary>
-    private static void Liste<T>(PropertyBuilder<IReadOnlyList<T>> eigenschaft) =>
+    internal static PropertyBuilder<IReadOnlyList<T>> Liste<T>(PropertyBuilder<IReadOnlyList<T>> eigenschaft) =>
         eigenschaft.HasConversion(
             new ValueConverter<IReadOnlyList<T>, string>(
                 l => JsonSerializer.Serialize(l, Json),
