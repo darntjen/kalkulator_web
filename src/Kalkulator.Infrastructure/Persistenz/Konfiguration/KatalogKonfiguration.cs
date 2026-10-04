@@ -1,6 +1,10 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Kalkulator.Domain.Katalog;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Kalkulator.Infrastructure.Persistenz.Konfiguration;
 
@@ -93,6 +97,72 @@ internal sealed class DokumentVorlageKonfiguration : IEntityTypeConfiguration<Do
         builder.Property(d => d.Bezeichnung).HasMaxLength(200);
         builder.Property(d => d.Version).HasMaxLength(20);
         builder.Property(d => d.Dateiname).HasMaxLength(260);
-        builder.HasIndex(d => new { d.Code, d.Version }).IsUnique();
+
+        // Eine Zeile je Vorlage; ihre Fassungen hängen als Vorlagenversionen daran (#26, Teil B).
+        builder.HasIndex(d => d.Code).IsUnique();
+        builder.HasMany(d => d.Versionen).WithOne().HasForeignKey(v => v.DokumentVorlageId).OnDelete(DeleteBehavior.Restrict);
+        builder.Ignore(d => d.AktiveVersion);
+    }
+}
+
+internal sealed class VorlagenversionKonfiguration : IEntityTypeConfiguration<Vorlagenversion>
+{
+    private static readonly JsonSerializerOptions Json = new() { Converters = { new JsonStringEnumConverter() } };
+
+    public void Configure(EntityTypeBuilder<Vorlagenversion> builder)
+    {
+        builder.ToTable("Vorlagenversionen", "katalog");
+        builder.HasIndex(v => new { v.DokumentVorlageId, v.Nummer }).IsUnique();
+        builder.Property(v => v.VersionLaut).HasMaxLength(20);
+        builder.Property(v => v.Dateiname).HasMaxLength(260);
+        builder.Property(v => v.Quelle).HasMaxLength(20);
+        builder.Property(v => v.Pfad).HasMaxLength(400);
+        builder.Property(v => v.QuellId).HasMaxLength(200);
+        builder.Property(v => v.QuellStand).HasMaxLength(200);
+        builder.Property(v => v.GeaendertInQuelleVon).HasMaxLength(200);
+        builder.Property(v => v.Sha256).HasMaxLength(64).IsFixedLength();
+        builder.Property(v => v.AbgerufenVon).HasMaxLength(200);
+        builder.Property(v => v.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(v => v.EntschiedenVon).HasMaxLength(200);
+        builder.Property(v => v.Kommentar).HasMaxLength(1000);
+        Liste(builder.Property(v => v.Hinweise));
+        Liste(builder.Property(v => v.Eingaben));
+        Liste(builder.Property(v => v.Komponenten));
+        builder.Ignore(v => v.HatFehler);
+        builder.HasOne(v => v.Datei).WithOne().HasForeignKey<VorlagenDatei>(d => d.VorlagenversionId).OnDelete(DeleteBehavior.Restrict);
+    }
+
+    /// <summary>Listen als JSON-Text; sie werden einmal beim Abgleich geschrieben und danach nur gelesen.</summary>
+    private static void Liste<T>(PropertyBuilder<IReadOnlyList<T>> eigenschaft) =>
+        eigenschaft.HasConversion(
+            new ValueConverter<IReadOnlyList<T>, string>(
+                l => JsonSerializer.Serialize(l, Json),
+                s => JsonSerializer.Deserialize<List<T>>(s, Json) ?? new List<T>()),
+            new ValueComparer<IReadOnlyList<T>>(
+                (a, b) => JsonSerializer.Serialize(a, Json) == JsonSerializer.Serialize(b, Json),
+                l => JsonSerializer.Serialize(l, Json).GetHashCode(StringComparison.Ordinal),
+                l => JsonSerializer.Deserialize<List<T>>(JsonSerializer.Serialize(l, Json), Json)!))
+        .HasColumnType("nvarchar(max)");
+}
+
+internal sealed class VorlagenDateiKonfiguration : IEntityTypeConfiguration<VorlagenDatei>
+{
+    public void Configure(EntityTypeBuilder<VorlagenDatei> builder)
+    {
+        builder.ToTable("VorlagenDateien", "katalog");
+        builder.HasKey(d => d.VorlagenversionId);
+    }
+}
+
+internal sealed class VorlagenabgleichKonfiguration : IEntityTypeConfiguration<Vorlagenabgleich>
+{
+    public void Configure(EntityTypeBuilder<Vorlagenabgleich> builder)
+    {
+        builder.ToTable("Vorlagenabgleiche", "katalog");
+        builder.Property(a => a.Quelle).HasMaxLength(20);
+        builder.Property(a => a.AusgeloestVon).HasMaxLength(200);
+        builder.Property(a => a.Fehler).HasMaxLength(2000);
+        builder.Property(a => a.Bericht).HasColumnType("nvarchar(max)");
+        builder.HasIndex(a => a.Beginn);
     }
 }

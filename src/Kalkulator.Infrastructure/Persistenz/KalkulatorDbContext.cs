@@ -20,6 +20,8 @@ public class KalkulatorDbContext(
     public DbSet<BundleBestandteil> BundleBestandteile => Set<BundleBestandteil>();
     public DbSet<ServiceRegel> Regeln => Set<ServiceRegel>();
     public DbSet<DokumentVorlage> DokumentVorlagen => Set<DokumentVorlage>();
+    public DbSet<Vorlagenversion> Vorlagenversionen => Set<Vorlagenversion>();
+    public DbSet<Vorlagenabgleich> Vorlagenabgleiche => Set<Vorlagenabgleich>();
     public DbSet<Preisliste> Preislisten => Set<Preisliste>();
     public DbSet<Preis> Preise => Set<Preis>();
     public DbSet<Preisstaffel> Preisstaffeln => Set<Preisstaffel>();
@@ -107,20 +109,27 @@ public class KalkulatorDbContext(
         }
     }
 
+    /// <summary>An einer Vorlagenfassung ändert sich nach dem Abgleich nur die Entscheidung des Produktmanagements.</summary>
+    private static readonly HashSet<string> EntscheidungsFelder =
+        [nameof(Vorlagenversion.Status), nameof(Vorlagenversion.EntschiedenVon), nameof(Vorlagenversion.EntschiedenAm), nameof(Vorlagenversion.Kommentar)];
+
     /// <summary>
     /// Eingefrorene Versionen, ihre Positionen und Kosten sowie archivierte Angebotsdokumente dürfen nur angelegt werden;
-    /// an einem Angebot ist nur der Versandvermerk änderbar.
+    /// an einem Angebot ist nur der Versandvermerk änderbar. Vorlagenfassungen und ihre Dateien sind ebenso unveränderlich.
     /// </summary>
     private void PruefeEingefroreneVersionen()
     {
         var geaendert = ChangeTracker.Entries()
             .FirstOrDefault(e => (e.State is EntityState.Modified or EntityState.Deleted
-                    && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei)
-                || (e.State == EntityState.Deleted && e.Entity is Angebot));
+                    && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei)
+                || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion)
+                || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name))));
         if (geaendert is not null)
         {
             throw new InvalidOperationException(
-                $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Angebotsstände und archivierte Angebote sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
+                geaendert.Entity is Vorlagenversion or VorlagenDatei
+                    ? $"{geaendert.Metadata.ClrType.Name}: Vorlagenfassungen sind unveränderlich; geändert wird nur die Entscheidung."
+                    : $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Angebotsstände und archivierte Angebote sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
         }
     }
 
@@ -145,7 +154,7 @@ public class KalkulatorDbContext(
 
     private List<(EntityEntry Eintrag, string Aktion, string? Werte)> ErfasseAenderungen() =>
         [.. ChangeTracker.Entries()
-            .Where(e => e.Entity is not AenderungsEintrag)
+            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich))
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(e => (e, e.State switch
             {

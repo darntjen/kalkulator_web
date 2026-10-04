@@ -1,9 +1,11 @@
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Persistenz;
+using Kalkulator.Infrastructure.Vorlagen;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 
 namespace Kalkulator.Infrastructure;
 
@@ -24,6 +26,32 @@ public static class DependencyInjection
         services.AddScoped<KatalogDienst>();
         services.AddScoped<PreislistenDienst>();
         services.AddOptions<AngebotsEinstellungen>();
+        services.AddOptions<VorlagenEinstellungen>();
+        services.AddSingleton(Vorlagenquelle);
+        services.AddScoped<VorlagenDienst>();
+        services.AddHostedService<NaechtlicherVorlagenabgleich>();
         return services;
+    }
+
+    /// <summary>Quelle der Vertragsvorlagen laut Konfiguration „Vorlagen“; eine unvollständige Konfiguration meldet der Abgleich.</summary>
+    private static IVorlagenQuelle Vorlagenquelle(IServiceProvider dienste)
+    {
+        var e = dienste.GetRequiredService<IOptions<VorlagenEinstellungen>>().Value;
+        try
+        {
+            return (e.Quelle ?? "").Trim().ToUpperInvariant() switch
+            {
+                "SHAREPOINT" => new SharePointQuelle(GraphZugang.Aus(e.SharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }), e.SharePoint),
+                "ORDNER" => new OrdnerQuelle(string.IsNullOrWhiteSpace(e.Ordner)
+                    ? throw new InvalidOperationException("Für die Quelle „Ordner“ fehlt die Einstellung Vorlagen:Ordner.")
+                    : e.Ordner),
+                "" => new KeineVorlagenquelle(),
+                _ => throw new InvalidOperationException($"Unbekannte Vorlagenquelle „{e.Quelle}“; erlaubt sind „SharePoint“ und „Ordner“."),
+            };
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Security.Cryptography.CryptographicException or IOException)
+        {
+            return new KeineVorlagenquelle(ex.Message);
+        }
     }
 }

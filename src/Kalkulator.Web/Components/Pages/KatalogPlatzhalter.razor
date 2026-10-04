@@ -1,0 +1,115 @@
+@page "/katalog/vorlagen/platzhalter"
+@rendermode InteractiveServer
+@using Kalkulator.Documents.Vertrag
+@inject VorlagenDienst Dienst
+
+<PageTitle>Platzhalter · Vertragsvorlagen · Managed-Services-Kalkulator</PageTitle>
+
+<div class="ansicht-kopf">
+    <div>
+        <h1>Katalog</h1>
+        <p class="unterzeile">Platzhalter für die Word-Vorlagen des Vertragswerks</p>
+    </div>
+    <a class="knopf zweit" href="katalog/vorlagen">Zu den Vorlagen</a>
+</div>
+
+@if (_fehler is not null)
+{
+    <p class="meldung fehler">@_fehler</p>
+}
+else
+{
+    <KatalogReiter />
+
+    <section class="karte">
+        <div class="karte-kopf"><h2>So funktioniert es</h2></div>
+        <div class="karte-inhalt stapel lesetext">
+            <p>
+                Variable Stellen in einer Vorlage schreibt man in Word als <code>{{name}}</code>, z. B. <code>{{kunde.firma}}</code>.
+                Formatierung (fett, Schriftgröße) gilt so, wie sie am Platzhalter steht. Groß- und Kleinschreibung zählt.
+            </p>
+            <p>
+                <strong>Listen</strong> wiederholen einen Abschnitt je Eintrag: Ein Absatz, der nur <code>{{#positionen}}</code> enthält,
+                und ein späterer Absatz mit <code>{{/positionen}}</code> umschließen den Abschnitt. In Tabellen beginnt die erste Zelle
+                der Zeile mit <code>{{#positionen}}</code> und die letzte Zelle endet mit <code>{{/positionen}}</code>; diese Zeile wird
+                je Position wiederholt.
+            </p>
+            <p>
+                Der Kalkulator prüft jede neue Fassung beim Abgleich. Unbekannte Platzhalter und nicht geschlossene Listen sind
+                Fehler; solche Fassungen lassen sich nicht aktivieren. Text in eckigen Klammern wie <code>[Vertragsnummer]</code>
+                und Linien <code>_____</code> meldet die Prüfung als Hinweis, weil dort oft ein Platzhalter fehlt.
+            </p>
+            <p>Im Grundvertrag sind Pflicht: @string.Join(", ", Vertragsplatzhalter.PflichtImGrundvertrag.Select(p => string.Join(" oder ", p.Select(Code))))).</p>
+        </div>
+    </section>
+
+    <section class="karte">
+        <div class="karte-kopf"><h2>Werte aus dem Kalkulator</h2></div>
+        <div class="tab-rahmen">
+            <table class="liste">
+                <thead><tr><th>Platzhalter</th><th>Inhalt</th><th>Beispiel</th></tr></thead>
+                <tbody>
+                    @foreach (var p in Vertragsplatzhalter.Alle)
+                    {
+                        <tr>
+                            <td><code>@(p.Art == PlatzhalterArt.Liste ? $"{{{{#{p.Schluessel}}}}} … {{{{/{p.Schluessel}}}}}" : $"{{{{{p.Schluessel}}}}}")</code></td>
+                            <td>@p.Beschreibung@(p.Art == PlatzhalterArt.Listenfeld ? $" (nur in {{{{#{p.Liste}}}}})" : "")</td>
+                            <td class="unterzeile">@p.Beispiel</td>
+                        </tr>
+                    }
+                    <tr>
+                        <td><code>{{preis.KOMPONENTE.menge}}</code>, <code>.einzelpreis</code>, <code>.summe</code></td>
+                        <td>Menge, Einzelpreis und Summe einer gebuchten Preiskomponente, z. B. <code>{{preis.S14-SERVER.menge}}</code>. Leer, wenn sie nicht gebucht ist.</td>
+                        <td class="unterzeile">3 · 15,00 € · 45,00 €</td>
+                    </tr>
+                    <tr>
+                        <td><code>{{#preis.KOMPONENTE}}</code> … <code>{{/preis.KOMPONENTE}}</code></td>
+                        <td>Abschnitt oder Tabellenzeile erscheint nur, wenn die Komponente gebucht ist („nicht vereinbarte Positionen werden gestrichen“).</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="karte">
+        <div class="karte-kopf"><h2>Eingaben beim Erstellen des Vertragswerks</h2></div>
+        <div class="karte-inhalt stapel lesetext">
+            <p>
+                Was der Kalkulator nicht kennt (z. B. Ansprechpartner, Sicherungsziele, Serverliste), fragt er beim Erstellen des
+                Vertragswerks ab. Die Vorlage legt selbst fest, welche Eingaben sie braucht; dafür ist keine Programmänderung nötig.
+                Namen dürfen Leerzeichen und Umlaute enthalten, aber keinen Punkt.
+            </p>
+        </div>
+        <div class="tab-rahmen">
+            <table class="liste">
+                <thead><tr><th>Schreibweise</th><th>Bedeutung</th></tr></thead>
+                <tbody>
+                    <tr><td><code>{{eingabe.Vertreter}}</code></td><td>Freitext „Vertreter“</td></tr>
+                    <tr><td><code>{{eingabe.Sicherungsvariante=Cloud-Backup}}</code></td><td>Kästchen ☒/☐: Auswahl „Sicherungsvariante“ mit der Option „Cloud-Backup“. Alle Optionen einer Gruppe ergeben die Auswahlliste.</td></tr>
+                    <tr><td><code>{{#eingabe.Sicherungsvariante=Objektspeicher}}</code> … <code>{{/eingabe.Sicherungsvariante=Objektspeicher}}</code></td><td>Abschnitt nur bei dieser Option.</td></tr>
+                    <tr><td><code>{{#eingabe.Server}}</code> mit <code>{{Server.Servername}}</code>, <code>{{Server.Zweck}}</code> … <code>{{/eingabe.Server}}</code></td><td>Tabelle „Server“ mit den Spalten Servername und Zweck; je eingegebener Zeile eine Tabellenzeile.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+}
+
+@code {
+    private string? _fehler;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await Dienst.QuellinfoAsync();
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+
+    private static string Code(string schluessel) =>
+        Vertragsplatzhalter.Alle.Single(p => p.Schluessel == schluessel).Art == PlatzhalterArt.Liste ? $"{{{{#{schluessel}}}}}" : $"{{{{{schluessel}}}}}";
+}

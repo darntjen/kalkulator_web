@@ -1,14 +1,16 @@
 @page "/katalog/vorlagen"
 @rendermode InteractiveServer
 @using Kalkulator.Domain.Katalog
-@inject KatalogDienst Dienst
+@using Kalkulator.Domain.Vertrag
+@inject KatalogDienst Katalog
+@inject VorlagenDienst Dienst
 
 <PageTitle>Vertragsvorlagen · Katalog · Managed-Services-Kalkulator</PageTitle>
 
 <div class="ansicht-kopf">
     <div>
         <h1>Katalog</h1>
-        <p class="unterzeile">Vertragsvorlagen: Grundvertrag, AVB, SLA, AVV und Leistungsscheine mit Version</p>
+        <p class="unterzeile">Vertragsvorlagen aus SharePoint: Fassungen prüfen und freigeben</p>
     </div>
 </div>
 
@@ -16,7 +18,7 @@
 {
     <p class="meldung fehler">@_fehler</p>
 }
-else if (_vorlagen is null)
+else if (_vorlagen is null || _quelle is null)
 {
     <p>Lade …</p>
 }
@@ -29,58 +31,221 @@ else
         <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
     }
 
-    <p class="meldung info">
-        Hier stehen Code, Version und Dateiname der Vorlagen. Welcher Leistungsschein zu welchem Service gehört, wird beim Service
-        unter „Stammdaten“ gewählt. Die Word-Dateien selbst kommen mit dem Vertragspaket (#13).
-    </p>
+    <section class="karte">
+        <div class="karte-kopf">
+            <h2>Quelle</h2>
+            <a href="katalog/vorlagen/platzhalter">Platzhalter für Vertragsvorlagen</a>
+        </div>
+        <div class="karte-inhalt stapel">
+            <dl class="daten">
+                <dt>Quelle</dt>
+                <dd>@(_quelle.Eingerichtet ? _quelle.Name : "nicht eingerichtet")</dd>
+                <dt>Ort</dt>
+                <dd>@_quelle.Ort</dd>
+                <dt>Letzter Abgleich</dt>
+                <dd>
+                    @if (_quelle.LetzterAbgleich is { } a)
+                    {
+                        @Texte.Zeitpunkt(a.Beginn) <span class="unterzeile">· @a.AusgeloestVon ·</span>
+                        @if (a.Fehler is not null)
+                        {
+                            <span class="pille fassung-Abgelehnt">fehlgeschlagen</span>
+                        }
+                        else
+                        {
+                            <span>@a.Dateien Dateien, @a.NeueFassungen neue Fassung(en)</span>
+                        }
+                    }
+                    else
+                    {
+                        <span>noch keiner</span>
+                    }
+                </dd>
+            </dl>
+            @if (_quelle.LetzterAbgleich is { } letzter && (letzter.Fehler ?? letzter.Bericht) is { Length: > 0 } bericht)
+            {
+                <details open="@(letzter.Fehler is not null)">
+                    <summary>Bericht des letzten Abgleichs</summary>
+                    <p class="bericht">@bericht</p>
+                </details>
+            }
+            @if (_pflegen)
+            {
+                <div class="aktionen">
+                    <button type="button" class="knopf klein" disabled="@_gleichtAb" @onclick="AbgleichenAsync">@(_gleichtAb ? "Gleiche ab …" : "Jetzt abgleichen")</button>
+                    <span class="unterzeile">Neue oder geänderte Dateien werden geprüft und warten dann auf deine Freigabe. Automatisch jede Nacht.</span>
+                </div>
+            }
+        </div>
+    </section>
+
+    @if (_vorlagen.Count(v => v.Offen is not null) is > 0 and var offen)
+    {
+        <p class="meldung info">@offen Fassung(en) warten auf Prüfung. Erst nach der Freigabe werden sie für neue Vertragswerke verwendet.</p>
+    }
 
     <section class="karte">
         <div class="tab-rahmen">
             <table class="liste">
-                <thead><tr><th>Typ</th><th>Code</th><th>Version</th><th>Bezeichnung</th><th>Dateiname</th><th>Zugeordnet</th>@if (_pflegen) { <th class="eng"></th> }</tr></thead>
+                <thead><tr><th>Typ</th><th>Code</th><th>Bezeichnung</th><th>Aktive Fassung</th><th>Zur Prüfung</th><th>Eingaben</th><th>Zugeordnet</th><th class="eng"></th></tr></thead>
                 <tbody>
                     @foreach (var z in _vorlagen)
                     {
                         var v = z.Vorlage;
-                        <tr>
-                            @if (_pflegen)
-                            {
-                                <td><select aria-label="Typ @v.Code" @bind="v.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></td>
-                                <td><input type="text" aria-label="Code" @bind="v.Code" /></td>
-                                <td><input type="text" aria-label="Version" @bind="v.Version" /></td>
-                                <td><input type="text" aria-label="Bezeichnung" @bind="v.Bezeichnung" /></td>
-                                <td><input type="text" aria-label="Dateiname" @bind="v.Dateiname" /></td>
-                            }
-                            else
-                            {
-                                <td>@KatalogTexte.Dokument(v.Typ)</td>
-                                <td>@v.Code</td>
-                                <td>@v.Version</td>
-                                <td>@v.Bezeichnung</td>
-                                <td>@(v.Dateiname ?? "–")</td>
-                            }
+                        <tr class="@(z.Vorlage.Id == _gewaehlt ? "gewaehlt" : null)">
+                            <td>@KatalogTexte.Dokument(v.Typ)</td>
+                            <td><strong>@v.Code</strong></td>
+                            <td>@v.Bezeichnung</td>
+                            <td>
+                                @if (z.Aktiv is { } aktiv)
+                                {
+                                    <span>V@(aktiv.Nummer)</span> <span class="unterzeile">(@(aktiv.VersionLaut ?? "–") laut Datei)</span>
+                                }
+                                else
+                                {
+                                    <span class="unterzeile">keine</span>
+                                }
+                            </td>
+                            <td>
+                                @if (z.Offen is { } o)
+                                {
+                                    <span class="pille @(o.HatFehler ? "fassung-Abgelehnt" : "fassung-ZurPruefung")">V@(o.Nummer)@(o.HatFehler ? " mit Fehlern" : "")</span>
+                                }
+                            </td>
+                            <td>@((z.Offen ?? z.Aktiv)?.Eingaben.Count is > 0 and var n ? n.ToString(System.Globalization.CultureInfo.CurrentCulture) : "–")</td>
                             <td>@(z.Services.Count == 0 ? "–" : string.Join(", ", z.Services))</td>
-                            @if (_pflegen)
-                            {
-                                <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => SpeichernAsync(v)">Speichern</button></td>
-                            }
+                            <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => Waehle(v.Id)">@(z.Vorlage.Id == _gewaehlt ? "Schließen" : "Fassungen")</button></td>
                         </tr>
+                        @if (z.Vorlage.Id == _gewaehlt)
+                        {
+                            var gewaehlt = z;
+                            <tr class="fassungszeile"><td colspan="8">
+                            <div class="fassungen" id="fassungen">
+            <div class="fassungen-kopf">
+                <strong>@gewaehlt.Vorlage.Code · @gewaehlt.Vorlage.Bezeichnung</strong>
+                <span class="unterzeile">@gewaehlt.Fassungen.Count Fassung(en)</span>
+            </div>
+            @if (gewaehlt.Fassungen.Count == 0)
+            {
+                <p class="fassung unterzeile">Noch keine Datei aus der Quelle. Sie erscheint nach dem nächsten Abgleich.</p>
+            }
+            @foreach (var f in gewaehlt.Fassungen)
+            {
+                <div class="stapel fassung">
+                    <div class="aktionen">
+                        <strong>V@(f.Nummer)</strong>
+                        <span class="pille fassung-@f.Status">@Status(f.Status)</span>
+                        <span>@f.Dateiname</span>
+                        <a class="knopf zweit klein" href="katalog/vorlagen/fassung/@f.Id/datei" download>Word herunterladen</a>
+                    </div>
+                    <dl class="daten">
+                        <dt>Pfad</dt>
+                        <dd>@f.Pfad</dd>
+                        <dt>Geändert in @f.Quelle</dt>
+                        <dd>@(f.GeaendertInQuelleAm is { } am ? Texte.Zeitpunkt(am) : "–")@(f.GeaendertInQuelleVon is { } von ? $" · {von}" : "")</dd>
+                        <dt>Abgerufen</dt>
+                        <dd>@Texte.Zeitpunkt(f.AbgerufenAm) · @f.AbgerufenVon</dd>
+                        @if (f.EntschiedenVon is not null)
+                        {
+                            <dt>Entscheidung</dt>
+                            <dd>@Texte.Zeitpunkt(f.EntschiedenAm!.Value) · @f.EntschiedenVon@(f.Kommentar is { } k ? $" · „{k}“" : "")</dd>
+                        }
+                    </dl>
+                    @if (f.Hinweise.Count > 0)
+                    {
+                        <div>
+                            <span class="etikett">Prüfung</span>
+                            <ul class="hinweisliste">
+                                @foreach (var h in f.Hinweise)
+                                {
+                                    <li class="@(h.IstFehler ? "fehler" : null)">@(h.IstFehler ? "Fehler: " : "Hinweis: ")@h.Text</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="unterzeile">Prüfung ohne Befund.</p>
+                    }
+                    @if (f.Eingaben.Count > 0)
+                    {
+                        <div>
+                            <span class="etikett">Eingaben, die beim Vertragswerk abgefragt werden</span>
+                            <ul class="hinweisliste">
+                                @foreach (var e in f.Eingaben)
+                                {
+                                    <li>@e.Name <span class="unterzeile">(@Art(e))</span></li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    @if (f.Komponenten.Count > 0)
+                    {
+                        <p class="unterzeile">Preisfelder für: @string.Join(", ", f.Komponenten)</p>
+                    }
+                    @if (_pflegen && f.Status is VorlagenStatus.ZurPruefung or VorlagenStatus.Abgeloest)
+                    {
+                        <form class="felder" @onsubmit="() => AktivierenAsync(f)">
+                            <div class="feld breit">
+                                <label for="kommentar-@f.Id">Kommentar (beim Ablehnen Pflicht)</label>
+                                <input id="kommentar-@f.Id" type="text" @bind="_kommentar" />
+                            </div>
+                            <div class="aktionen breit">
+                                <button type="submit" class="knopf klein" disabled="@f.HatFehler">@(f.Status == VorlagenStatus.Abgeloest ? "Wieder aktivieren" : "Freigeben und aktivieren")</button>
+                                @if (f.Status == VorlagenStatus.ZurPruefung)
+                                {
+                                    <button type="button" class="knopf zweit klein" @onclick="() => AblehnenAsync(f)">Ablehnen</button>
+                                }
+                                @if (f.HatFehler)
+                                {
+                                    <span class="unterzeile">Mit Fehlern lässt sich die Fassung nicht aktivieren. Bitte die Datei in SharePoint korrigieren; der nächste Abgleich bringt eine neue Fassung.</span>
+                                }
+                            </div>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+                            </td></tr>
+                        }
                     }
                 </tbody>
             </table>
         </div>
-        @if (_pflegen)
-        {
-            <form class="karte-inhalt felder" @onsubmit="AnlegenAsync">
-                <div class="feld"><label for="n-typ">Neue Vorlage: Typ</label><select id="n-typ" @bind="_neu.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></div>
-                <div class="feld"><label for="n-code">Code</label><input id="n-code" type="text" placeholder="z. B. S34" @bind="_neu.Code" /></div>
-                <div class="feld"><label for="n-version">Version</label><input id="n-version" type="text" placeholder="1.0" @bind="_neu.Version" /></div>
-                <div class="feld"><label for="n-bez">Bezeichnung</label><input id="n-bez" type="text" @bind="_neu.Bezeichnung" /></div>
-                <div class="feld"><label for="n-datei">Dateiname</label><input id="n-datei" type="text" @bind="_neu.Dateiname" /></div>
-                <div class="aktionen breit"><button class="knopf klein" type="submit">Vorlage anlegen</button></div>
-            </form>
-        }
     </section>
+
+    @if (_pflegen)
+    {
+        <section class="karte">
+            <details class="karte-inhalt">
+                <summary>Stammdaten der Vorlagen bearbeiten oder Vorlage anlegen</summary>
+                <p class="unterzeile">Neue Vorlagen legt der Abgleich selbst an, sobald eine passend benannte Datei in SharePoint liegt. Welcher Leistungsschein zu welchem Service gehört, wird beim Service unter „Stammdaten“ gewählt.</p>
+                <div class="tab-rahmen">
+                    <table class="liste">
+                        <thead><tr><th>Typ</th><th>Code</th><th>Bezeichnung</th><th class="eng"></th></tr></thead>
+                        <tbody>
+                            @foreach (var z in _vorlagen)
+                            {
+                                var v = z.Vorlage;
+                                <tr>
+                                    <td><select aria-label="Typ @v.Code" @bind="v.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></td>
+                                    <td><input type="text" aria-label="Code" @bind="v.Code" /></td>
+                                    <td><input type="text" aria-label="Bezeichnung" @bind="v.Bezeichnung" /></td>
+                                    <td class="eng"><button type="button" class="knopf zweit klein" @onclick="() => SpeichernAsync(v)">Speichern</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <form class="felder" @onsubmit="AnlegenAsync">
+                    <div class="feld"><label for="n-typ">Neue Vorlage: Typ</label><select id="n-typ" @bind="_neu.Typ">@foreach (var t in Typen) { <option value="@t">@KatalogTexte.Dokument(t)</option> }</select></div>
+                    <div class="feld"><label for="n-code">Code</label><input id="n-code" type="text" placeholder="z. B. S34" @bind="_neu.Code" /></div>
+                    <div class="feld"><label for="n-bez">Bezeichnung</label><input id="n-bez" type="text" @bind="_neu.Bezeichnung" /></div>
+                    <div class="aktionen breit"><button class="knopf klein" type="submit">Vorlage anlegen</button></div>
+                </form>
+            </details>
+        </section>
+    }
 }
 
 @code {
@@ -90,14 +255,14 @@ else
     {
         public DokumentTyp Typ { get; set; } = DokumentTyp.Leistungsschein;
         public string? Code { get; set; }
-        public string? Version { get; set; } = "1.0";
         public string? Bezeichnung { get; set; }
-        public string? Dateiname { get; set; }
     }
 
-    private IReadOnlyList<VorlagenZeile>? _vorlagen;
-    private bool _pflegen, _meldungIstFehler;
-    private string? _fehler, _meldung;
+    private IReadOnlyList<VorlagenUebersicht>? _vorlagen;
+    private VorlagenQuellinfo? _quelle;
+    private bool _pflegen, _meldungIstFehler, _gleichtAb;
+    private string? _fehler, _meldung, _kommentar;
+    private int? _gewaehlt;
     private Neu _neu = new();
 
     protected override Task OnInitializedAsync() => LadeAsync();
@@ -106,7 +271,8 @@ else
     {
         try
         {
-            _vorlagen = await Dienst.VorlagenAsync();
+            _vorlagen = await Dienst.UebersichtAsync();
+            _quelle = await Dienst.QuellinfoAsync();
             _pflegen = Dienst.Recht.DarfKatalogPflegen;
         }
         catch (KeinZugriffException e)
@@ -115,12 +281,61 @@ else
         }
     }
 
+    private void Waehle(int id)
+    {
+        _gewaehlt = _gewaehlt == id ? null : id;
+        _kommentar = null;
+    }
+
+    private static string Status(VorlagenStatus status) => status switch
+    {
+        VorlagenStatus.ZurPruefung => "zur Prüfung",
+        VorlagenStatus.Aktiv => "aktiv",
+        VorlagenStatus.Abgelehnt => "abgelehnt",
+        _ => "abgelöst",
+    };
+
+    private static string Art(EingabeDefinition e) => e.Art switch
+    {
+        EingabeArt.Text => "Text",
+        EingabeArt.Auswahl => "Auswahl: " + string.Join(" / ", e.Optionen),
+        _ => "Liste mit " + string.Join(", ", e.Optionen),
+    };
+
+    private async Task AbgleichenAsync()
+    {
+        _gleichtAb = true;
+        try
+        {
+            var abgleich = await Dienst.AbgleichenAsync();
+            (_meldung, _meldungIstFehler) = abgleich.Fehler is { } f
+                ? ($"Abgleich fehlgeschlagen: {f}", true)
+                : ($"Abgleich fertig: {abgleich.Dateien} Dateien, {abgleich.NeueFassungen} neue Fassung(en).", false);
+        }
+        catch (Exception e) when (e is InvalidOperationException or KeinZugriffException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+        finally
+        {
+            _gleichtAb = false;
+        }
+
+        await LadeAsync();
+    }
+
+    private Task AktivierenAsync(Vorlagenversion f) =>
+        AusfuehrenAsync(() => Dienst.AktivierenAsync(f.Id, _kommentar), $"V{f.Nummer} ist jetzt aktiv und gilt für neue Vertragswerke.");
+
+    private Task AblehnenAsync(Vorlagenversion f) =>
+        AusfuehrenAsync(() => Dienst.AblehnenAsync(f.Id, _kommentar ?? ""), $"V{f.Nummer} abgelehnt.");
+
     private Task SpeichernAsync(DokumentVorlage v) =>
-        AusfuehrenAsync(() => Dienst.VorlageSpeichernAsync(v.Id, new VorlagenStammdaten(v.Typ, v.Code, v.Bezeichnung, v.Version, v.Dateiname)), $"{v.Code} gespeichert.");
+        AusfuehrenAsync(() => Katalog.VorlageSpeichernAsync(v.Id, new VorlagenStammdaten(v.Typ, v.Code, v.Bezeichnung)), $"{v.Code} gespeichert.");
 
     private Task AnlegenAsync() => AusfuehrenAsync(async () =>
     {
-        await Dienst.VorlageAnlegenAsync(new VorlagenStammdaten(_neu.Typ, _neu.Code ?? "", _neu.Bezeichnung ?? "", _neu.Version ?? "", _neu.Dateiname));
+        await Katalog.VorlageAnlegenAsync(new VorlagenStammdaten(_neu.Typ, _neu.Code ?? "", _neu.Bezeichnung ?? ""));
         _neu = new Neu();
     }, "Vorlage angelegt.");
 
@@ -130,8 +345,9 @@ else
         {
             await aktion();
             (_meldung, _meldungIstFehler) = (erfolg, false);
+            _kommentar = null;
         }
-        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException or KeinZugriffException)
         {
             (_meldung, _meldungIstFehler) = (e.Message, true);
         }

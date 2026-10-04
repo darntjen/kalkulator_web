@@ -3,6 +3,7 @@ using Kalkulator.Infrastructure;
 using Kalkulator.Infrastructure.Anwendung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 using Kalkulator.Infrastructure.Persistenz;
+using Kalkulator.Infrastructure.Vorlagen;
 using Kalkulator.Web.Anmeldung;
 using Kalkulator.Web.Components;
 using Microsoft.AspNetCore.Localization;
@@ -27,6 +28,7 @@ builder.Services.AddKalkulatorInfrastruktur(builder.Configuration.GetConnectionS
 
 // Angebotsvorlage und Textbausteine liegen beim Programm (templates/angebot wird mitkopiert); der Ordner ist umstellbar (C-02).
 builder.Services.Configure<AngebotsEinstellungen>(builder.Configuration.GetSection("Angebot"));
+builder.Services.Configure<VorlagenEinstellungen>(builder.Configuration.GetSection(VorlagenEinstellungen.Abschnitt));
 builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
 {
     if (string.IsNullOrWhiteSpace(e.Vorlagenordner))
@@ -96,6 +98,23 @@ app.MapGet("/katalog/export/{id:int}", async (int id, PreislistenDienst dienst, 
     {
         var (name, inhalt) = await dienst.ExportAsync(id, abbruch);
         return Results.File(inhalt, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+// Word-Datei einer Vorlagenfassung (#26, Teil B); Produktmanagement und Führung.
+app.MapGet("/katalog/vorlagen/fassung/{id:int}/datei", async (int id, VorlagenDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, inhalt) = await dienst.DateiAsync(id, abbruch);
+        return Results.File(inhalt, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", name);
     }
     catch (KeinZugriffException)
     {
