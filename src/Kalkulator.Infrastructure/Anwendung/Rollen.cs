@@ -58,6 +58,9 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
 
     public bool DarfBearbeiten(Kundenprojekt projekt) => Leitung || (Vertrieb && IstVerantwortlich(projekt));
 
+    /// <summary>Unterlagen und Kundensituation pflegen (Phase 4): wer das Projekt bearbeitet, dazu die Consultants.</summary>
+    public bool DarfUnterlagenPflegen(Kundenprojekt projekt) => DarfBearbeiten(projekt) || benutzer.IstInRolle(Rollen.Consultant);
+
     private bool IstVerantwortlich(Kundenprojekt projekt) =>
         string.Equals(projekt.Verantwortlich, benutzer.Name, StringComparison.OrdinalIgnoreCase);
 }

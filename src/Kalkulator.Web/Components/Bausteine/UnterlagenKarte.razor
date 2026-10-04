@@ -1,0 +1,291 @@
+@using Kalkulator.Infrastructure.Ablage
+@inject UnterlagenDienst Dienst
+
+@* Unterlagen des Kundenprojekts (Phase 4): Kanalordner im Team „Kundenprojekte“ und ergänzende Uploads. *@
+<section class="karte" id="unterlagen">
+    <div class="karte-kopf">
+        <h2>Unterlagen</h2>
+        @if (_uebersicht?.Kanalordner is { } kanal)
+        {
+            <span class="unterzeile">Teams › Kundenprojekte › @kanal</span>
+        }
+    </div>
+
+    @if (_meldung is not null)
+    {
+        <p class="karte-inhalt meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    @if (_uebersicht is not { } u)
+    {
+        <p class="karte-inhalt unterzeile">Lade …</p>
+    }
+    else
+    {
+        <div class="karte-inhalt stapel">
+            @* Kanalordner *@
+            @if (!u.AblageEingerichtet)
+            {
+                <p class="unterzeile">@u.AblageGrund Uploads sind trotzdem möglich.</p>
+            }
+            else if (u.Kanalordner is null || _auswahlOffen)
+            {
+                @if (u.DarfPflegen)
+                {
+                    @if (_kanaele is null)
+                    {
+                        <div class="aktionen">
+                            <button type="button" class="knopf zweit" @onclick="KanaeleLadenAsync" disabled="@_beschaeftigt">Kanalordner in Teams wählen</button>
+                            <span class="unterzeile">Verknüpft das Projekt mit dem Ordner des Kunden im Team „Kundenprojekte“.</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="felder">
+                            <div class="feld breit">
+                                <label for="kanalordner">Kanalordner im Team „Kundenprojekte“</label>
+                                <select id="kanalordner" @bind="_kanalId">
+                                    <option value="">– bitte wählen –</option>
+                                    @foreach (var k in _kanaele.Kanaele)
+                                    {
+                                        <option value="@k.Id">@k.Name@(k == _kanaele.Vorschlag ? " (Vorschlag)" : "")</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
+                        <div class="aktionen">
+                            <button type="button" class="knopf" disabled="@(string.IsNullOrEmpty(_kanalId) || _beschaeftigt)" @onclick="VerknuepfenAsync">Verknüpfen</button>
+                            <button type="button" class="knopf zweit" @onclick="() => { _kanaele = null; _auswahlOffen = false; }">Abbrechen</button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="unterzeile">Noch kein Kanalordner verknüpft.</p>
+                }
+            }
+            else
+            {
+                @if (_dateien is null)
+                {
+                    <p class="unterzeile">Lade Dateien aus Teams …</p>
+                }
+                else if (_dateien.Count == 0)
+                {
+                    <p class="unterzeile">Im Kanalordner liegen noch keine Dateien in den gelesenen Ordnern (Kundenakte bis Workshop, Angebote, Protokolle).</p>
+                }
+                else
+                {
+                    @foreach (var gruppe in _dateien.GroupBy(d => d.Bereich))
+                    {
+                        <div class="ablage-gruppe">
+                            <h3>@Texte.Ablagebereich(gruppe.Key) <span class="unterzeile">· @gruppe.Count()</span></h3>
+                            <ul class="ablage-liste">
+                                @foreach (var d in gruppe)
+                                {
+                                    <li>
+                                        <a href="@(d.Link ?? $"kundenprojekte/{ProjektId}/ablage?datei={Uri.EscapeDataString(d.Id)}")" target="@(d.Link is null ? null : "_blank")" rel="noopener">@d.Name</a>
+                                        <span class="unterzeile">
+                                            @Unterordner(d)@(d.GeaendertAm is { } am ? Texte.Zeitpunkt(am) : "")@(d.GeaendertVon is { } von ? $" · {von}" : "") · @Texte.Groesse(d.Groesse)
+                                        </span>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                }
+                @if (u.DarfPflegen)
+                {
+                    <div class="aktionen">
+                        <button type="button" class="knopf zweit klein" @onclick="DateienLadenAsync" disabled="@_beschaeftigt">Aktualisieren</button>
+                        <button type="button" class="knopf zweit klein" @onclick="KanaeleLadenAsync" disabled="@_beschaeftigt">Anderen Kanalordner wählen</button>
+                    </div>
+                }
+            }
+
+            @* Uploads *@
+            <div class="ablage-gruppe"><h3>Hochgeladen im Kalkulator</h3></div>
+            @if (u.Uploads.Count == 0)
+            {
+                <p class="unterzeile">Keine Uploads. Was in Teams liegt, muss nicht hochgeladen werden.</p>
+            }
+            else
+            {
+                <ul class="ablage-liste">
+                    @foreach (var up in u.Uploads)
+                    {
+                        <li>
+                            <a href="unterlagen/@up.Id" download>@up.Dateiname</a>
+                            <span class="unterzeile">@Texte.Unterlagenart(up.Art) · @Texte.Zeitpunkt(up.HochgeladenAm) · @up.HochgeladenVon · @Texte.Groesse(up.Groesse)@(up.Beschreibung is { } b ? $" · {b}" : "")</span>
+                            @if (u.DarfPflegen)
+                            {
+                                @if (_loeschen == up.Id)
+                                {
+                                    <span class="aktionen">
+                                        <button type="button" class="knopf gefahr klein" @onclick="() => LoeschenAsync(up.Id)" disabled="@_beschaeftigt">Wirklich löschen</button>
+                                        <button type="button" class="knopf zweit klein" @onclick="() => _loeschen = null">Abbrechen</button>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <button type="button" class="knopf zweit klein" @onclick="() => _loeschen = up.Id">Löschen</button>
+                                }
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+            @if (u.LoeschungAm is { } loeschung)
+            {
+                <p class="unterzeile">Das Projekt ist abgeschlossen. Uploads werden am @Texte.Datum(loeschung) gelöscht (Aufbewahrungsfrist); Dateien in Teams bleiben.</p>
+            }
+
+            @if (u.DarfPflegen)
+            {
+                <div class="felder">
+                    <div class="feld">
+                        <label for="upload-art">Art</label>
+                        <select id="upload-art" @bind="_art">
+                            @foreach (var a in Enum.GetValues<UnterlagenArt>())
+                            {
+                                <option value="@a">@Texte.Unterlagenart(a)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld">
+                        <label for="upload-beschreibung">Beschreibung (optional)</label>
+                        <input id="upload-beschreibung" type="text" @bind="_beschreibung" @bind:event="oninput" maxlength="500" />
+                    </div>
+                    <div class="feld breit">
+                        <label for="upload-datei">Datei (PDF, Word, Excel, PowerPoint, Text, Transkript, Bild, E-Mail; höchstens 25 MB)</label>
+                        <InputFile id="upload-datei" OnChange="HochladenAsync" disabled="@_beschaeftigt" />
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public int ProjektId { get; set; }
+
+    private UnterlagenUebersicht? _uebersicht;
+    private IReadOnlyList<AblageDatei>? _dateien;
+    private KanalAuswahl? _kanaele;
+    private string? _kanalId;
+    private bool _auswahlOffen;
+    private bool _beschaeftigt;
+    private int? _loeschen;
+    private UnterlagenArt _art = UnterlagenArt.Analyse;
+    private string? _beschreibung;
+    private string? _meldung;
+    private bool _meldungIstFehler;
+
+    protected override async Task OnParametersSetAsync() => await LadeAsync();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Dateien aus Teams erst nach dem ersten Anzeigen laden; Graph braucht einen Moment.
+        if (_uebersicht is { Kanalordner: not null, AblageEingerichtet: true } && _dateien is null && !_beschaeftigt && !_auswahlOffen)
+        {
+            await DateienLadenAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _uebersicht = await Dienst.UebersichtAsync(ProjektId);
+        }
+        catch (KeinZugriffException e)
+        {
+            Fehler(e.Message);
+        }
+    }
+
+    private Task DateienLadenAsync() => AusfuehrenAsync(async () =>
+    {
+        _dateien = await Dienst.AblageDateienAsync(ProjektId);
+        return null;
+    }, neuLaden: false);
+
+    private Task KanaeleLadenAsync() => AusfuehrenAsync(async () =>
+    {
+        _kanaele = await Dienst.KanaeleAsync(ProjektId);
+        _kanalId = _kanaele.Vorschlag?.Id;
+        _auswahlOffen = true;
+        return null;
+    }, neuLaden: false);
+
+    private Task VerknuepfenAsync() => AusfuehrenAsync(async () =>
+    {
+        await Dienst.VerknuepfenAsync(ProjektId, _kanalId);
+        _kanaele = null;
+        _auswahlOffen = false;
+        _dateien = null;
+        return "Kanalordner verknüpft.";
+    });
+
+    private async Task HochladenAsync(InputFileChangeEventArgs e)
+    {
+        await AusfuehrenAsync(async () =>
+        {
+            Unterlage.Pruefe(e.File.Name, e.File.Size);
+            using var strom = new MemoryStream();
+            await using (var quelle = e.File.OpenReadStream(Unterlage.MaxGroesse))
+            {
+                await quelle.CopyToAsync(strom);
+            }
+
+            await Dienst.HochladenAsync(ProjektId, _art, e.File.Name, strom.ToArray(), _beschreibung);
+            _beschreibung = null;
+            return $"„{e.File.Name}“ hochgeladen.";
+        });
+    }
+
+    private Task LoeschenAsync(int id) => AusfuehrenAsync(async () =>
+    {
+        await Dienst.LoeschenAsync(id);
+        _loeschen = null;
+        return "Unterlage gelöscht.";
+    });
+
+    private async Task AusfuehrenAsync(Func<Task<string?>> aktion, bool neuLaden = true)
+    {
+        _beschaeftigt = true;
+        try
+        {
+            var erfolg = await aktion();
+            // Reines Nachladen (Dateien, Kanalordner) lässt eine vorhandene Meldung stehen.
+            if (erfolg is not null || neuLaden)
+            {
+                (_meldung, _meldungIstFehler) = (erfolg, false);
+            }
+            if (neuLaden)
+            {
+                await LadeAsync();
+            }
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or KeyNotFoundException or IOException)
+        {
+            Fehler(ex.Message);
+            _dateien ??= [];
+        }
+        finally
+        {
+            _beschaeftigt = false;
+        }
+    }
+
+    private void Fehler(string text) => (_meldung, _meldungIstFehler) = (text, true);
+
+    /// <summary>Unterordner unterhalb des Bereichs, z. B. „_Rohtranskripte · “.</summary>
+    private static string Unterordner(AblageDatei d)
+    {
+        var teile = d.Pfad.Split('/');
+        return teile.Length > 2 ? string.Join(" › ", teile[1..^1]) + " · " : "";
+    }
+}

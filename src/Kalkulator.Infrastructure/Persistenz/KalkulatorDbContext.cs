@@ -161,7 +161,7 @@ public class KalkulatorDbContext(
 
     private List<(EntityEntry Eintrag, string Aktion, string? Werte)> ErfasseAenderungen() =>
         [.. ChangeTracker.Entries()
-            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich or VertragswerkDatei))
+            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich or VertragswerkDatei or UnterlageDatei))
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(e => (e, e.State switch
             {

@@ -38,6 +38,9 @@ internal sealed class KundenprojektKonfiguration : IEntityTypeConfiguration<Kund
         builder.Property(p => p.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.Verlustgrund).HasConversion<string>().HasMaxLength(30);
         builder.Property(p => p.Zeilenversion).IsRowVersion();
+        builder.Property(p => p.KanalordnerId).HasMaxLength(200);
+        builder.Property(p => p.Kanalordner).HasMaxLength(200);
+        builder.Ignore(p => p.AbgeschlossenAm);
         builder.HasIndex(p => p.Status);
 
         builder.HasOne(p => p.Kunde).WithMany().HasForeignKey(p => p.KundeId).OnDelete(DeleteBehavior.Restrict);
@@ -303,5 +306,30 @@ internal static class AngabenJson
                 l => (IReadOnlyList<IReadOnlyDictionary<string, string>>)[.. l.Value.Select(z => (IReadOnlyDictionary<string, string>)new Dictionary<string, string>(z, StringComparer.Ordinal))],
                 StringComparer.Ordinal),
         };
+    }
+}
+
+internal sealed class UnterlageKonfiguration : IEntityTypeConfiguration<Unterlage>
+{
+    public void Configure(EntityTypeBuilder<Unterlage> builder)
+    {
+        builder.ToTable("Unterlagen", "projekte");
+        builder.Property(u => u.Art).HasConversion<string>().HasMaxLength(30);
+        builder.Property(u => u.Dateiname).HasMaxLength(255);
+        builder.Property(u => u.Inhaltstyp).HasMaxLength(100);
+        builder.Property(u => u.Beschreibung).HasMaxLength(500);
+        builder.Property(u => u.HochgeladenVon).HasMaxLength(200);
+        builder.HasIndex(u => u.KundenprojektId);
+        builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(u => u.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(u => u.Datei).WithOne().HasForeignKey<UnterlageDatei>(d => d.UnterlageId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class UnterlageDateiKonfiguration : IEntityTypeConfiguration<UnterlageDatei>
+{
+    public void Configure(EntityTypeBuilder<UnterlageDatei> builder)
+    {
+        builder.ToTable("UnterlagenDateien", "projekte");
+        builder.HasKey(d => d.UnterlageId);
     }
 }

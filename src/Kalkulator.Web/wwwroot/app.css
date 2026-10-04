@@ -190,6 +190,12 @@ a {
         font-size: 0.8rem;
     }
 
+    .knopf.gefahr {
+        background: var(--kritisch);
+        border-color: var(--kritisch);
+        color: var(--weiss);
+    }
+
     .knopf:disabled {
         opacity: 0.45;
         cursor: not-allowed;
@@ -775,3 +781,26 @@ dl.daten dd { overflow-wrap: anywhere; }
 /* Vertragswerk im Kundenprojekt (#26, Teil C) */
 .dokumentliste { margin: 0; padding-left: 1.4rem; }
 .dokumentliste li { padding: .15rem 0; }
+
+/* Unterlagen am Kundenprojekt (Phase 4) */
+.ablage-gruppe h3 {
+    font-size: 0.9rem;
+    margin: 0.5rem 0 0.25rem;
+}
+
+.ablage-liste {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+    .ablage-liste li {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 0.25rem 0.6rem;
+        overflow-wrap: anywhere;
+    }
