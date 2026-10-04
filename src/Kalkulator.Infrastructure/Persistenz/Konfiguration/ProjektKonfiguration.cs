@@ -42,6 +42,7 @@ internal sealed class KundenprojektKonfiguration : IEntityTypeConfiguration<Kund
         builder.HasOne(p => p.Kunde).WithMany().HasForeignKey(p => p.KundeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(p => p.StatusEreignisse).WithOne().HasForeignKey(e => e.KundenprojektId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(p => p.Kalkulationen).WithOne(k => k.Kundenprojekt).HasForeignKey(k => k.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Angebot>().WithMany().HasForeignKey(p => p.AngenommenesAngebotId).OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -76,6 +77,25 @@ internal sealed class KalkulationKonfiguration : IEntityTypeConfiguration<Kalkul
 
         builder.HasMany(k => k.Sonderpositionen).WithOne().HasForeignKey(s => s.KalkulationId).OnDelete(DeleteBehavior.Cascade);
         builder.HasMany(k => k.Versionen).WithOne().HasForeignKey(v => v.KalkulationId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(k => k.Vertriebsfreigaben).WithOne().HasForeignKey(f => f.KalkulationId).OnDelete(DeleteBehavior.Cascade);
+        builder.Ignore(k => k.IstVertriebsfreigegeben);
+    }
+}
+
+internal sealed class VertriebsfreigabeKonfiguration : IEntityTypeConfiguration<Vertriebsfreigabe>
+{
+    public void Configure(EntityTypeBuilder<Vertriebsfreigabe> builder)
+    {
+        builder.ToTable("Vertriebsfreigaben", "kalkulation");
+        builder.Property(f => f.Rolle).HasConversion<string>().HasMaxLength(30);
+        builder.Property(f => f.Benutzer).HasMaxLength(200);
+        builder.Property(f => f.Kommentar).HasMaxLength(2000);
+        builder.Property(f => f.AufgehobenVon).HasMaxLength(200);
+        builder.Property(f => f.Aufhebungsgrund).HasMaxLength(500);
+        builder.Ignore(f => f.IstAktiv);
+
+        // Je Rolle höchstens eine aktive Freigabe.
+        builder.HasIndex(f => new { f.KalkulationId, f.Rolle }).IsUnique().HasFilter("[AufgehobenAm] IS NULL").HasDatabaseName("IX_Vertriebsfreigaben_Aktiv");
     }
 }
 
@@ -104,6 +124,8 @@ internal sealed class KalkulationsversionKonfiguration : IEntityTypeConfiguratio
         builder.Property(v => v.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
         builder.Property(v => v.SummeMonatlich).HasPrecision(12, 2);
         builder.Property(v => v.SummeEinmalig).HasPrecision(12, 2);
+        builder.Property(v => v.FreigabeVertriebsleitungVon).HasMaxLength(200);
+        builder.Property(v => v.FreigabeSolutionConsultantVon).HasMaxLength(200);
         builder.Ignore(v => v.Bezeichnung);
         builder.Ignore(v => v.Jahreswert);
         builder.Ignore(v => v.WertErstlaufzeit);
@@ -186,6 +208,9 @@ internal sealed class NummernkreisKonfiguration : IEntityTypeConfiguration<Numme
 internal static class EingabeJson
 {
     private static readonly JsonSerializerOptions Optionen = new() { Converters = { new JsonStringEnumConverter() } };
+
+    /// <summary>Die Eingabe so, wie sie gespeichert wird; z. B. um Arbeitsstände zu vergleichen.</summary>
+    public static string Text(KalkulationsEingabe eingabe) => JsonSerializer.Serialize(eingabe, Optionen);
 
     public static readonly ValueConverter<KalkulationsEingabe, string> Konverter = new(
         e => JsonSerializer.Serialize(e, Optionen),

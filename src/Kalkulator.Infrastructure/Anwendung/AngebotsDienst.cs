@@ -69,11 +69,18 @@ public sealed class AngebotsDienst(
         var kalkulation = await kontext.Kalkulationen
             .Include(k => k.Kundenprojekt).ThenInclude(p => p!.Kunde)
             .Include(k => k.Sonderpositionen)
+            .Include(k => k.Vertriebsfreigaben)
             .SingleOrDefaultAsync(k => k.Id == kalkulationId, abbruch)
             ?? throw new KeyNotFoundException($"Kalkulation {kalkulationId} gibt es nicht.");
         if (!_recht.DarfBearbeiten(kalkulation.Kundenprojekt!))
         {
             throw new KeinZugriffException("Angebote zu dieser Kalkulation darfst du nicht erzeugen.");
+        }
+
+        // Kein Angebot an den Kunden ohne Vertriebsfreigabe (#26); die Freigaben landen in der eingefrorenen Version.
+        if (!kalkulation.IstVertriebsfreigegeben)
+        {
+            throw new InvalidOperationException("Vor dem Angebot braucht die Kalkulation die Freigaben von Vertriebsleitung und Solution Consultant.");
         }
 
         // Für das Einfrieren immer mit EK, damit die Kosten der Version vollständig im Schema „intern“ landen.

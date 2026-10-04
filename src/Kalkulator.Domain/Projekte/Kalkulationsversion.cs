@@ -25,6 +25,12 @@ public class Kalkulationsversion
     public decimal SummeMonatlich { get; init; }
     public decimal SummeEinmalig { get; init; }
 
+    /// <summary>Vertriebsfreigaben, mit denen dieser Stand eingefroren wurde (#26); leer bei Ständen vor der Freigabepflicht.</summary>
+    public string? FreigabeVertriebsleitungVon { get; init; }
+    public DateTimeOffset? FreigabeVertriebsleitungAm { get; init; }
+    public string? FreigabeSolutionConsultantVon { get; init; }
+    public DateTimeOffset? FreigabeSolutionConsultantAm { get; init; }
+
     public List<VersionsPosition> Positionen { get; } = [];
 
     public string Bezeichnung => $"V{Nummer}";

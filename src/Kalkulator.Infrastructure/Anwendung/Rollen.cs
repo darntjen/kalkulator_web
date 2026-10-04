@@ -40,6 +40,14 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
 
     public bool DarfSonderpositionenFreigeben => Leitung;
 
+    /// <summary>Vertriebsfreigabe einer Kalkulation (#26): Vertriebsleitung bzw. Solution Consultant (Rolle „Consultant“).</summary>
+    public bool DarfVertriebFreigeben(FreigabeRolle rolle) => rolle switch
+    {
+        FreigabeRolle.Vertriebsleitung => Leitung,
+        FreigabeRolle.SolutionConsultant => benutzer.IstInRolle(Rollen.Consultant),
+        _ => false,
+    };
+
     /// <summary>Katalog, Preislisten, EK-Kalkulation und Änderungsprotokoll einsehen: Produktmanagement und Führung.</summary>
     public bool DarfKatalogSehen => benutzer.IstInRolle(Rollen.Produktmanagement) || benutzer.IstInRolle(Rollen.Fuehrung);
 

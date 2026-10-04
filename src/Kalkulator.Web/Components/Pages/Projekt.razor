@@ -116,6 +116,24 @@ else
         </div>
 
         <div class="stapel">
+            @if (_angeboteZurAnnahme.FirstOrDefault(a => a.Id == _projekt.AngenommenesAngebotId) is { } angenommen)
+            {
+                <section class="karte">
+                    <div class="karte-kopf"><h2>Angenommenes Angebot</h2></div>
+                    <div class="karte-inhalt stapel">
+                        <dl class="daten">
+                            <dt>Angebot</dt>
+                            <dd>@angenommen.Nummer V@(angenommen.Version)</dd>
+                            <dt>Kalkulation</dt>
+                            <dd>@angenommen.Kalkulation</dd>
+                            <dt>Monatlich</dt>
+                            <dd>@Texte.Euro(angenommen.SummeMonatlich) netto</dd>
+                        </dl>
+                        <div class="aktionen"><a class="knopf zweit klein" href="angebote/@angenommen.Id/datei" download>Word herunterladen</a></div>
+                    </div>
+                </section>
+            }
+
             <section class="karte">
                 <div class="karte-kopf"><h2>Kunde</h2></div>
                 <div class="karte-inhalt">
@@ -186,8 +204,28 @@ else
                                     </select>
                                 </div>
                             }
+                            @if (_neuerStatus == ProjektStatus.Gewonnen)
+                            {
+                                <div class="feld">
+                                    <label for="angebot">Angenommenes Angebot *</label>
+                                    @if (_angeboteZurAnnahme.Count == 0)
+                                    {
+                                        <p class="unterzeile">Es gibt noch kein als versendet markiertes Angebot. Bitte das Angebot in der Kalkulation erst als versendet markieren.</p>
+                                    }
+                                    else
+                                    {
+                                        <select id="angebot" @bind="_angenommenesAngebot">
+                                            <option value="">Bitte wählen</option>
+                                            @foreach (var a in _angeboteZurAnnahme)
+                                            {
+                                                <option value="@a.Id">@a.Text · @Texte.Euro(a.SummeMonatlich) mtl.@(a.VersendetAm is { } v ? $" · versendet {v:dd.MM.yyyy}" : "")</option>
+                                            }
+                                        </select>
+                                    }
+                                </div>
+                            }
                             <div class="feld"><label for="kommentar">Kommentar</label><textarea id="kommentar" rows="2" @bind="_kommentar"></textarea></div>
-                            <div class="aktionen"><button class="knopf klein" type="submit" disabled="@(_neuerStatus is null)">Status setzen</button></div>
+                            <div class="aktionen"><button class="knopf klein" type="submit" disabled="@(_neuerStatus is null || (_neuerStatus == ProjektStatus.Gewonnen && _angenommenesAngebot is null))">Status setzen</button></div>
                         </form>
                     </div>
                 </section>
@@ -207,6 +245,8 @@ else
     private DateTime? _monat;
     private ProjektStatus? _neuerStatus;
     private Verlustgrund? _verlustgrund;
+    private int? _angenommenesAngebot;
+    private IReadOnlyList<AngebotsAuswahl> _angeboteZurAnnahme = [];
 
     private IReadOnlyList<ProjektStatus> Moegliche =>
         _projekt is null ? [] : [.. Enum.GetValues<ProjektStatus>().Where(_projekt.KannWechselnZu)];
@@ -229,6 +269,7 @@ else
             }
 
             _darfBearbeiten = Dienst.Recht.DarfBearbeiten(_projekt);
+            _angeboteZurAnnahme = await Dienst.AngeboteZurAnnahmeAsync(Id);
             _wahrscheinlichkeit = _projekt.Wahrscheinlichkeit;
             _monat = _projekt.ErwarteterAbschlussmonat?.ToDateTime(TimeOnly.MinValue);
         }
@@ -255,9 +296,11 @@ else
 
     private Task StatusAsync() => AusfuehrenAsync(async () =>
     {
-        await Dienst.SetzeStatusAsync(Id, _neuerStatus!.Value, _kommentar, _neuerStatus == ProjektStatus.Verloren ? _verlustgrund : null);
+        await Dienst.SetzeStatusAsync(Id, _neuerStatus!.Value, _kommentar, _neuerStatus == ProjektStatus.Verloren ? _verlustgrund : null,
+            _neuerStatus == ProjektStatus.Gewonnen ? _angenommenesAngebot : null);
         _neuerStatus = null;
         _verlustgrund = null;
+        _angenommenesAngebot = null;
         _kommentar = null;
     }, "Status gesetzt.");
 

@@ -72,6 +72,7 @@ erDiagram
 | **Position** | Eingefrorene Ergebniszeile einer Version | Komponenten- und Service-Code, Bezeichnung, Menge, berechnete Menge, Einzelpreis, Betrag, Abrechnungsart, Herkunft (Katalog, Onboarding, Sonderrechner, Sonderposition), Hinweis „im Bundle enthalten“. Kosten je Zeile liegen getrennt im Schema `intern` |
 | **Sonderrechner-Eingabe** | Eingaben der Spezialrechner | S60: Anfragen/Monat, Ø AE; S14: Variante, Server, Datenmenge, Lizenzherkunft, Checkliste; S25: Clients, Server; S61: Buchungsübersicht, TERRA-Wert, Backup-Entscheidung; S41: Roadmap-Erstellung ja/nein |
 | **Sonderposition** | Freie Position im Arbeitsstand | Bezeichnung, Einheit, Menge, Preis, Begründung, Freigabestatus (offen/freigegeben/abgelehnt), entschieden von/am, Kommentar (bei Ablehnung Pflicht). Jede inhaltliche Änderung setzt die Freigabe auf „offen“ zurück, ebenso das Duplizieren der Kalkulation (Entscheidung 02.10.2026) |
+| **Vertriebsfreigabe** | Freigabe einer Kalkulation vor dem Angebot (#26, Entscheidung 04.10.2026) | Rolle (Vertriebsleitung / Solution Consultant), wer, wann, Kommentar; aufgehoben am/von, Grund. Je Rolle höchstens eine aktive Freigabe. Ein Angebot entsteht nur mit beiden aktiven Freigaben; sie werden in die Kalkulationsversion übernommen. Jede inhaltliche Änderung (Positionen, Mengen, Sonderrechner, Sonderpositionen, Vertragsbeginn) hebt beide auf. Beide Freigaben kommen von verschiedenen Personen; wer das Kundenprojekt verantwortet, darf mit passender Rolle selbst freigeben |
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 
 ## Projektstatus eines Kundenprojekts (bestätigt 25.09.2026, am Kundenprojekt seit 29.09.2026)
@@ -81,6 +82,7 @@ stateDiagram-v2
     [*] --> Entwurf
     Entwurf --> Angebot_versendet: Angebot erzeugt und versendet
     Angebot_versendet --> Entwurf: neue Version
+    Angebot_versendet --> Gewonnen: Kunde nimmt Angebot an
     Angebot_versendet --> Vertrag_erstellt: Vertragspaket erzeugt
     Vertrag_erstellt --> Entwurf: Änderungswunsch, neue Version
     Vertrag_erstellt --> Gewonnen: Vertrag unterschrieben
@@ -100,6 +102,12 @@ Auswahlliste (bestätigt 02.10.2026): Preis, Wettbewerber, kein Bedarf,
 falscher Zeitpunkt, interne Lösung, keine Rückmeldung, Sonstiges.
 Gewonnen und Verloren sind endgültig; aus dem Entwurf geht es nur zum
 versendeten Angebot.
+
+Bei „Gewonnen“ wählt der Vertrieb das **angenommene Angebot** aus den als versendet
+markierten Angeboten des Projekts (Pflicht, #26). Es ist die Grundlage für das
+Vertragswerk und die Übergabe an Paperless. Vor dem Angebot stehen die
+Vertriebsfreigaben von Vertriebsleitung und Solution Consultant (siehe Objekt
+„Vertriebsfreigabe“).
 
 ## Objekte für Stufe 2 (Gesamtkonzept)
 

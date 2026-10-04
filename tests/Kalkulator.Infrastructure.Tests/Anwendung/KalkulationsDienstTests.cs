@@ -161,6 +161,20 @@ public class KalkulationsDienstTests(SqlServerFixture db)
         Assert.Single((await dienst.LadeAsync(id))!.Kalkulation.Sonderpositionen);
     }
 
+    [Fact]
+    public async Task Vertriebsfreigabe_braucht_eine_freigegebene_Preisliste()
+    {
+        var (id, vertrieb) = await NeueKalkulationAsync();
+        var (_, dienst) = await DiensteAsync(vertrieb);
+        var (_, leitung) = await DiensteAsync(Neu(Rollen.Vertriebsleitung));
+        await dienst.SpeichernAsync(id, "Variante A", null, Rk01, (await dienst.LadeAsync(id))!.Kalkulation.Zeilenversion);
+
+        var fehler = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            await leitung.VertriebFreigebenAsync(id, FreigabeRolle.Vertriebsleitung, (await leitung.LadeAsync(id))!.Stand, null));
+
+        Assert.Contains("freigegebene Preisliste", fehler.Message, StringComparison.Ordinal);
+    }
+
     private sealed class Fabrik(Func<KalkulatorDbContext> erzeugen) : IDbContextFactory<KalkulatorDbContext>
     {
         public KalkulatorDbContext CreateDbContext() => erzeugen();

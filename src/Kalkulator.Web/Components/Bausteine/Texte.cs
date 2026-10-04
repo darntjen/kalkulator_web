@@ -41,6 +41,13 @@ public static class Texte
         _ => status.ToString(),
     };
 
+    public static string Freigaberolle(Domain.Projekte.FreigabeRolle rolle) => rolle switch
+    {
+        Domain.Projekte.FreigabeRolle.Vertriebsleitung => "Vertriebsleitung",
+        Domain.Projekte.FreigabeRolle.SolutionConsultant => "Solution Consultant",
+        _ => rolle.ToString(),
+    };
+
     public static string Menge(decimal menge) => menge.ToString("#,##0.##", Deutsch);
 
     public static string Prozent(decimal anteil) => (anteil * 100).ToString("0.0", Deutsch) + " %";
