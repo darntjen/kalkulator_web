@@ -109,7 +109,8 @@ public class PaperlessUebergabeTests
     public async Task Abgelehnte_Anfrage_und_fehlende_Einrichtung_werden_verstaendlich_gemeldet()
     {
         var server = new TestServer(
-            (HttpStatusCode.OK, """{"signed_id":"blob-1"}"""),
+            (HttpStatusCode.OK, """{"signed_id":"blob-1","direct_upload":{"url":"https://speicher.test/upload/1"}}"""),
+            (HttpStatusCode.OK, ""),
             (HttpStatusCode.UnprocessableEntity, """{"errors":{"participants":["ist ung\u00fcltig"]}}"""));
 
         var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
@@ -117,10 +118,38 @@ public class PaperlessUebergabeTests
         Assert.Contains("documents", fehler.Message, StringComparison.Ordinal);
         Assert.Contains("422", fehler.Message, StringComparison.Ordinal);
         Assert.Contains("\"participants\":[\"ist ungültig\"]", fehler.Message, StringComparison.Ordinal);
-        Assert.Equal(2, server.Anfragen.Count);
+        Assert.Equal(3, server.Anfragen.Count);
 
         var aus = await Assert.ThrowsAsync<PaperlessFehler>(() =>
             new PaperlessUebergabe(new HttpClient(new TestServer()), Options.Create(new PaperlessEinstellungen())).UebergebenAsync(Auftrag(), CancellationToken.None));
         Assert.Contains("nicht eingerichtet", aus.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Ohne_Upload_Ziel_bricht_die_Uebergabe_ab_statt_ein_leeres_Dokument_anzulegen()
+    {
+        var server = new TestServer((HttpStatusCode.OK, """{"signed_id":"blob-1","upload":{"href":"https://geheim.test/x?sig=abc"}}"""));
+
+        var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenAsync(Auftrag(), CancellationToken.None));
+
+        Assert.Single(server.Anfragen);
+        Assert.Contains("kein Upload-Ziel", fehler.Message, StringComparison.Ordinal);
+        Assert.Contains("{signed_id, upload{href}}", fehler.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("sig=abc", fehler.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Protokoll_nennt_Anfrage_Status_und_Aufbau_ohne_Werte()
+    {
+        var ausgabe = new StringWriter();
+        var server = new TestServer((HttpStatusCode.OK, """{"signed_id":"blob-geheim","direct_upload":{"url":"https://speicher.test/u?sig=abc","headers":{"Content-MD5":"x"}}}"""));
+        using var http = new HttpClient(new PaperlessProtokoll(ausgabe, server));
+
+        var antwort = await http.PostAsync("https://paperless.test/api/v1/blobs?token=geheim", new StringContent("{}"));
+
+        Assert.Equal("""    POST paperless.test/api/v1/blobs → 200 {signed_id, direct_upload{url, headers{Content-MD5}}}""", ausgabe.ToString().TrimEnd());
+        Assert.DoesNotContain("geheim", ausgabe.ToString(), StringComparison.Ordinal);
+        Assert.Contains("blob-geheim", await antwort.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 }

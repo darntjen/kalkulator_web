@@ -77,27 +77,30 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
         var antwort = await SendeAsync(e, HttpMethod.Post, "blobs", anfrage, abbruch);
         var signiert = Kennung(antwort, "signed_id") ?? throw new PaperlessFehler("Paperless hat beim Hochladen keine signed_id zurückgegeben.");
 
-        if (antwort["direct_upload"] is JsonObject ziel && ziel["url"]?.GetValue<string>() is { Length: > 0 } url)
+        // Ohne Upload-Ziel bliebe das Dokument in Paperless leer; dann lieber abbrechen und den Aufbau der Antwort nennen.
+        if (antwort["direct_upload"] is not JsonObject ziel || ziel["url"]?.GetValue<string>() is not { Length: > 0 } url)
         {
-            using var hochladen = new HttpRequestMessage(HttpMethod.Put, url) { Content = new ByteArrayContent(auftrag.Pdf) };
-            if (ziel["headers"] is JsonObject kopf)
+            throw new PaperlessFehler($"Paperless hat beim Hochladen kein Upload-Ziel (direct_upload.url) zurückgegeben. Aufbau der Antwort: {Aufbau(antwort)}");
+        }
+
+        using var hochladen = new HttpRequestMessage(HttpMethod.Put, url) { Content = new ByteArrayContent(auftrag.Pdf) };
+        if (ziel["headers"] is JsonObject kopf)
+        {
+            foreach (var (name, wert) in kopf)
             {
-                foreach (var (name, wert) in kopf)
+                var text = wert?.ToString() ?? "";
+                if (!hochladen.Headers.TryAddWithoutValidation(name, text))
                 {
-                    var text = wert?.ToString() ?? "";
-                    if (!hochladen.Headers.TryAddWithoutValidation(name, text))
-                    {
-                        hochladen.Content.Headers.Remove(name);
-                        hochladen.Content.Headers.TryAddWithoutValidation(name, text);
-                    }
+                    hochladen.Content.Headers.Remove(name);
+                    hochladen.Content.Headers.TryAddWithoutValidation(name, text);
                 }
             }
+        }
 
-            using var ergebnis = await http.SendAsync(hochladen, abbruch);
-            if (!ergebnis.IsSuccessStatusCode)
-            {
-                throw new PaperlessFehler($"Das Hochladen der PDF-Datei ist fehlgeschlagen ({(int)ergebnis.StatusCode}).");
-            }
+        using var ergebnis = await http.SendAsync(hochladen, abbruch);
+        if (!ergebnis.IsSuccessStatusCode)
+        {
+            throw new PaperlessFehler($"Das Hochladen der PDF-Datei ist fehlgeschlagen ({(int)ergebnis.StatusCode}).");
         }
 
         return signiert;
@@ -189,6 +192,15 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
         JsonValue w when w.TryGetValue<string>(out var s) && s.Length > 0 => s,
         JsonValue w when w.TryGetValue<long>(out var n) => n.ToString(CultureInfo.InvariantCulture),
         _ => null,
+    };
+
+    /// <summary>Feldnamen einer JSON-Antwort ohne Werte, z. B. <c>{id, direct_upload{url, headers{…}}}</c>; für Fehlermeldungen und Protokolle.</summary>
+    public static string Aufbau(JsonNode? knoten, int tiefe = 0) => knoten switch
+    {
+        JsonObject o when tiefe < 4 => "{" + string.Join(", ", o.Select(f => f.Value is JsonObject or JsonArray ? f.Key + Aufbau(f.Value, tiefe + 1) : f.Key)) + "}",
+        JsonArray a when tiefe < 4 => "[" + (a.Count > 0 ? Aufbau(a[0], tiefe + 1) : "") + "]",
+        JsonObject or JsonArray => "{…}",
+        _ => "",
     };
 
     private static string Kurz(string text)

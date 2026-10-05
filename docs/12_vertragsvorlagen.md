@@ -245,9 +245,16 @@ lässt. Dafür gibt es den **Testlauf**:
    Codespaces → Secrets) und den Codespace neu starten. Auf einem Server genügt die Umgebungsvariable.
 2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
    der Test-„Kunde“).
-3. Der Testlauf legt zwei **Entwürfe** an (nie Versand): A mit Koordinaten ab oberem Rand, B ab unterem. Im Muster-PDF
-   zeigt ein grauer Rahmen, wo das Feld liegen soll. Die Variante, bei der die Felder in den Rahmen fallen, ergibt
-   `Paperless:YVonOben` (A = `true`, B = `false`). Danach beide Entwürfe in Paperless löschen.
+3. Der Testlauf legt drei **Entwürfe** an (nie Versand): A mit Vorlage und Koordinaten ab oberem Rand, B mit Vorlage
+   ab unterem Rand, C ohne Vorlage. Im Muster-PDF zeigt ein grauer Rahmen, wo das Feld liegen soll. Die Variante, bei
+   der die Felder in den Rahmen fallen, ergibt `Paperless:YVonOben` (A = `true`, B = `false`); C zeigt, ob die Vorlage
+   den Inhalt beeinflusst. Danach alle Entwürfe in Paperless löschen.
+4. Der Testlauf protokolliert jede Anfrage mit Status und dem Aufbau der Antwort (nur Feldnamen, keine Werte). Bei
+   Fehlern dieses Protokoll weitergeben.
+
+Erster Lauf (05.10.2026): Die Dokumente kamen **leer** an. Ursache war vermutlich, dass die Antwort auf `POST blobs` kein
+Upload-Ziel unter `direct_upload.url` enthielt und der Upload deshalb still übersprungen wurde. Die Übergabe bricht jetzt
+in diesem Fall mit dem Aufbau der Antwort ab, statt ein leeres Dokument anzulegen.
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.

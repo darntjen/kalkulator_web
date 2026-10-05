@@ -22,21 +22,28 @@ public class PaperlessTestlaufTests
     [Fact]
     public void Muster_PDF_hat_je_Rolle_ein_Feld_am_Anfang_der_Linie()
     {
-        var felder = Unterschriftsfelder.Finde(PaperlessTestlauf.MusterPdf("Testlauf", 180, 56));
+        var felder = Unterschriftsfelder.Finde(PaperlessTestlauf.MusterPdf("Testlauf", "Zusatz", 180, 56));
 
         Assert.Equal(["Kunde", "Nösse"], felder.Select(f => f.Rolle));
         Assert.All(felder, f => Assert.Equal((1, 72d), (f.Seite, Math.Round(f.X))));
         Assert.Equal([430d, 250d], felder.Select(f => Math.Round(f.Grundlinie)));
     }
 
+    private static (HttpStatusCode, string)[] Variante(string blob, (HttpStatusCode, string) dokument) =>
+    [
+        (HttpStatusCode.OK, "{\"signed_id\":\"" + blob + "\",\"direct_upload\":{\"url\":\"https://speicher.test/" + blob + "\"}}"),
+        (HttpStatusCode.OK, ""),
+        dokument,
+    ];
+
     [Fact]
-    public async Task Legt_zwei_Entwuerfe_an_einmal_mit_Ursprung_oben_und_einmal_unten()
+    public async Task Legt_drei_Entwuerfe_an_oben_und_unten_mit_Vorlage_und_einmal_ohne()
     {
-        var server = new TestServer(
-            (HttpStatusCode.OK, """{"signed_id":"blob-a"}"""),
-            (HttpStatusCode.Created, """{"id":101}"""),
-            (HttpStatusCode.OK, """{"signed_id":"blob-b"}"""),
-            (HttpStatusCode.Created, """{"id":102}"""));
+        var server = new TestServer([
+            .. Variante("blob-a", (HttpStatusCode.Created, """{"id":101}""")),
+            .. Variante("blob-b", (HttpStatusCode.Created, """{"id":102}""")),
+            .. Variante("blob-c", (HttpStatusCode.Created, """{"id":103}""")),
+        ]);
         var e = Einstellungen();
         e.Versenden = true;
         var ausgabe = new StringWriter();
@@ -44,14 +51,17 @@ public class PaperlessTestlaufTests
         var kennungen = await PaperlessTestlauf.AusfuehrenAsync(
             e, " dennis@noesse.de ", x => new PaperlessUebergabe(new HttpClient(server), Options.Create(x)), ausgabe);
 
-        Assert.Equal(["101", "102"], kennungen);
+        Assert.Equal(["101", "102", "103"], kennungen);
         var dokumente = server.Anfragen.Where(a => a.Anfrage.RequestUri!.AbsolutePath.EndsWith("/documents", StringComparison.Ordinal))
             .Select(a => JsonNode.Parse(a.Inhalt)!.AsObject()).ToList();
-        Assert.Equal(2, dokumente.Count);
+        Assert.Equal(3, dokumente.Count);
+        Assert.All(server.Anfragen.Where(a => a.Anfrage.Method == HttpMethod.Put), a => Assert.StartsWith("%PDF", a.Inhalt, StringComparison.Ordinal));
+        Assert.Equal([true, true, false], dokumente.Select(d => d.ContainsKey("template_id")));
 
         foreach (var d in dokumente)
         {
-            Assert.Equal((15114L, 50379L), (d["workspace_id"]!.GetValue<long>(), d["template_id"]!.GetValue<long>()));
+            Assert.Equal(15114L, d["workspace_id"]!.GetValue<long>());
+            Assert.Equal(50379L, d["template_id"]?.GetValue<long>() ?? 50379L);
             // Kein Versand trotz Versenden = true: Der Testlauf legt nur Entwürfe an.
             Assert.False(d.ContainsKey("state"));
 
@@ -67,7 +77,25 @@ public class PaperlessTestlaufTests
         Assert.Equal(842 - 430 - 56, Y(dokumente[0]), 0);
         Assert.Equal(430, Y(dokumente[1]), 0);
         Assert.Contains("Testlauf A", dokumente[0]["name"]!.GetValue<string>(), StringComparison.Ordinal);
-        Assert.Contains("Dokument 102 angelegt", ausgabe.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Dokument 103 angelegt", ausgabe.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Eine_gescheiterte_Variante_haelt_die_anderen_nicht_auf()
+    {
+        var server = new TestServer([
+            .. Variante("blob-a", (HttpStatusCode.Created, """{"id":101}""")),
+            .. Variante("blob-b", (HttpStatusCode.Created, """{"id":102}""")),
+            .. Variante("blob-c", (HttpStatusCode.UnprocessableEntity, """{"error":"slot unknown"}""")),
+        ]);
+        var ausgabe = new StringWriter();
+
+        var kennungen = await PaperlessTestlauf.AusfuehrenAsync(
+            Einstellungen(), "dennis@noesse.de", x => new PaperlessUebergabe(new HttpClient(server), Options.Create(x)), ausgabe);
+
+        Assert.Equal(["101", "102"], kennungen);
+        Assert.Contains("C: fehlgeschlagen", ausgabe.ToString(), StringComparison.Ordinal);
+        Assert.Contains("slot unknown", ausgabe.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

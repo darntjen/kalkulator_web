@@ -7,9 +7,10 @@ namespace Kalkulator.Infrastructure.Paperless;
 
 /// <summary>
 /// Testlauf gegen die echte Paperless-API (Frage 12.5), ohne Vertragsvorlagen und PDF-Umwandlung: Ein Muster-PDF mit
-/// erfundenem Inhalt und je einem Unterschriftsfeld für „Kunde“ und „Nösse“ geht zweimal als Entwurf an Paperless,
-/// einmal mit Koordinaten ab oberem Seitenrand (A) und einmal ab unterem (B). Ein grauer Rahmen im PDF zeigt, wo das
-/// Feld liegen soll; in Paperless sieht man, welche Variante passt (<see cref="PaperlessEinstellungen.YVonOben"/>).
+/// erfundenem Inhalt und je einem Unterschriftsfeld für „Kunde“ und „Nösse“ geht dreimal als Entwurf an Paperless:
+/// mit Vorlage und Koordinaten ab oberem Seitenrand (A) bzw. ab unterem (B) sowie ohne Vorlage (C). Ein grauer Rahmen
+/// im PDF zeigt, wo das Feld liegen soll; in Paperless sieht man, welche Variante passt
+/// (<see cref="PaperlessEinstellungen.YVonOben"/>) und ob die Vorlage den Inhalt beeinflusst.
 /// Aufruf: <c>dotnet run --project src/Kalkulator.Web -- --paperless-test name@firma.de</c>.
 /// </summary>
 public static class PaperlessTestlauf
@@ -28,7 +29,7 @@ public static class PaperlessTestlauf
     /// Ein A4-Blatt mit Hinweistext, zwei Unterschriftslinien und den unsichtbaren Marken am Anfang jeder Linie, wie sie
     /// <see cref="Vertragsdaten"/> in die Word-Vorlagen schreibt. Die grauen Rahmen haben die Größe der Felder.
     /// </summary>
-    public static byte[] MusterPdf(string titel, double feldBreite, double feldHoehe)
+    public static byte[] MusterPdf(string titel, string zusatz, double feldBreite, double feldHoehe)
     {
         var builder = new PdfDocumentBuilder();
         var schrift = builder.AddStandard14Font(Standard14Font.Helvetica);
@@ -36,6 +37,7 @@ public static class PaperlessTestlauf
         var seite = builder.AddPage(UglyToad.PdfPig.Content.PageSize.A4);
 
         seite.AddText(Lesbar(titel), 14, new PdfPoint(Rand, 770), fett);
+        seite.AddText(Lesbar(zusatz), 10, new PdfPoint(Rand, 754), schrift);
         string[] hinweis =
         [
             "Testdokument des Managed-Services-Kalkulators, erfundener Inhalt. Bitte nicht versenden und nach der",
@@ -47,7 +49,7 @@ public static class PaperlessTestlauf
         ];
         for (var i = 0; i < hinweis.Length; i++)
         {
-            seite.AddText(Lesbar(hinweis[i]), 10, new PdfPoint(Rand, 735 - (i * 14)), schrift);
+            seite.AddText(Lesbar(hinweis[i]), 10, new PdfPoint(Rand, 725 - (i * 14)), schrift);
         }
 
         foreach (var (rolle, y) in Rollen.Zip(Linien))
@@ -68,7 +70,7 @@ public static class PaperlessTestlauf
     }
 
     /// <summary>
-    /// Lädt beide Varianten als Entwurf hoch und gibt die Kennungen der Paperless-Dokumente zurück. Der Kunde ist die
+    /// Lädt die drei Varianten als Entwurf hoch und gibt die Kennungen der Paperless-Dokumente zurück. Der Kunde ist die
     /// angegebene Adresse; für Rollen mit <see cref="PaperlessRolle.AusVorlage"/> wird nur das Feld gesetzt.
     /// </summary>
     public static async Task<IReadOnlyList<string>> AusfuehrenAsync(
@@ -90,18 +92,31 @@ public static class PaperlessTestlauf
 
         ausgabe.WriteLine($"Paperless-Testlauf: Arbeitsbereich {einstellungen.ArbeitsbereichId}, Vorlage {einstellungen.VorlageId?.ToString() ?? "keine"}, nur Entwürfe.");
         var kennungen = new List<string>();
-        foreach (var (variante, vonOben) in new[] { ("A", true), ("B", false) })
+        foreach (var (variante, vonOben, mitVorlage) in new[] { ("A", true, true), ("B", false, true), ("C", true, false) })
         {
-            var e = Kopie(einstellungen, vonOben);
-            var titel = $"Kalkulator-Testlauf {variante} – Koordinaten ab {(vonOben ? "oberem" : "unterem")} Rand (bitte löschen)";
-            var pdf = MusterPdf(titel, e.FeldBreite, e.FeldHoehe);
+            var e = Kopie(einstellungen, vonOben, mitVorlage);
+            var titel = $"Kalkulator-Testlauf {variante} (bitte löschen)";
+            var zusatz = $"Koordinaten ab {(vonOben ? "oberem" : "unterem")} Seitenrand, {(mitVorlage ? $"mit Vorlage {e.VorlageId}" : "ohne Vorlage")}";
+            ausgabe.WriteLine($"  {variante}: {zusatz}");
+            var pdf = MusterPdf(titel, zusatz, e.FeldBreite, e.FeldHoehe);
             var auftrag = Auftrag(e, titel, pdf, empfaenger.Trim());
-            var kennung = await uebergabe(e).UebergebenAsync(auftrag, abbruch);
+            string kennung;
+            try
+            {
+                kennung = await uebergabe(e).UebergebenAsync(auftrag, abbruch);
+            }
+            catch (PaperlessFehler f)
+            {
+                // Eine Variante darf scheitern (z. B. C ohne Vorlage); die anderen laufen weiter.
+                ausgabe.WriteLine($"  {variante}: fehlgeschlagen: {f.Message}");
+                continue;
+            }
+
             kennungen.Add(kennung);
-            ausgabe.WriteLine($"  {variante}: Dokument {kennung} angelegt ({string.Join(", ", auftrag.Felder.Select(f => $"{f.Slot} Seite {f.Stelle.Seite} x={f.Stelle.X:0} Linie={f.Stelle.Grundlinie:0}"))}).");
+            ausgabe.WriteLine($"  {variante}: Dokument {kennung} angelegt, {pdf.Length} Byte PDF ({string.Join(", ", auftrag.Felder.Select(f => $"{f.Slot} Seite {f.Stelle.Seite} x={f.Stelle.X:0} Linie={f.Stelle.Grundlinie:0}"))}).");
         }
 
-        ausgabe.WriteLine("Fertig. In Paperless prüfen, bei welcher Variante die Felder in den grauen Rahmen liegen, und beide Entwürfe danach löschen.");
+        ausgabe.WriteLine("Fertig. In Paperless prüfen: Ist das PDF zu sehen (A, B, C)? Liegen die Felder bei A oder B in den grauen Rahmen? Danach alle Entwürfe löschen.");
         return kennungen;
     }
 
@@ -135,12 +150,12 @@ public static class PaperlessTestlauf
         return new PaperlessAuftrag(titel, "Kalkulator-Testlauf.pdf", pdf, teilnehmer, felder);
     }
 
-    private static PaperlessEinstellungen Kopie(PaperlessEinstellungen e, bool vonOben) => new()
+    private static PaperlessEinstellungen Kopie(PaperlessEinstellungen e, bool vonOben, bool mitVorlage) => new()
     {
         Adresse = e.Adresse,
         ApiSchluessel = e.ApiSchluessel,
         ArbeitsbereichId = e.ArbeitsbereichId,
-        VorlageId = e.VorlageId,
+        VorlageId = mitVorlage ? e.VorlageId : null,
         Versenden = false,
         Rollen = e.Rollen,
         FeldBreite = e.FeldBreite,

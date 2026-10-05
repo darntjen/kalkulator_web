@@ -71,7 +71,7 @@ if (erstbefuellung)
 if (paperlessTest >= 0)
 {
     var einstellungen = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaperlessEinstellungen>>().Value;
-    using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    using var http = new HttpClient(new PaperlessProtokoll(Console.Out)) { Timeout = TimeSpan.FromMinutes(2) };
     try
     {
         await PaperlessTestlauf.AusfuehrenAsync(
