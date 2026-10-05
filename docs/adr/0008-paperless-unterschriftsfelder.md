@@ -38,3 +38,21 @@ erst nach der PDF-Umwandlung bekannt.
 - Vorlagen ohne `{{unterschrift.…}}` gehen ohne Felder an Paperless; die Projektansicht weist darauf hin.
 - Die Marke steht als unsichtbarer Text im PDF (z. B. bei „Alles markieren“ sichtbar); fachlich unbedenklich.
 - Der API-Schlüssel ist ein Geheimnis der Serverkonfiguration und nicht Teil des Repositorys.
+
+## Nachtrag 2026-10-05: Vertragsfreigabe im Kalkulator
+
+Die Testläufe mit echtem Schlüssel haben gezeigt: Ein Dokument entsteht in Paperless entweder aus einer Vorlage oder
+aus einem PDF. Mit `template_id` fehlt das PDF; beim Anlegen aus einem PDF kennen die Teilnehmer keine Rolle
+(`approver`) und keine Reihenfolge. Die beiden Freigaben (AVV, Technik) lassen sich deshalb nicht über Paperless
+abbilden.
+
+- Die Übergabe legt das Dokument **ohne Vorlage direkt aus dem PDF** an; Feldlage und -größe werden von Punkt in
+  Pixel umgerechnet (`Paperless:Skalierung`).
+- **AVV und Technik prüfen im Kalkulator** (App-Rollen `FreigabeAvv`, `FreigabeTechnik`): Sie lesen die Gesamtdatei im
+  Browser, geben parallel frei oder lehnen mit Begründung ab. Eine Ablehnung sperrt die Ausfertigung; der Vertrieb
+  erzeugt neu.
+- Die Übergabe geschieht **nicht mehr beim Erzeugen**, sondern automatisch mit der zweiten Freigabe. „Erneut
+  übergeben“ gibt es nur für freigegebene Ausfertigungen.
+- Für Nösse unterschreibt fest Sascha Manczak; Kunde zuerst, dann Nösse.
+
+Einzelheiten: `docs/12_vertragsvorlagen.md`, Abschnitt 7.

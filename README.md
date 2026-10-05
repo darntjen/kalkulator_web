@@ -74,7 +74,7 @@ eingeben. Das SA-Kennwort des SQL Servers erzeugt der Datenbank-Container beim e
 
 Bis die Anmeldung über Entra ID steht (Issue #4), ist man in der **Entwicklungsumgebung** automatisch
 als Testbenutzer angemeldet und wählt die Rolle oben rechts (Vertrieb, Consultant, Vertriebsleitung,
-Produktmanagement, Führung, Admin). Die Rechte prüft die Anwendung serverseitig nach der Rechtematrix
+Produktmanagement, Führung, Admin, FreigabeAvv, FreigabeTechnik). Die Rechte prüft die Anwendung serverseitig nach der Rechtematrix
 in `docs/00_projektueberblick.md`. In allen anderen Umgebungen ist die Anwendung bis dahin gesperrt;
 nur der Health-Check antwortet.
 
@@ -189,9 +189,11 @@ Pdf__Wandler=LibreOffice Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_V
 
 Technik: ADR-0007.
 
-Ist Paperless eingerichtet (`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei beim
-Erzeugen automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless zur technischen
-Freigabe. Einrichtung: `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
+Das erzeugte Vertragswerk prüfen AVV und Technik im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`): Sie
+öffnen die Gesamtdatei im Browser und geben frei oder lehnen mit Begründung ab; offene Prüfungen stehen auf der
+Startseite. Nach einer Ablehnung erzeugt der Vertrieb das Vertragswerk neu. Ist Paperless eingerichtet
+(`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei mit der zweiten Freigabe
+automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless. Einrichtung: `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
 
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.

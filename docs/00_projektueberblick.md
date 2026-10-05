@@ -91,6 +91,8 @@ in Word zusammengesetzt.
 | **Vertrieb** | Erstellt Kundenprojekte, Kalkulationen, Angebote und Vertragsunterlagen, pflegt Projektstatus und Forecast | Eigene Kundenprojekte anlegen, bearbeiten und ausgeben. **Keine Rabatte.** Kein Einblick in EK und Marge der Managed Services; EK und Marge **seiner Transformationsprojekte** pflegt und sieht er |
 | **Consultant** (Solution Consultant) | Führt Analysen durch, prüft die Lösung | Sieht Kundenprojekte und Kalkulationen, lädt Analyseergebnisse hoch. **Erteilt die Vertriebsfreigabe aus Lösungssicht** (#26). Kalkuliert nicht, erzeugt keine Angebote, sieht keine Einkaufspreise |
 | **Vertriebsleitung** | Sieht das Team, gibt Sonderpositionen und Kalkulationen frei | Wie Vertrieb, zusätzlich alle Kalkulationen des Teams, **Freigabe freier Sonderpositionen** und **Vertriebsfreigabe der Kalkulation** (#26) |
+| **Freigabe AVV** (`FreigabeAvv`, zusätzliche Rolle) | Prüft im Vertragswerk die Auftragsverarbeitung | Sieht alle Kundenprojekte lesend, öffnet die Gesamtdatei und **gibt das Vertragswerk aus AVV-Sicht frei oder lehnt es mit Begründung ab** |
+| **Freigabe Technik** (`FreigabeTechnik`, zusätzliche Rolle) | Prüft das Vertragswerk aus technischer Sicht | Wie Freigabe AVV, für die technische Prüfung. Erst nach beiden Freigaben geht das Vertragswerk an Paperless |
 | **Produktmanagement / Service-Owner** | Pflegt Services, Preise, EK und Vorlagen | Pflege von Servicekatalog, Preislisten, EK-Kalkulation sowie Angebots- und Vertragsvorlagen |
 | **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken inkl. Deckungsbeitrag und Marge |
 | **Administration (IT)** | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups |

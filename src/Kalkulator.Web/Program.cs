@@ -164,6 +164,24 @@ app.MapGet("/vertragswerke/{id:int}/{art:regex(^(pdf|zip)$)}", async (int id, st
     }
 });
 
+// Gesamt-PDF zum Lesen im Browser (Vertragsfreigabe durch AVV und Technik); wer das Kundenprojekt sehen darf.
+app.MapGet("/vertragswerke/{id:int}/ansicht", async (int id, VertragswerkDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (_, inhalt) = await dienst.DateiAsync(id, zip: false, abbruch);
+        return Results.File(inhalt, "application/pdf");
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
 // Word-Datei einer Vorlagenfassung (#26, Teil B); Produktmanagement und Führung.
 app.MapGet("/katalog/vorlagen/fassung/{id:int}/datei", async (int id, VorlagenDienst dienst, CancellationToken abbruch) =>
 {

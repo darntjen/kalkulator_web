@@ -64,7 +64,7 @@ doch auf einem Linux-Server bzw. einer Linux-VM laufen kann.
 | Oberfläche | Blazor Server, Komponentenbibliothek (z. B. MudBlazor, MIT-Lizenz) |
 | Datenzugriff | Entity Framework Core mit Migrationen |
 | Datenbank | vorhandener SQL Server (eigene Datenbank für die Anwendung) |
-| Anmeldung | Entra ID über OpenID Connect (App-Registrierung); Rollen über **App-Rollen** oder Entra-Gruppen: `Vertrieb`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin` |
+| Anmeldung | Entra ID über OpenID Connect (App-Registrierung); Rollen über **App-Rollen** oder Entra-Gruppen: `Vertrieb`, `Consultant`, `Vertriebsleitung`, `Produktmanagement`, `Fuehrung`, `Admin`, `FreigabeAvv`, `FreigabeTechnik` |
 | Word-Erzeugung | Open XML SDK; Vorlagen mit Platzhaltern bzw. Inhaltssteuerelementen; Tabellen (§ 3 Vergütung, Preistabelle) programmatisch |
 | Vertragspaket | ZIP mit befüllten .docx in Rangfolge und Anlagenverzeichnis; PDF optional später über LibreOffice headless |
 | Diagramme | Chart-Komponente der UI-Bibliothek oder Chart.js |

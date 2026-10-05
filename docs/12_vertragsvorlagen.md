@@ -177,11 +177,30 @@ Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgle
 
 ## 7. Übergabe an Paperless (Teil D)
 
-Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt im Kalkulator, die technische Freigabe in
-Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kunden.
+Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt vor dem Angebot im Kalkulator. Das
+erzeugte Vertragswerk prüfen danach **AVV** und **Technik**, ebenfalls im Kalkulator (Vertragsfreigabe, siehe unten).
+Erst nach beiden Freigaben geht es an Paperless; Paperless schickt es zur Unterschrift an den Kunden und danach an
+Nösse.
 
-**Ablauf** (Entscheidungen 04.10.2026):
-- Die Übergabe geschieht **automatisch beim Erzeugen** des Vertragswerks, sobald Paperless eingerichtet ist.
+**Vertragsfreigabe** (Entscheidungen 05.10.2026; Paperless kann bei Dokumenten aus einem PDF weder Freigaben noch
+eine Reihenfolge vorgeben, siehe unten):
+- Neue App-Rollen **`FreigabeAvv`** (heute Matthias Erhard) und **`FreigabeTechnik`** (heute Christian Leinen,
+  Sascha Manczak, Till Elsner). Sie kommen zu den übrigen Rollen einer Person hinzu; die IT weist sie über
+  Entra-Gruppen zu.
+- Geprüft wird die **Gesamtdatei** der neuesten Ausfertigung. Sie öffnet sich mit „Ansehen“ im Browser.
+- Beide Prüfungen laufen **parallel**, in beliebiger Reihenfolge. Je Ausfertigung und Prüfung gibt es genau eine
+  Entscheidung; wer, wann und die Begründung werden gespeichert.
+- **Ablehnung** nur mit Begründung (höchstens 1000 Zeichen). Sie sperrt die Ausfertigung: Die andere Prüfung entfällt,
+  und der Vertrieb korrigiert (Kalkulation, Vertragsangaben oder Vorlage) und erzeugt das Vertragswerk neu. Die neue
+  Ausfertigung beginnt ohne Freigaben.
+- Eine neuere Ausfertigung macht ältere überholt; geprüft und übergeben wird nur die neueste.
+- Die Startseite zeigt Personen mit einer Prüfrolle die **offenen Freigaben** (neueste Ausfertigung, nicht abgelehnt,
+  noch nicht übergeben, Projekt „Gewonnen“). Eine Benachrichtigung per E-Mail gibt es noch nicht.
+- Ausfertigungen, die vor dieser Änderung schon übergeben wurden, zeigen „entfällt“.
+
+**Ablauf der Übergabe** (Entscheidungen 04.10.2026, angepasst 05.10.2026):
+- Die Übergabe geschieht **automatisch mit der zweiten Freigabe**, sobald Paperless eingerichtet ist. Ohne Paperless
+  endet der Ablauf mit den Freigaben; die Gesamtdatei geht dann von Hand weiter.
   Voraussetzungen wie bisher: beide Vertriebsfreigaben und das Projekt mit angenommenem Angebot auf „Gewonnen“.
 - Übergeben wird die **Gesamtdatei** (Deckblatt und alle Dokumente) mit den Unterschriftsfeldern.
 - **Unterschriftsfelder aus den Vorlagen:** Das Produktmanagement setzt in Word `{{unterschrift.Rolle}}` an die
@@ -196,12 +215,11 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
   `template_id` legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg; das PDF lässt sich danach nicht
   austauschen. Beim Anlegen aus einem PDF kennen Teilnehmer nur Name und E-Mail, keine Rolle (`approver`) und keine
   Reihenfolge. Reihenfolge und Freigaben gibt es deshalb nur über eine Vorlage (siehe unten, Testlauf D).
-- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, den die technische Freigabe prüft und von dort
-  versendet. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
+- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
-  Vertragswerk gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“. Jede Ausfertigung geht
-  höchstens einmal an Paperless.
+  Vertragswerk mit seinen Freigaben gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“
+  (nur nach beiden Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
 
 **Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
 - Arbeitsbereich **15114**. Die Paperless-Vorlage **50379** (Ablauf-Vorlage) enthält kein Dokument; sie regelt die
@@ -210,14 +228,15 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
 - Slots **„Kunde“** und **„Nösse“**, nacheinander: erst unterschreibt der Kunde, dann Nösse.
 - **Kunde:** Name und E-Mail kommen je Vertrag aus dem Kalkulator (vorbelegt mit dem Ansprechpartner).
 - **Nösse:** Es unterschreibt immer **Sascha Manczak** (technischer Leiter), fest eingestellt.
-- **Freigaben** in der Vorlage, an Rollen gebunden: AVV durch Matthias Erhard; Vertrag aus technischer Sicht durch
-  Christian Leinen, Sascha Manczak oder Till Elsner.
+- **Freigaben:** AVV durch Matthias Erhard; Vertrag aus technischer Sicht durch Christian Leinen, Sascha Manczak oder
+  Till Elsner. Sie laufen jetzt im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`, siehe oben), weil Paperless
+  sie bei Dokumenten aus einem PDF nicht übernimmt.
 - Der Kalkulator übergibt nur Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
   `{{unterschrift.Kunde}}` und `{{unterschrift.Nösse}}` am Anfang der Unterschriftslinie (Frage 12.6).
-- **Offen (Testlauf D):** ob sich die Ablauf-Vorlage mit eigenem PDF und Unterschriftsfeldern kopieren lässt. Dann
-  entstünde der Entwurf aus der Kopie (mit Reihenfolge und Freigaben), und die Kopie wird danach gelöscht. Bis dahin
-  legt die Übergabe den Entwurf direkt aus dem PDF an; Reihenfolge und Freigaben müssen dann in Paperless von Hand
-  ergänzt werden.
+- Die Übergabe legt den Entwurf **direkt aus dem PDF** an (Testlauf E: PDF und Felder passen). Die Ablauf-Vorlage
+  50379 wird dafür nicht gebraucht; sie bleibt nur für den Testlauf D eingestellt.
+- **Offen:** ob Paperless bei Dokumenten aus einem PDF die Reihenfolge der Teilnehmer (erst Kunde, dann Nösse)
+  einhält oder an beide gleichzeitig sendet.
 
 **Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
 

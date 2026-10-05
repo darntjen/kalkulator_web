@@ -207,10 +207,25 @@ internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertr
         builder.Property(v => v.PaperlessDokumentId).HasMaxLength(100);
         builder.Property(v => v.UebergabeFehler).HasMaxLength(1000);
         builder.Ignore(v => v.IstUebergeben);
+        builder.Ignore(v => v.IstAbgelehnt);
+        builder.Ignore(v => v.IstFreigegeben);
+        builder.HasMany(v => v.Freigaben).WithOne().HasForeignKey(f => f.VertragswerkId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Angebot>().WithMany().HasForeignKey(v => v.AngebotId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(v => v.Dokumente).WithOne().HasForeignKey(d => d.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(v => v.Datei).WithOne().HasForeignKey<VertragswerkDatei>(d => d.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class VertragsfreigabeKonfiguration : IEntityTypeConfiguration<Vertragsfreigabe>
+{
+    public void Configure(EntityTypeBuilder<Vertragsfreigabe> builder)
+    {
+        builder.ToTable("Vertragsfreigaben", "kalkulation");
+        builder.HasIndex(f => new { f.VertragswerkId, f.Art }).IsUnique();
+        builder.Property(f => f.Art).HasConversion<string>().HasMaxLength(20);
+        builder.Property(f => f.Begruendung).HasMaxLength(1000);
+        builder.Property(f => f.Von).HasMaxLength(200);
     }
 }
 

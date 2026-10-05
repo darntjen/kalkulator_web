@@ -4,6 +4,7 @@ using Kalkulator.Infrastructure.Persistenz;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(KalkulatorDbContext))]
-    partial class KalkulatorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261005201355_Vertragsfreigaben")]
+    partial class Vertragsfreigaben
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
