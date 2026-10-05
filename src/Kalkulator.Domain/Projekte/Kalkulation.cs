@@ -34,6 +34,12 @@ public class Kalkulation
 
     public void AendereVertragsangaben(Vertragsangaben angaben) => Vertragsangaben = angaben;
 
+    /// <summary>Welcher Service welche Herausforderung des Kunden löst (G-04); Teil des Arbeitsstands.</summary>
+    public IReadOnlyList<Zuordnung> Zuordnungen { get; private set; } = [];
+
+    public void AendereZuordnungen(IEnumerable<Zuordnung> zuordnungen) =>
+        Zuordnungen = [.. zuordnungen.Distinct().OrderBy(z => z.ServiceCode, StringComparer.Ordinal).ThenBy(z => z.HerausforderungId)];
+
     public int LetzteVersionsnummer { get; private set; }
 
     /// <summary>Wird mit dem ersten Angebot vergeben und gilt für alle weiteren Versionen dieser Kalkulation.</summary>
@@ -158,7 +164,7 @@ public class Kalkulation
     /// Friert den Arbeitsstand als neue Version ein: Eingabe, Preisliste, Positionen, Summen und Kosten.
     /// Nur mit einer freigegebenen Preisliste und nur ohne Fehler, also auch nicht mit offenen Sonderpositionen (B-22).
     /// </summary>
-    public Kalkulationsversion FriereEin(Rechenkern kern, string benutzer, DateTimeOffset zeitpunkt)
+    public Kalkulationsversion FriereEin(Rechenkern kern, string benutzer, DateTimeOffset zeitpunkt, IReadOnlyList<Loesungsbezug>? loesungsbezuege = null)
     {
         var preisliste = kern.Preisliste;
         if (preisliste.Status != PreislistenStatus.Freigegeben || preisliste.Id == 0)
@@ -184,6 +190,8 @@ public class Kalkulation
             Eingabe = eingabe,
             Vertragsbeginn = Vertragsbeginn,
             Vertragsangaben = Vertragsangaben,
+            // Nur Bezüge zu Services, die tatsächlich im Angebot stehen.
+            Loesungsbezuege = [.. (loesungsbezuege ?? []).Where(l => ergebnis.Positionen.Any(p => p.ServiceCode == l.ServiceCode))],
             SummeMonatlich = ergebnis.SummeMonatlich,
             SummeEinmalig = ergebnis.SummeEinmalig,
             FreigabeVertriebsleitungVon = AktiveFreigabe(FreigabeRolle.Vertriebsleitung)?.Benutzer,
@@ -221,6 +229,7 @@ public class Kalkulation
         kopie.Vertragsbeginn = Vertragsbeginn;
         kopie.AendereEingabe(Eingabe);
         kopie.AendereVertragsangaben(Vertragsangaben);
+        kopie.AendereZuordnungen(Zuordnungen);
         kopie.Sonderpositionen.AddRange(Sonderpositionen.Select(s => s.Kopie()));
         return kopie;
     }

@@ -1,0 +1,20 @@
+{
+  // Testumgebung für GitHub Codespaces: App mit .NET 10 und SQL Server als zweiter Container.
+  // Beim ersten Start werden Datenbank und Musterkatalog angelegt (einrichten.sh); danach startet und überwacht
+  // dienst.sh als Hauptprozess des Containers die App auf Port 5226.
+  "name": "Kalkulator",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "overrideCommand": false,
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "bash .devcontainer/einrichten.sh",
+  "forwardPorts": [5226],
+  "portsAttributes": {
+    "5226": { "label": "Kalkulator", "onAutoForward": "openBrowser" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "customizations": {
+    "vscode": { "extensions": ["ms-dotnettools.csdevkit"] }
+  }
+}

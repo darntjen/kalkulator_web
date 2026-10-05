@@ -94,7 +94,17 @@ public sealed class AngebotsDienst(
             throw new InvalidOperationException("Es gibt noch keine freigegebene Preisliste. Angebote entstehen erst nach der Freigabe durch das Produktmanagement.");
         }
 
-        var version = kalkulation.FriereEin(katalog.ErzeugeRechenkern(), _recht.Name, zeit.GetUtcNow());
+        // Welche Services welche Herausforderungen lösen, mit den Titeln von heute (G-04).
+        var herausforderungen = await kontext.Set<Herausforderung>().AsNoTracking()
+            .Where(h => h.KundenprojektId == kalkulation.KundenprojektId).ToDictionaryAsync(h => h.Id, abbruch);
+        var bezuege = kalkulation.Zuordnungen.Where(z => herausforderungen.ContainsKey(z.HerausforderungId))
+            .Select(z =>
+            {
+                var h = herausforderungen[z.HerausforderungId];
+                return new Loesungsbezug(z.ServiceCode, h.Dimension, h.Prioritaet, h.Titel);
+            })
+            .ToList();
+        var version = kalkulation.FriereEin(katalog.ErzeugeRechenkern(), _recht.Name, zeit.GetUtcNow(), bezuege);
 
         // Die Vertragsangaben, die die aktiven Vorlagen verlangen, müssen vor dem Angebot vollständig sein (#26, Teil C).
         var vorschau = await VertragswerkDienst.VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch);

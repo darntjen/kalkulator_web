@@ -103,6 +103,8 @@ So kann der Vertrieb früh Rückmeldung geben.
 
 **Ergebnis:** Die Pipeline ist im Kalkulator vollständig, inklusive Analyse und Workshop.
 
+*Stand 04.10.2026:* Unterlagen (Kanalordner und Uploads), Kundensituation, Verknüpfung der Managed Services mit den Herausforderungen und Analyse-/Workshop-Angebote sind umgesetzt.
+
 ## Phase 5 – Navision-Import und Transformationsprojekte
 
 **Issue:** [darntjen/kalkulator_web#15](https://github.com/darntjen/kalkulator_web/issues/15)

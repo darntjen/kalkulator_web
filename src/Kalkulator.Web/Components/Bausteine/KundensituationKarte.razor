@@ -1,0 +1,190 @@
+@inject KundensituationDienst Dienst
+
+@* Kundensituation (G-03): Herausforderungen je Dimension, gepflegt von Vertrieb, Vertriebsleitung und Consultants. *@
+<section class="karte" id="kundensituation">
+    <div class="karte-kopf">
+        <h2>Kundensituation</h2>
+        <span class="unterzeile">Herausforderungen des Kunden in seiner Sprache</span>
+    </div>
+
+    @if (_meldung is not null)
+    {
+        <p class="karte-inhalt meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    @if (_situation is not { } s)
+    {
+        <p class="karte-inhalt unterzeile">Lade …</p>
+    }
+    else
+    {
+        <div class="karte-inhalt stapel">
+            @if (s.Herausforderungen.Count == 0)
+            {
+                <p class="unterzeile">Noch keine Herausforderungen erfasst. Grundlage sind Standortgespräch, Analyse und Workshop (siehe Unterlagen).</p>
+            }
+            @foreach (var dimension in Enum.GetValues<Dimension>())
+            {
+                var liste = s.Herausforderungen.Where(h => h.Dimension == dimension).ToList();
+                if (liste.Count == 0)
+                {
+                    continue;
+                }
+
+                <div class="ablage-gruppe">
+                    <h3>@Texte.Dimension(dimension) <span class="unterzeile">· @liste.Count</span></h3>
+                    <ul class="herausforderungen">
+                        @foreach (var h in liste)
+                        {
+                            <li>
+                                <div class="kopfzeile">
+                                    <span class="pille prio-@h.Prioritaet">@Texte.Prioritaet(h.Prioritaet)</span>
+                                    <strong>@h.Titel</strong>
+                                    @if (s.DarfPflegen)
+                                    {
+                                        <span class="aktionen">
+                                            <button type="button" class="knopf zweit klein" @onclick="() => Bearbeiten(h)">Bearbeiten</button>
+                                            @if (_loeschen == h.Id)
+                                            {
+                                                <button type="button" class="knopf gefahr klein" @onclick="() => LoeschenAsync(h.Id)">Wirklich löschen</button>
+                                                <button type="button" class="knopf zweit klein" @onclick="() => _loeschen = null">Abbrechen</button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="knopf zweit klein" @onclick="() => _loeschen = h.Id">Löschen</button>
+                                            }
+                                        </span>
+                                    }
+                                </div>
+                                @if (h.Beschreibung is { } b)
+                                {
+                                    <p>@b</p>
+                                }
+                                @if (h.Auswirkung is { } a)
+                                {
+                                    <p class="unterzeile"><strong>Auswirkung:</strong> @a</p>
+                                }
+                                <p class="unterzeile">
+                                    @(h.Quelle is { } q ? $"Quelle: {q} · " : "")@(s.Verknuepft.TryGetValue(h.Id, out var services) ? $"gelöst durch {string.Join(", ", services)}" : "noch mit keinem Service verknüpft")
+                                </p>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (s.DarfPflegen)
+            {
+                <form class="felder" @onsubmit="SpeichernAsync">
+                    <div class="feld breit"><h3>@(_bearbeitet is null ? "Neue Herausforderung" : "Herausforderung bearbeiten")</h3></div>
+                    <div class="feld">
+                        <label for="h-dimension">Dimension</label>
+                        <select id="h-dimension" @bind="_dimension">
+                            @foreach (var d in Enum.GetValues<Dimension>())
+                            {
+                                <option value="@d">@Texte.Dimension(d)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld">
+                        <label for="h-prioritaet">Priorität</label>
+                        <select id="h-prioritaet" @bind="_prioritaet">
+                            @foreach (var p in Enum.GetValues<Prioritaet>())
+                            {
+                                <option value="@p">@Texte.Prioritaet(p)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld breit"><label for="h-titel">Titel *</label><input id="h-titel" type="text" maxlength="200" @bind="_titel" @bind:event="oninput" placeholder="z. B. Datensicherung ist nicht nachweislich wiederherstellbar" /></div>
+                    <div class="feld breit"><label for="h-beschreibung">Beschreibung in Kundensprache</label><textarea id="h-beschreibung" rows="2" maxlength="2000" @bind="_beschreibung" @bind:event="oninput"></textarea></div>
+                    <div class="feld breit"><label for="h-auswirkung">Auswirkung für den Kunden</label><input id="h-auswirkung" type="text" maxlength="1000" @bind="_auswirkung" @bind:event="oninput" placeholder="z. B. höchstens fünf Tage Ausfall tragbar" /></div>
+                    <div class="feld breit"><label for="h-quelle">Quelle</label><input id="h-quelle" type="text" maxlength="300" @bind="_quelle" @bind:event="oninput" placeholder="z. B. Infrastruktur-Analyse vom 12.08.2026" /></div>
+                    <div class="aktionen feld breit">
+                        <button type="submit" class="knopf" disabled="@string.IsNullOrWhiteSpace(_titel)">@(_bearbeitet is null ? "Hinzufügen" : "Speichern")</button>
+                        @if (_bearbeitet is not null)
+                        {
+                            <button type="button" class="knopf zweit" @onclick="Leeren">Abbrechen</button>
+                        }
+                    </div>
+                </form>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public int ProjektId { get; set; }
+
+    private Kundensituation? _situation;
+    private int? _bearbeitet, _loeschen;
+    private Dimension _dimension = Dimension.Technisch;
+    private Prioritaet _prioritaet = Prioritaet.Mittel;
+    private string? _titel, _beschreibung, _auswirkung, _quelle, _meldung;
+    private bool _meldungIstFehler;
+
+    protected override async Task OnParametersSetAsync() => await LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _situation = await Dienst.LadeAsync(ProjektId);
+        }
+        catch (KeinZugriffException e)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+
+    private void Bearbeiten(Herausforderung h)
+    {
+        (_bearbeitet, _dimension, _prioritaet, _titel, _beschreibung, _auswirkung, _quelle) = (h.Id, h.Dimension, h.Prioritaet, h.Titel, h.Beschreibung, h.Auswirkung, h.Quelle);
+        _meldung = null;
+    }
+
+    private void Leeren() => (_bearbeitet, _titel, _beschreibung, _auswirkung, _quelle) = (null, null, null, null, null);
+
+    private Task SpeichernAsync() => AusfuehrenAsync(async () =>
+    {
+        var daten = new HerausforderungsDaten(_dimension, _titel ?? "", _beschreibung, _auswirkung, _prioritaet, _quelle);
+        if (_bearbeitet is { } id)
+        {
+            await Dienst.AendernAsync(id, daten);
+        }
+        else
+        {
+            await Dienst.AnlegenAsync(ProjektId, daten);
+        }
+
+        var text = _bearbeitet is null ? "Herausforderung hinzugefügt." : "Herausforderung gespeichert.";
+        Leeren();
+        return text;
+    });
+
+    private Task LoeschenAsync(int id) => AusfuehrenAsync(async () =>
+    {
+        _loeschen = null;
+        await Dienst.LoeschenAsync(id);
+        if (_bearbeitet == id)
+        {
+            Leeren();
+        }
+
+        return "Herausforderung gelöscht.";
+    });
+
+    private async Task AusfuehrenAsync(Func<Task<string>> aktion)
+    {
+        try
+        {
+            (_meldung, _meldungIstFehler) = (await aktion(), false);
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

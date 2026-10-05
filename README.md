@@ -57,7 +57,18 @@ dotnet run --project src/Kalkulator.Web
 ```
 
 Die Anwendung ist danach unter der in der Konsole angezeigten Adresse erreichbar
-(Standard: `http://localhost:5226`). Der Health-Check liegt unter `/health`.
+(Standard: `http://localhost:5186`). Der Health-Check liegt unter `/health`.
+
+### In GitHub Codespaces testen
+
+Ohne Installation im Browser: im Repository **Code → Codespaces → Create codespace** (gewünschten Branch wählen).
+Der Codespace startet .NET 10 und einen SQL Server und spielt beim ersten Start Datenbank und Musterkatalog ein
+(Protokoll `/tmp/einrichten.log`). Die App läuft danach als Hauptprozess des Containers auf Port **5226** und startet
+nach einem Absturz oder Neustart des Codespaces von selbst wieder; der Browser öffnet sie automatisch (sonst Reiter
+„Ports“). Neu starten lässt sie sich mit `pkill -f Kalkulator.Web`. Die Teams-Ablage
+ersetzt `.devcontainer/beispielablage` mit erfundenen Kanalordnern. Das Protokoll der App liegt in
+`/tmp/kalkulator.log`. Die Adresse ist privat (nur mit dem eigenen GitHub-Konto); bitte keine echten Kundendaten
+eingeben. Das SA-Kennwort des SQL Servers erzeugt der Datenbank-Container beim ersten Start selbst; es steht nicht im Repository.
 
 ### Anmeldung bis zur Einrichtung von Entra ID
 
@@ -142,6 +153,16 @@ Kundenablage__Quelle=Ordner Kundenablage__Ordner=/pfad/zur/kundenablage dotnet r
 
 Unterordner von `/pfad/zur/kundenablage` sind die Kanalordner, darin `00_Kundenakte`, `30_Analyse` usw. Technik:
 ADR-0010.
+
+### Kundensituation und Analyse-Angebote
+
+In der Projektansicht erfassen Vertrieb, Vertriebsleitung und Consultants die **Kundensituation**: Herausforderungen
+je Dimension (kaufmännisch, organisatorisch, technisch) mit Priorität, Auswirkung und Quelle. In der Kalkulation
+ordnet der Vertrieb unter „Wofür der Kunde die Leistungen braucht“ jedem gebuchten Service die Herausforderungen zu,
+die er löst. Die Zuordnung gehört zum gespeicherten Stand (sie hebt Vertriebsfreigaben auf) und wird mit dem Angebot
+eingefroren; eine verknüpfte Herausforderung lässt sich nicht löschen. Angebote zu **Analyse und Workshop** entstehen
+weiter per Skill; im Kalkulator stehen nur die Eckdaten mit der Navision-Nummer, dem Status und optional dem
+hochgeladenen Dokument.
 
 ### Vertragsvorlagen
 

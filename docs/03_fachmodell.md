@@ -139,7 +139,8 @@ erDiagram
 |--------|-------|---------------------------|
 | **Dokumentenablage** | Hochgeladene Unterlagen | Art (Analyse, Workshop, Standortgespräch, Recherche, Angebot Analyse/Workshop, Sonstiges), Datei, hochgeladen von/am |
 | **Herausforderung** | Baustein der Kundensituation | Dimension (kaufmännisch/organisatorisch/technisch), Titel, Beschreibung, Auswirkung, Priorität, Quelle |
-| **Analyse-/Workshop-Angebot** | Eckdaten für die Pipeline | Angebotsnummer, Datum, Paketpreis, Status, Dokument |
+| **Analyse-/Workshop-Angebot** | Eckdaten für die Pipeline | Navision-Angebotsnummer (eindeutig), Datum, Paketpreis, Status (versendet/beauftragt/abgelehnt), Bemerkung, Dokument aus den Uploads (optional) |
+| **Zuordnung** | Verknüpfung Baustein ↔ Herausforderung | Service-Code der Kalkulation, Herausforderung; im Angebot eingefroren als Lösungsbezug mit Titel, Dimension und Priorität |
 | **Transformationsprojekt** | Vorhaben aus der Roadmap, kalkuliert in Navision | Titel, Ziel und Nutzen, Navision-Angebotsnummer, Umsetzungszeitraum |
 | **Navision-Import** | Eine eingelesene Fassung des PDFs | Datei, Kopfdaten (Belegdatum, Kundennummer, Referenz, Ansprechpartner), Total netto, eingelesen von/am |
 | **Kapitel** | Gliederung für die Kundenansicht | Titel, Beschreibung, Reihenfolge, EK-Summe (optional) |

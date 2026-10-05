@@ -1,0 +1,174 @@
+@inject KundensituationDienst Dienst
+
+@* Angebote „Analyse und Workshop“ (J-01): nur Eckdaten; das Dokument entsteht per Skill. *@
+<section class="karte" id="analyse-angebote">
+    <div class="karte-kopf">
+        <h2>Analyse und Workshop</h2>
+        <span class="unterzeile">Angebote aus Navision, Eckdaten</span>
+    </div>
+
+    @if (_meldung is not null)
+    {
+        <p class="karte-inhalt meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+    }
+
+    @if (_daten is not { } d)
+    {
+        <p class="karte-inhalt unterzeile">Lade …</p>
+    }
+    else
+    {
+        <div class="karte-inhalt stapel">
+            @if (d.Angebote.Count == 0)
+            {
+                <p class="unterzeile">Kein Angebot zu Analyse und Workshop erfasst.</p>
+            }
+            else
+            {
+                <ul class="ablage-liste">
+                    @foreach (var a in d.Angebote)
+                    {
+                        <li>
+                            <strong>@a.Nummer</strong>
+                            <span class="pille analyse-@a.Status">@Texte.AnalyseStatus(a.Status)</span>
+                            <span class="unterzeile">@Texte.Datum(a.Datum) · @Texte.Euro(a.Paketpreis)@(a.Bemerkung is { } b ? $" · {b}" : "")</span>
+                            @if (a.UnterlageId is { } u && d.Dokumente.FirstOrDefault(x => x.Id == u) is { } dok)
+                            {
+                                <a href="unterlagen/@dok.Id" download>@dok.Dateiname</a>
+                            }
+                            @if (d.DarfPflegen)
+                            {
+                                <span class="aktionen">
+                                    <button type="button" class="knopf zweit klein" @onclick="() => Bearbeiten(a)">Bearbeiten</button>
+                                    @if (_loeschen == a.Id)
+                                    {
+                                        <button type="button" class="knopf gefahr klein" @onclick="() => LoeschenAsync(a.Id)">Wirklich löschen</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="knopf zweit klein" @onclick="() => _loeschen = a.Id">Löschen</button>
+                                    }
+                                </span>
+                            }
+                        </li>
+                    }
+                </ul>
+            }
+
+            @if (d.DarfPflegen)
+            {
+                <form class="felder" @onsubmit="SpeichernAsync">
+                    <div class="feld"><label for="aa-nummer">Navision-Nummer *</label><input id="aa-nummer" type="text" maxlength="30" @bind="_nummer" @bind:event="oninput" placeholder="AN…" /></div>
+                    <div class="feld"><label for="aa-datum">Datum</label><input id="aa-datum" type="date" @bind="_datum" /></div>
+                    <div class="feld"><label for="aa-preis">Paketpreis netto (€)</label><input id="aa-preis" type="number" min="0" step="0.01" @bind="_preis" /></div>
+                    <div class="feld">
+                        <label for="aa-status">Status</label>
+                        <select id="aa-status" @bind="_status">
+                            @foreach (var st in Enum.GetValues<AnalyseAngebotsStatus>())
+                            {
+                                <option value="@st">@Texte.AnalyseStatus(st)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld breit">
+                        <label for="aa-dokument">Dokument (optional, aus den Uploads)</label>
+                        <select id="aa-dokument" @bind="_unterlage">
+                            <option value="">– keines –</option>
+                            @foreach (var u in d.Dokumente)
+                            {
+                                <option value="@u.Id">@u.Dateiname (@Texte.Unterlagenart(u.Art))</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="feld breit"><label for="aa-bemerkung">Bemerkung</label><input id="aa-bemerkung" type="text" maxlength="500" @bind="_bemerkung" @bind:event="oninput" /></div>
+                    <div class="aktionen feld breit">
+                        <button type="submit" class="knopf" disabled="@string.IsNullOrWhiteSpace(_nummer)">@(_bearbeitet is null ? "Erfassen" : "Speichern")</button>
+                        @if (_bearbeitet is not null)
+                        {
+                            <button type="button" class="knopf zweit" @onclick="Leeren">Abbrechen</button>
+                        }
+                    </div>
+                </form>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired]
+    public int ProjektId { get; set; }
+
+    private AnalyseAngebote? _daten;
+    private int? _bearbeitet, _loeschen, _unterlage;
+    private string? _nummer, _bemerkung, _meldung;
+    private DateOnly _datum = DateOnly.FromDateTime(DateTime.Today);
+    private decimal _preis;
+    private AnalyseAngebotsStatus _status = AnalyseAngebotsStatus.Versendet;
+    private bool _meldungIstFehler;
+
+    protected override async Task OnParametersSetAsync() => await LadeAsync();
+
+    private async Task LadeAsync()
+    {
+        try
+        {
+            _daten = await Dienst.AnalyseAngeboteAsync(ProjektId);
+        }
+        catch (KeinZugriffException e)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+    }
+
+    private void Bearbeiten(AnalyseAngebot a)
+    {
+        (_bearbeitet, _nummer, _datum, _preis, _status, _bemerkung, _unterlage) = (a.Id, a.Nummer, a.Datum, a.Paketpreis, a.Status, a.Bemerkung, a.UnterlageId);
+        _meldung = null;
+    }
+
+    private void Leeren()
+    {
+        (_bearbeitet, _nummer, _preis, _bemerkung, _unterlage) = (null, null, 0, null, null);
+        (_datum, _status) = (DateOnly.FromDateTime(DateTime.Today), AnalyseAngebotsStatus.Versendet);
+    }
+
+    private async Task SpeichernAsync()
+    {
+        try
+        {
+            var daten = new AnalyseAngebotsDaten(_nummer, _datum, _preis, _status, _bemerkung, _unterlage);
+            if (_bearbeitet is { } id)
+            {
+                await Dienst.AnalyseAngebotAendernAsync(id, daten);
+            }
+            else
+            {
+                await Dienst.AnalyseAngebotErfassenAsync(ProjektId, daten);
+            }
+
+            (_meldung, _meldungIstFehler) = (_bearbeitet is null ? "Angebot erfasst." : "Angebot gespeichert.", false);
+            Leeren();
+        }
+        catch (Exception e) when (e is ArgumentException or InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+
+    private async Task LoeschenAsync(int id)
+    {
+        try
+        {
+            await Dienst.AnalyseAngebotLoeschenAsync(id);
+            (_meldung, _meldungIstFehler, _loeschen) = ("Angebot gelöscht.", false, null);
+        }
+        catch (Exception e) when (e is InvalidOperationException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+
+        await LadeAsync();
+    }
+}

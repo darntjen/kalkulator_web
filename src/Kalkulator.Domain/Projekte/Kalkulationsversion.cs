@@ -27,6 +27,9 @@ public class Kalkulationsversion
     /// <summary>Vertragsangaben zum Zeitpunkt des Angebots; Grundlage des Vertragswerks (#26, Teil C).</summary>
     public Vertragsangaben Vertragsangaben { get; init; } = new();
 
+    /// <summary>Welche Services welche Herausforderungen lösen, zum Zeitpunkt des Angebots (G-04).</summary>
+    public IReadOnlyList<Loesungsbezug> Loesungsbezuege { get; init; } = [];
+
     public decimal SummeMonatlich { get; init; }
     public decimal SummeEinmalig { get; init; }
 

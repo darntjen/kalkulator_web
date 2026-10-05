@@ -75,6 +75,7 @@ internal sealed class KalkulationKonfiguration : IEntityTypeConfiguration<Kalkul
         builder.HasIndex(k => k.Angebotsnummer).IsUnique().HasFilter("[Angebotsnummer] IS NOT NULL");
         builder.Property(k => k.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
         builder.Property(k => k.Vertragsangaben).HasConversion(AngabenJson.Konverter, AngabenJson.Vergleich).HasColumnType("nvarchar(max)");
+        VorlagenversionKonfiguration.Liste(builder.Property(k => k.Zuordnungen));
         builder.Property(k => k.Zeilenversion).IsRowVersion();
 
         // Genau eine Variante je Kundenprojekt zählt im Forecast (E-09).
@@ -128,6 +129,7 @@ internal sealed class KalkulationsversionKonfiguration : IEntityTypeConfiguratio
         builder.Property(v => v.ErstelltVon).HasMaxLength(200);
         builder.Property(v => v.Eingabe).HasConversion(EingabeJson.Konverter, EingabeJson.Vergleich);
         builder.Property(v => v.Vertragsangaben).HasConversion(AngabenJson.Konverter, AngabenJson.Vergleich).HasColumnType("nvarchar(max)");
+        VorlagenversionKonfiguration.Liste(builder.Property(v => v.Loesungsbezuege));
         builder.Property(v => v.SummeMonatlich).HasPrecision(12, 2);
         builder.Property(v => v.SummeEinmalig).HasPrecision(12, 2);
         builder.Property(v => v.FreigabeVertriebsleitungVon).HasMaxLength(200);
@@ -331,5 +333,40 @@ internal sealed class UnterlageDateiKonfiguration : IEntityTypeConfiguration<Unt
     {
         builder.ToTable("UnterlagenDateien", "projekte");
         builder.HasKey(d => d.UnterlageId);
+    }
+}
+
+internal sealed class HerausforderungKonfiguration : IEntityTypeConfiguration<Herausforderung>
+{
+    public void Configure(EntityTypeBuilder<Herausforderung> builder)
+    {
+        builder.ToTable("Herausforderungen", "projekte");
+        builder.Property(h => h.Dimension).HasConversion<string>().HasMaxLength(20);
+        builder.Property(h => h.Prioritaet).HasConversion<string>().HasMaxLength(10);
+        builder.Property(h => h.Titel).HasMaxLength(200);
+        builder.Property(h => h.Beschreibung).HasMaxLength(2000);
+        builder.Property(h => h.Auswirkung).HasMaxLength(1000);
+        builder.Property(h => h.Quelle).HasMaxLength(300);
+        builder.Property(h => h.AngelegtVon).HasMaxLength(200);
+        builder.Property(h => h.GeaendertVon).HasMaxLength(200);
+        builder.HasIndex(h => h.KundenprojektId);
+        builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(h => h.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+internal sealed class AnalyseAngebotKonfiguration : IEntityTypeConfiguration<AnalyseAngebot>
+{
+    public void Configure(EntityTypeBuilder<AnalyseAngebot> builder)
+    {
+        builder.ToTable("AnalyseAngebote", "projekte");
+        builder.Property(a => a.Nummer).HasMaxLength(30);
+        builder.HasIndex(a => a.Nummer).IsUnique();
+        builder.Property(a => a.Paketpreis).HasPrecision(12, 2);
+        builder.Property(a => a.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(a => a.Bemerkung).HasMaxLength(500);
+        builder.Property(a => a.ErfasstVon).HasMaxLength(200);
+        builder.HasIndex(a => a.KundenprojektId);
+        builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(a => a.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Unterlage>().WithMany().HasForeignKey(a => a.UnterlageId).OnDelete(DeleteBehavior.SetNull);
     }
 }

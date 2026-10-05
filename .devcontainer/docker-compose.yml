@@ -1,0 +1,46 @@
+# Das SA-Kennwort erzeugt der Datenbank-Container beim ersten Start zufällig und legt es im Volume „geheim“ ab;
+# die App liest es von dort (umgebung.sh). Es steht nirgends im Repository.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/dotnet:10.0
+    # Hauptprozess ist dienst.sh aus dem Repository: er startet und überwacht die App (Port 5226).
+    command:
+      - /bin/bash
+      - -c
+      - |
+        for skript in /workspaces/*/.devcontainer/dienst.sh; do
+          [ -f "$$skript" ] && exec bash "$$skript"
+        done
+        echo "dienst.sh nicht gefunden" >&2
+        exec sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+      - geheim:/geheim:ro
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    user: root
+    environment:
+      ACCEPT_EULA: "Y"
+    volumes:
+      - sqldaten:/var/opt/mssql
+      - geheim:/geheim
+    command:
+      - /bin/bash
+      - -c
+      - |
+        if [ ! -s /geheim/sa-kennwort ]; then
+          echo "Kx9!$$(tr -dc 'A-Za-z0-9' </dev/urandom | head -c 20)" > /geheim/sa-kennwort
+          chmod 644 /geheim/sa-kennwort
+        fi
+        export MSSQL_SA_PASSWORD="$$(cat /geheim/sa-kennwort)"
+        exec /opt/mssql/bin/sqlservr
+
+volumes:
+  sqldaten:
+  geheim:

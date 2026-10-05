@@ -318,6 +318,45 @@ else
                 }
             </section>
 
+            <section class="karte" id="loesungen">
+                <div class="karte-kopf">
+                    <h2>Wofür der Kunde die Leistungen braucht</h2>
+                    <span class="unterzeile">Herausforderungen aus der Kundensituation, die ein Service löst</span>
+                </div>
+                @if (_daten.Herausforderungen.Count == 0)
+                {
+                    <p class="karte-inhalt unterzeile">Für dieses Kundenprojekt ist noch keine Kundensituation erfasst. Herausforderungen pflegt man in der <a href="projekte/@_daten.Projekt.Id#kundensituation">Projektansicht</a>.</p>
+                }
+                else if (GebuchteServices.Count == 0)
+                {
+                    <p class="karte-inhalt unterzeile">Noch keine Leistung gebucht.</p>
+                }
+                else
+                {
+                    <fieldset class="karte-inhalt loesungen" disabled="@(!_daten.DarfBearbeiten)">
+                        @foreach (var (serviceCode, serviceName) in GebuchteServices)
+                        {
+                            <div class="service">
+                                <strong>@serviceCode · @serviceName</strong>
+                                <div class="aktionen">
+                                    @foreach (var h in _daten.Herausforderungen)
+                                    {
+                                        <label class="schalter" title="@Texte.Dimension(h.Dimension), Priorität @Texte.Prioritaet(h.Prioritaet)">
+                                            <input type="checkbox" checked="@_zuordnungen.Contains(new Zuordnung(serviceCode, h.Id))" @onchange="e => Zuordnen(serviceCode, h.Id, e.Value is true)" />
+                                            @h.Titel
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        @if (_daten.DarfBearbeiten)
+                        {
+                            <p class="unterzeile">Wird mit „Speichern“ gesichert und mit dem Angebot eingefroren. Änderungen heben erteilte Vertriebsfreigaben auf.</p>
+                        }
+                    </fieldset>
+                }
+            </section>
+
             <section class="karte" id="vertriebsfreigabe">
                 <div class="karte-kopf">
                     <h2>Vertriebsfreigabe</h2>
@@ -589,6 +628,7 @@ else
             _zustand = EditorZustand.Aus(k.Titel, k.Vertragsbeginn, k.Eingabe, _connect.Select(c => c.Code).ToHashSet());
             _zeilenversion = k.Zeilenversion;
             LadeAngaben(k.Vertragsangaben);
+            _zuordnungen = [.. k.Zuordnungen];
             _geaendert = false;
             Berechne();
             await LadeAngeboteAsync();
@@ -633,7 +673,8 @@ else
         _speichert = true;
         try
         {
-            _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion, AlsAngaben());
+            _zeilenversion = await Dienst.SpeichernAsync(Id, _zustand!.Titel, _zustand.VertragsbeginnDatum, _zustand.AlsEingabe(), _zeilenversion, AlsAngaben(),
+                [.. _zuordnungen.Where(z => GebuchteServices.Any(s => s.Code == z.ServiceCode))]);
             _geaendert = false;
             var aufgehoben = await NeuLadenAsync();
             Zeige(aufgehoben ? "Gespeichert. Weil sich der Stand geändert hat, sind die Vertriebsfreigaben aufgehoben." : "Gespeichert.", false);
@@ -810,6 +851,26 @@ else
         catch (Exception e) when (e is InvalidOperationException or KeyNotFoundException)
         {
             Zeige(e.Message, true);
+        }
+    }
+
+    // ---------- Wofür der Kunde die Leistungen braucht (G-04) ----------
+
+    private HashSet<Zuordnung> _zuordnungen = [];
+
+    /// <summary>Gebuchte Services in der Reihenfolge des Ergebnisses, mit Namen aus dem Katalog.</summary>
+    private IReadOnlyList<(string Code, string Name)> GebuchteServices =>
+        _ergebnis is null || _katalog is null
+            ? []
+            : [.. _ergebnis.Positionen.Select(p => p.ServiceCode).OfType<string>().Distinct(StringComparer.Ordinal)
+                .Select(c => (c, _katalog.Services.FirstOrDefault(s => s.Code == c)?.Bezeichnung ?? c))];
+
+    private void Zuordnen(string code, int herausforderung, bool an)
+    {
+        var z = new Zuordnung(code, herausforderung);
+        if (an ? _zuordnungen.Add(z) : _zuordnungen.Remove(z))
+        {
+            AngabeGeaendert();
         }
     }
 

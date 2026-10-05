@@ -804,3 +804,52 @@ dl.daten dd { overflow-wrap: anywhere; }
         gap: 0.25rem 0.6rem;
         overflow-wrap: anywhere;
     }
+
+/* Kundensituation und Analyse-Angebote (Phase 4) */
+.herausforderungen {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+    .herausforderungen li {
+        border-left: 3px solid var(--linie);
+        padding-left: 0.6rem;
+    }
+
+    .herausforderungen p {
+        margin: 0.2rem 0 0;
+    }
+
+    .herausforderungen .kopfzeile {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.3rem 0.6rem;
+    }
+
+        .herausforderungen .kopfzeile .aktionen {
+            margin-left: auto;
+        }
+
+.prio-Hoch { background: var(--kritisch-bg); color: var(--kritisch); }
+.prio-Mittel { background: var(--warn-bg); color: var(--warn); }
+.prio-Niedrig { background: var(--flaeche-2); color: #44555b; }
+.analyse-Versendet { background: var(--petrol-hell); color: var(--petrol-dunkel); }
+.analyse-Beauftragt { background: var(--gut-bg); color: var(--gut); }
+.analyse-Abgelehnt { background: var(--kritisch-bg); color: var(--kritisch); }
+
+.loesungen {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+    .loesungen .service {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+    }

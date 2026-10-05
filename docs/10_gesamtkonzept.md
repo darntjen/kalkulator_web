@@ -120,14 +120,14 @@ flowchart TD
 
 1. **Kundenprojekt anlegen:** Kunde mit Navision-Kundennummer, Titel. Der Vertrieb pflegt Abschlusswahrscheinlichkeit und erwarteten Abschlussmonat und hält beides aktuell.
 2. **Unterlagen:** Das Kundenprojekt wird mit seinem Kanalordner im Team „Kundenprojekte“ verknüpft; der Kalkulator zeigt die Dateien der Ordner 00 bis 40, 60 und 80 an. Was dort nicht liegt, laden Vertrieb oder Consultants hoch. Uploads werden drei Jahre nach Abschluss des Projekts gelöscht (Entscheidung 04.10.2026).
-3. **Kundensituation erfassen:** Der Vertrieb trägt die Herausforderungen manuell ein, gegliedert nach kaufmännisch, organisatorisch und technisch. Die Unterlagen sind daneben einsehbar.
+3. **Kundensituation erfassen:** Der Vertrieb trägt die Herausforderungen manuell ein, gegliedert nach kaufmännisch, organisatorisch und technisch. Die Unterlagen sind daneben einsehbar. Pflegen dürfen der verantwortliche Vertrieb, die Vertriebsleitung und die Consultants (Entscheidung 04.10.2026).
 4. **Transformationsprojekt anlegen:** Der Vertrieb lädt das Navision-PDF hoch.
    - Die Anwendung liest Kopf, Positionen und Summen und prüft die Summe.
    - Danach ordnet der Vertrieb die Positionen Kapiteln zu, zum Beispiel „Neue Firewall“ oder „Einrichtung und Migration“, und schreibt Ziel und Nutzen in Kundensprache.
    - Die Einkaufspreise trägt er manuell nach (Abschnitt 6).
    - Preise, Mengen und Texte **dürfen im Kalkulator geändert werden**. Jede Abweichung vom importierten Navision-Stand wird deutlich gekennzeichnet: an der Position, am Transformationsprojekt und vor dem Erzeugen des Angebots. So ist klar, dass Navision noch nachgezogen werden muss.
 5. **Managed Services kalkulieren:** wie im Clickdummy.
-6. **Verknüpfen und Varianten bilden:** Jeder Baustein wird einer oder mehreren Herausforderungen zugeordnet. Bei Bedarf werden Varianten angelegt, etwa Kauf gegen Leasing oder zwei Ausbaustufen.
+6. **Verknüpfen und Varianten bilden:** Jeder Baustein wird einer oder mehreren Herausforderungen zugeordnet. Bei Bedarf werden Varianten angelegt, etwa Kauf gegen Leasing oder zwei Ausbaustufen. *Umgesetzt für Managed Services (Phase 4): Die Zuordnung gehört zum Stand der Kalkulation, hebt also die Vertriebsfreigaben auf, und wird mit dem Angebot eingefroren. Eine verknüpfte Herausforderung lässt sich nicht löschen. Transformationsprojekte folgen in Phase 5.*
 7. **Gesamtangebot erzeugen:** Word-Dokument mit Nummer und Version, archiviert. Die vollständige Positionsliste hängt als Anlage an.
 8. **Versand vermerken:** Der Vertrieb markiert die Version als versendet (Datum). Der Projektstatus wechselt auf „Angebot versendet“. Das ist die Versendungsübersicht aus dem Feedback (F3).
 9. **Vertragspaket erzeugen:** für den Managed-Services-Anteil, wie geplant. Transformationsprojekte werden wie bisher über Navision beauftragt.
@@ -237,7 +237,7 @@ Abschlussquote und Verlustgründe wie geplant.
 
 | Angebotsart | Erstellung in v1 | Im Kalkulator |
 |-------------|------------------|---------------|
-| **Analyse und Workshop** | weiter per Claude-Skill | Eckdaten erfassen (Nummer, Datum, Paketpreis, Status), Dokument optional ablegen. Zählt in Pipeline und Statistik |
+| **Analyse und Workshop** | weiter per Claude-Skill | Eckdaten erfassen (Nummer, Datum, Paketpreis, Status), Dokument optional ablegen. Zählt in Pipeline und Statistik. Die Nummer ist die Navision-Angebotsnummer, eindeutig (Entscheidung 04.10.2026); Status versendet, beauftragt oder abgelehnt |
 | **Gesamtangebot** (Transformation und/oder Managed Services, mit Varianten) | im Kalkulator | vollständig |
 
 Version 2 holt die Erstellung des Analyse- und Workshop-Angebots in den
