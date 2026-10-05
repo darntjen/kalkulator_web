@@ -87,20 +87,20 @@ public class PaperlessUebergabeTests
         Assert.Equal("Block::Input::SignatureInput", feld["type"]!.GetValue<string>());
         Assert.Equal("Nösse", feld["owner_participants_slot_names"]![0]!.GetValue<string>());
         Assert.Equal(3, feld["pdf_page_number"]!.GetValue<int>());
-        // Ursprung oben links: 842 − 200 − 56 = 586.
-        Assert.Equal((320d, 586d), (feld["settings"]!["absolutePosition"]!["x"]!.GetValue<double>(), feld["settings"]!["absolutePosition"]!["y"]!.GetValue<double>()));
-        Assert.Equal((180d, 56d), (feld["settings"]!["absoluteSize"]!["width"]!.GetValue<double>(), feld["settings"]!["absoluteSize"]!["height"]!.GetValue<double>()));
+        // Ursprung oben links: 842 − 200 − 56 = 586 pt; Paperless rechnet in Pixeln (× 96/72).
+        Assert.Equal((426.7, 781.3), (feld["settings"]!["absolutePosition"]!["x"]!.GetValue<double>(), feld["settings"]!["absolutePosition"]!["y"]!.GetValue<double>()));
+        Assert.Equal((240d, 74.7), (feld["settings"]!["absoluteSize"]!["width"]!.GetValue<double>(), feld["settings"]!["absoluteSize"]!["height"]!.GetValue<double>()));
     }
 
     [Fact]
-    public void Mit_Vorlage_Versand_und_PDF_Koordinaten()
+    public void Ablauf_Vorlage_bleibt_beim_PDF_weg_Versand_und_PDF_Koordinaten()
     {
-        var e = new PaperlessEinstellungen { ApiSchluessel = "x", ArbeitsbereichId = 1, VorlageId = 77, Versenden = true, YVonOben = false, FeldBreite = 150, FeldHoehe = 40 };
+        var e = new PaperlessEinstellungen { ApiSchluessel = "x", ArbeitsbereichId = 1, AblaufVorlageId = 77, Versenden = true, YVonOben = false, FeldBreite = 150, FeldHoehe = 40, Skalierung = 1 };
 
         var d = PaperlessUebergabe.Dokument(e, Auftrag(), "blob");
 
         Assert.Equal("dispatched", d["state"]!.GetValue<string>());
-        Assert.Equal(77, d["template_id"]!.GetValue<long>());
+        Assert.False(d.ContainsKey("template_id"), "Mit template_id legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg.");
         Assert.Equal(200d, d["blocks"]!["unterschrift_1"]!["settings"]!["absolutePosition"]!["y"]!.GetValue<double>());
         Assert.Equal(150d, d["blocks"]!["unterschrift_1"]!["settings"]!["absoluteSize"]!["width"]!.GetValue<double>());
     }
@@ -123,6 +123,47 @@ public class PaperlessUebergabeTests
         var aus = await Assert.ThrowsAsync<PaperlessFehler>(() =>
             new PaperlessUebergabe(new HttpClient(new TestServer()), Options.Create(new PaperlessEinstellungen())).UebergebenAsync(Auftrag(), CancellationToken.None));
         Assert.Contains("nicht eingerichtet", aus.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Ueber_Vorlage_kopiert_die_Vorlage_mit_PDF_legt_das_Dokument_an_und_loescht_die_Kopie()
+    {
+        var server = new TestServer(
+            (HttpStatusCode.OK, """{"signed_id":"blob-9","direct_upload":{"url":"https://speicher.test/upload/9"}}"""),
+            (HttpStatusCode.OK, ""),
+            (HttpStatusCode.Created, """{"id":555}"""),
+            (HttpStatusCode.Created, """{"id":777}"""),
+            (HttpStatusCode.NoContent, ""));
+
+        var id = await new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenUeberVorlageAsync(Auftrag(), 77, CancellationToken.None);
+
+        Assert.Equal("777", id);
+        Assert.Equal(
+            ["POST /api/v1/blobs", "PUT /upload/9", "POST /api/v1/templates", "POST /api/v1/documents", "DELETE /api/v1/templates/555"],
+            server.Anfragen.Select(a => $"{a.Anfrage.Method} {a.Anfrage.RequestUri!.AbsolutePath}"));
+        var vorlage = JsonNode.Parse(server.Anfragen[2].Inhalt)!.AsObject();
+        Assert.Equal((77L, "blob-9", 2), (vorlage["template_id"]!.GetValue<long>(), vorlage["pdf"]!.GetValue<string>(), vorlage["blocks"]!.AsObject().Count));
+        var dokument = JsonNode.Parse(server.Anfragen[3].Inhalt)!.AsObject();
+        Assert.Equal(555L, dokument["template_id"]!.GetValue<long>());
+        Assert.False(dokument.ContainsKey("pdf") || dokument.ContainsKey("blocks") || dokument.ContainsKey("state"));
+        Assert.Equal("erika@example.org", dokument["participants"]!["Kunde"]!["email"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Ueber_Vorlage_loescht_die_Kopie_auch_wenn_das_Dokument_scheitert()
+    {
+        var server = new TestServer(
+            (HttpStatusCode.OK, """{"signed_id":"blob-9","direct_upload":{"url":"https://speicher.test/upload/9"}}"""),
+            (HttpStatusCode.OK, ""),
+            (HttpStatusCode.Created, """{"id":555}"""),
+            (HttpStatusCode.UnprocessableEntity, """{"error":"slot missing"}"""),
+            (HttpStatusCode.NoContent, ""));
+
+        var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenUeberVorlageAsync(Auftrag(), 77, CancellationToken.None));
+
+        Assert.Contains("slot missing", fehler.Message, StringComparison.Ordinal);
+        Assert.Equal("DELETE /api/v1/templates/555", $"{server.Anfragen[^1].Anfrage.Method} {server.Anfragen[^1].Anfrage.RequestUri!.AbsolutePath}");
     }
 
     [Fact]

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Kalkulator.Documents.Vertrag;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
@@ -7,11 +8,9 @@ namespace Kalkulator.Infrastructure.Paperless;
 
 /// <summary>
 /// Testlauf gegen die echte Paperless-API (Frage 12.5), ohne Vertragsvorlagen und PDF-Umwandlung: Ein Muster-PDF mit
-/// erfundenem Inhalt und je einem Unterschriftsfeld für „Kunde“ und „Nösse“ geht dreimal als Entwurf an Paperless:
-/// mit Vorlage und Koordinaten ab oberem Seitenrand (A) bzw. ab unterem (B) sowie ohne Vorlage (C). Ein grauer Rahmen
-/// im PDF zeigt, wo das Feld liegen soll; in Paperless sieht man, welche Variante passt
-/// (<see cref="PaperlessEinstellungen.YVonOben"/>) und ob die Vorlage den Inhalt beeinflusst.
-/// Aufruf: <c>dotnet run --project src/Kalkulator.Web -- --paperless-test name@firma.de</c>.
+/// erfundenem Inhalt und je einem Unterschriftsfeld für „Kunde“ und „Nösse“ geht als Entwurf an Paperless, einmal über
+/// eine Kopie der Ablauf-Vorlage (D, Reihenfolge und Freigaben) und einmal direkt aus dem PDF (E). Ein grauer Rahmen im
+/// PDF zeigt, wo das Feld liegen soll. Aufruf: <c>dotnet run --project src/Kalkulator.Web -- --paperless-test name@firma.de</c>.
 /// </summary>
 public static class PaperlessTestlauf
 {
@@ -44,8 +43,7 @@ public static class PaperlessTestlauf
             "Prüfung löschen.",
             "",
             "Prüfen: Liegt das Unterschriftsfeld von Paperless im grauen Rahmen über der jeweiligen Linie?",
-            "Ist die Paperless-Vorlage übernommen (Reihenfolge, Freigaben)?",
-            "Lässt sich für „Nösse“ eine Person zuordnen?",
+            "Bei Variante D: Sind Reihenfolge (erst Kunde, dann Nösse) und Freigaben aus der Vorlage übernommen?",
         ];
         for (var i = 0; i < hinweis.Length; i++)
         {
@@ -70,8 +68,8 @@ public static class PaperlessTestlauf
     }
 
     /// <summary>
-    /// Lädt die drei Varianten als Entwurf hoch und gibt die Kennungen der Paperless-Dokumente zurück. Der Kunde ist die
-    /// angegebene Adresse; für Rollen mit <see cref="PaperlessRolle.AusVorlage"/> wird nur das Feld gesetzt.
+    /// Legt die Varianten D und E als Entwurf an und gibt die Kennungen der Paperless-Dokumente zurück. Der Kunde ist die
+    /// angegebene Adresse; „Nösse“ kommt aus den Einstellungen (fest eingestellte Person).
     /// </summary>
     public static async Task<IReadOnlyList<string>> AusfuehrenAsync(
         PaperlessEinstellungen einstellungen,
@@ -90,33 +88,39 @@ public static class PaperlessTestlauf
             throw new ArgumentException($"Bitte die eigene E-Mail-Adresse als Empfänger angeben: {Schalter} name@noesse.de");
         }
 
-        ausgabe.WriteLine($"Paperless-Testlauf: Arbeitsbereich {einstellungen.ArbeitsbereichId}, Vorlage {einstellungen.VorlageId?.ToString() ?? "keine"}, nur Entwürfe.");
+        var e = Kopie(einstellungen);
+        ausgabe.WriteLine($"Paperless-Testlauf: Arbeitsbereich {e.ArbeitsbereichId}, Ablauf-Vorlage {e.AblaufVorlageId?.ToString(CultureInfo.InvariantCulture) ?? "keine"}, Skalierung {e.Skalierung:0.###}, nur Entwürfe.");
         var kennungen = new List<string>();
-        foreach (var (variante, vonOben, mitVorlage) in new[] { ("A", true, true), ("B", false, true), ("C", true, false) })
+        var varianten = new List<(string Name, string Zusatz, Func<PaperlessAuftrag, Task<string>> Anlegen)>();
+        if (e.AblaufVorlageId is { } vorlage)
         {
-            var e = Kopie(einstellungen, vonOben, mitVorlage);
+            varianten.Add(("D", $"über eine Kopie der Ablauf-Vorlage {vorlage}", a => uebergabe(e).UebergebenUeberVorlageAsync(a, vorlage, abbruch)));
+        }
+
+        varianten.Add(("E", "direkt aus dem PDF, ohne Vorlage", a => uebergabe(e).UebergebenAsync(a, abbruch)));
+        foreach (var (variante, zusatz, anlegen) in varianten)
+        {
             var titel = $"Kalkulator-Testlauf {variante} (bitte löschen)";
-            var zusatz = $"Koordinaten ab {(vonOben ? "oberem" : "unterem")} Seitenrand, {(mitVorlage ? $"mit Vorlage {e.VorlageId}" : "ohne Vorlage")}";
             ausgabe.WriteLine($"  {variante}: {zusatz}");
             var pdf = MusterPdf(titel, zusatz, e.FeldBreite, e.FeldHoehe);
             var auftrag = Auftrag(e, titel, pdf, empfaenger.Trim());
             string kennung;
             try
             {
-                kennung = await uebergabe(e).UebergebenAsync(auftrag, abbruch);
+                kennung = await anlegen(auftrag);
             }
             catch (PaperlessFehler f)
             {
-                // Eine Variante darf scheitern (z. B. C ohne Vorlage); die anderen laufen weiter.
+                // Eine Variante darf scheitern (z. B. D, wenn Paperless keine Vorlage mit eigenem PDF kopiert).
                 ausgabe.WriteLine($"  {variante}: fehlgeschlagen: {f.Message}");
                 continue;
             }
 
             kennungen.Add(kennung);
-            ausgabe.WriteLine($"  {variante}: Dokument {kennung} angelegt, {pdf.Length} Byte PDF ({string.Join(", ", auftrag.Felder.Select(f => $"{f.Slot} Seite {f.Stelle.Seite} x={f.Stelle.X:0} Linie={f.Stelle.Grundlinie:0}"))}).");
+            ausgabe.WriteLine($"  {variante}: Dokument {kennung} angelegt, {pdf.Length} Byte PDF, Teilnehmer {string.Join(", ", auftrag.Teilnehmer.Select(t => $"{t.Slot} = {t.Name}"))}.");
         }
 
-        ausgabe.WriteLine("Fertig. In Paperless prüfen: Ist das PDF zu sehen (A, B, C)? Liegen die Felder bei A oder B in den grauen Rahmen? Danach alle Entwürfe löschen.");
+        ausgabe.WriteLine("Fertig. In Paperless prüfen: PDF zu sehen? Felder im grauen Rahmen? Bei D: Reihenfolge und Freigaben aus der Vorlage? Danach die Entwürfe löschen.");
         return kennungen;
     }
 
@@ -150,16 +154,17 @@ public static class PaperlessTestlauf
         return new PaperlessAuftrag(titel, "Kalkulator-Testlauf.pdf", pdf, teilnehmer, felder);
     }
 
-    private static PaperlessEinstellungen Kopie(PaperlessEinstellungen e, bool vonOben, bool mitVorlage) => new()
+    private static PaperlessEinstellungen Kopie(PaperlessEinstellungen e) => new()
     {
         Adresse = e.Adresse,
         ApiSchluessel = e.ApiSchluessel,
         ArbeitsbereichId = e.ArbeitsbereichId,
-        VorlageId = mitVorlage ? e.VorlageId : null,
+        AblaufVorlageId = e.AblaufVorlageId,
         Versenden = false,
         Rollen = e.Rollen,
         FeldBreite = e.FeldBreite,
         FeldHoehe = e.FeldHoehe,
-        YVonOben = vonOben,
+        YVonOben = e.YVonOben,
+        Skalierung = e.Skalierung,
     };
 }

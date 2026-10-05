@@ -16,8 +16,12 @@ public sealed class PaperlessEinstellungen
     /// <summary>Arbeitsbereich (workspace_id), in dem das Dokument angelegt wird.</summary>
     public long? ArbeitsbereichId { get; set; }
 
-    /// <summary>Optionale Paperless-Vorlage (template_id), die Ablauf, Freigabe und Teilnehmer regelt.</summary>
-    public long? VorlageId { get; set; }
+    /// <summary>
+    /// Paperless-Vorlage mit Reihenfolge und Freigaben (Ablauf-Vorlage). Ein Dokument entsteht in Paperless entweder aus
+    /// einer Vorlage oder aus einem PDF; mit <c>template_id</c> bliebe das PDF unberücksichtigt (Testlauf 05.10.2026).
+    /// Die Übergabe nutzt sie deshalb noch nicht; ob eine Kopie der Vorlage mit eigenem PDF trägt, prüft der Testlauf.
+    /// </summary>
+    public long? AblaufVorlageId { get; set; }
 
     /// <summary>
     /// <c>true</c>: Paperless versendet sofort (state „dispatched“). Standard ist <c>false</c>: Das Dokument liegt als
@@ -41,6 +45,12 @@ public sealed class PaperlessEinstellungen
     /// <c>false</c> = linke untere Ecke wie im PDF. Mit dem echten Schlüssel zu prüfen (docs/12_vertragsvorlagen.md).
     /// </summary>
     public bool YVonOben { get; set; } = true;
+
+    /// <summary>
+    /// Umrechnung von Punkt (1/72 Zoll, Einheit im PDF) in die Einheit von Paperless. Paperless rechnet in Pixeln
+    /// (1/96 Zoll): Felder lagen ohne Umrechnung zu weit links und zu weit oben (Testlauf 05.10.2026).
+    /// </summary>
+    public double Skalierung { get; set; } = 96d / 72d;
 
     public bool Aktiv => !string.IsNullOrWhiteSpace(ApiSchluessel) && ArbeitsbereichId is not null;
 

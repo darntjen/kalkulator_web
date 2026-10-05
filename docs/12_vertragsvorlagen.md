@@ -192,8 +192,10 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
 - **Rollen und Personen:** Die Rolle ist der Slot in Paperless, sofern `Paperless:Rollen` nichts anderes sagt.
   Rollen, die nicht fest eingestellt sind (in der Regel „Kunde“), fragt die Projektansicht vor dem Erzeugen ab:
   Name und E-Mail-Adresse. Für „Kunde“ ist der Ansprechpartner vorbelegt.
-- **Paperless-Vorlage regelt den Ablauf:** Mit `Paperless:VorlageId` wird die Paperless-Vorlage mitgegeben. Rollen
-  mit `AusVorlage = true` (z. B. die Geschäftsführung) bekommen nur das Feld; die Person legt die Vorlage fest.
+- **Paperless-Vorlage und PDF:** Ein Paperless-Dokument entsteht entweder aus einer Vorlage oder aus einem PDF. Mit
+  `template_id` legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg; das PDF lässt sich danach nicht
+  austauschen. Beim Anlegen aus einem PDF kennen Teilnehmer nur Name und E-Mail, keine Rolle (`approver`) und keine
+  Reihenfolge. Reihenfolge und Freigaben gibt es deshalb nur über eine Vorlage (siehe unten, Testlauf D).
 - **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, den die technische Freigabe prüft und von dort
   versendet. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
@@ -202,17 +204,20 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
   höchstens einmal an Paperless.
 
 **Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
-- Arbeitsbereich **15114**, Paperless-Vorlage **50379**. Die Vorlage enthält kein Dokument; sie regelt Slots,
-  Reihenfolge und die Freigaben vor dem Versand. Das Dokument kommt immer in der aktuellen Fassung aus dem Kalkulator.
+- Arbeitsbereich **15114**. Die Paperless-Vorlage **50379** (Ablauf-Vorlage) enthält kein Dokument; sie regelt die
+  Reihenfolge und die beiden Freigaben vor dem Versand. Sie wird gebraucht, weil Reihenfolge und Freigaben anders nicht
+  vorzugeben sind.
 - Slots **„Kunde“** und **„Nösse“**, nacheinander: erst unterschreibt der Kunde, dann Nösse.
 - **Kunde:** Name und E-Mail kommen je Vertrag aus dem Kalkulator (vorbelegt mit dem Ansprechpartner).
-- **Nösse:** Es unterschreibt je Vertrag die Geschäftsführung (André Nösse oder Matthias Erhard) oder der technische
-  Leiter (Sascha Manczak). Wer, legt die Person fest, die das Dokument in Paperless freigibt; der Kalkulator setzt nur
-  das Feld (`Paperless:Rollen:Nösse:AusVorlage = true`).
+- **Nösse:** Es unterschreibt immer **Sascha Manczak** (technischer Leiter), fest eingestellt.
+- **Freigaben** in der Vorlage, an Rollen gebunden: AVV durch Matthias Erhard; Vertrag aus technischer Sicht durch
+  Christian Leinen, Sascha Manczak oder Till Elsner.
 - Der Kalkulator übergibt nur Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
   `{{unterschrift.Kunde}}` und `{{unterschrift.Nösse}}` am Anfang der Unterschriftslinie (Frage 12.6).
-- Offen bis zum Test mit echtem Schlüssel (Frage 12.5): ob Paperless die Vorlage zusammen mit einer eigenen PDF-Datei
-  anwendet und ob sich die Person für „Nösse“ auch erst nach der Unterschrift des Kunden zuordnen lässt.
+- **Offen (Testlauf D):** ob sich die Ablauf-Vorlage mit eigenem PDF und Unterschriftsfeldern kopieren lässt. Dann
+  entstünde der Entwurf aus der Kopie (mit Reihenfolge und Freigaben), und die Kopie wird danach gelöscht. Bis dahin
+  legt die Übergabe den Entwurf direkt aus dem PDF an; Reihenfolge und Freigaben müssen dann in Paperless von Hand
+  ergänzt werden.
 
 **Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
 
@@ -221,40 +226,42 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
 | `Paperless:ApiSchluessel` | API-Schlüssel aus Paperless (Umgebungsvariable `Paperless__ApiSchluessel`); leer = Übergabe aus |
 | `Paperless:ArbeitsbereichId` | Arbeitsbereich (workspace_id); leer = Übergabe aus |
 | `Paperless:Adresse` | `https://api.paperless.io/api/v1/` |
-| `Paperless:VorlageId` | optionale Paperless-Vorlage (template_id) |
+| `Paperless:AblaufVorlageId` | Paperless-Vorlage mit Reihenfolge und Freigaben; vorerst nur im Testlauf (Variante D) |
 | `Paperless:Versenden` | `false` = Entwurf für die technische Freigabe, `true` = sofort versenden |
 | `Paperless:Rollen:<Rolle>:Slot` | Slot-Name in Paperless, falls er vom Rollennamen abweicht |
 | `Paperless:Rollen:<Rolle>:AusVorlage` | `true`: Die Person legt die Paperless-Vorlage fest |
 | `Paperless:Rollen:<Rolle>:Name`, `EMail` | fest eingestellte Person, z. B. für die Geschäftsführung |
 | `Paperless:FeldBreite`, `FeldHoehe` | Größe des Felds in Punkt (Standard 180 × 56) |
 | `Paperless:YVonOben` | Koordinaten ab oberem Seitenrand (Standard) oder ab unterem (`false`) |
+| `Paperless:Skalierung` | Umrechnung Punkt → Paperless-Einheit, Standard 96/72 (Paperless rechnet in Pixeln) |
 
 **Stand der Prüfung gegen die echte API** (05.10.2026, ohne gültigen Schlüssel; Paperless prüft den Aufbau einer
 Anfrage vor der Anmeldung):
 - `POST blobs`: Name, Größe, MD5-Prüfsumme und Typ stehen **auf oberster Ebene** (`filename`, `byte_size`,
   `checksum`, `content_type`), nicht unter `blob`. Korrigiert; danach folgt der Upload an `direct_upload.url`.
-- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot, `blocks` und `template_id`
-  besteht die Prüfung des Aufbaus. Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
+- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` besteht die
+  Prüfung des Aufbaus; ebenso `POST templates` mit `template_id`, `pdf` und `blocks` (Kopie der Ablauf-Vorlage). Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
   `pdf_page_number`, `settings.absolutePosition`, `settings.absoluteSize`) prüft Paperless erst nach der Anmeldung.
 
-**Noch mit echtem Schlüssel zu prüfen:** Einheit und Ursprung der Koordinaten (Punkt, oben oder unten links), ob
-`template_id` zusammen mit einer eigenen PDF-Datei wirkt und ob sich „Nösse“ nach der Unterschrift des Kunden zuordnen
-lässt. Dafür gibt es den **Testlauf**:
+**Erkenntnisse aus den Testläufen mit echtem Schlüssel** (05.10.2026):
+- Upload und Anlegen funktionieren. Dokumente **mit** `template_id` kamen leer an: Paperless baut sie aus der (leeren)
+  Vorlage und lässt das PDF weg. Ohne Vorlage war das PDF da.
+- Die Felder lagen links und deutlich oberhalb der Linie: Paperless rechnet in Pixeln (1/96 Zoll), der Kalkulator in
+  Punkt (1/72 Zoll). Lage und Größe werden jetzt mit `Paperless:Skalierung` (96/72) umgerechnet.
+- Ein Feld ohne Teilnehmer im Slot (früher „Nösse“) erscheint ohne Zuordnung; „Nösse“ ist jetzt fest Sascha Manczak.
+
+**Testlauf** (noch offen: Lage nach der Umrechnung und Variante D):
 
 1. API-Schlüssel als Codespaces-Secret `Paperless__ApiSchluessel` für das Repository anlegen (GitHub: Settings →
-   Codespaces → Secrets) und den Codespace neu starten. Auf einem Server genügt die Umgebungsvariable.
+   Codespaces → Secrets) und den Codespace neu starten. Für Variante D braucht der Schlüssel zusätzlich das Recht
+   `template.write`. Auf einem Server genügt die Umgebungsvariable.
 2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
-   der Test-„Kunde“).
-3. Der Testlauf legt drei **Entwürfe** an (nie Versand): A mit Vorlage und Koordinaten ab oberem Rand, B mit Vorlage
-   ab unterem Rand, C ohne Vorlage. Im Muster-PDF zeigt ein grauer Rahmen, wo das Feld liegen soll. Die Variante, bei
-   der die Felder in den Rahmen fallen, ergibt `Paperless:YVonOben` (A = `true`, B = `false`); C zeigt, ob die Vorlage
-   den Inhalt beeinflusst. Danach alle Entwürfe in Paperless löschen.
+   der Test-„Kunde“; „Nösse“ ist Sascha Manczak, es wird nichts versendet).
+3. Der Testlauf legt zwei **Entwürfe** an: **D** über eine Kopie der Ablauf-Vorlage mit dem Muster-PDF (die Kopie wird
+   danach gelöscht) und **E** direkt aus dem PDF. Im Muster-PDF zeigt ein grauer Rahmen, wo das Feld liegen soll.
+   Prüfen: PDF sichtbar? Felder im Rahmen? Bei D Reihenfolge und Freigaben übernommen? Danach beide Entwürfe löschen.
 4. Der Testlauf protokolliert jede Anfrage mit Status und dem Aufbau der Antwort (nur Feldnamen, keine Werte). Bei
    Fehlern dieses Protokoll weitergeben.
-
-Erster Lauf (05.10.2026): Die Dokumente kamen **leer** an. Ursache war vermutlich, dass die Antwort auf `POST blobs` kein
-Upload-Ziel unter `direct_upload.url` enthielt und der Upload deshalb still übersprungen wurde. Die Übergabe bricht jetzt
-in diesem Fall mit dem Aufbau der Antwort ab, statt ein leeres Dokument anzulegen.
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.
