@@ -3,7 +3,16 @@
 services:
   app:
     image: mcr.microsoft.com/devcontainers/dotnet:10.0
-    command: sleep infinity
+    # Hauptprozess ist dienst.sh aus dem Repository: er startet und überwacht die App (Port 5226).
+    command:
+      - /bin/bash
+      - -c
+      - |
+        for skript in /workspaces/*/.devcontainer/dienst.sh; do
+          [ -f "$$skript" ] && exec bash "$$skript"
+        done
+        echo "dienst.sh nicht gefunden" >&2
+        exec sleep infinity
     volumes:
       - ../..:/workspaces:cached
       - geheim:/geheim:ro

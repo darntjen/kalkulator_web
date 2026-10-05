@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Gemeinsame Umgebung für einrichten.sh und starten.sh (wird mit „source“ eingebunden).
+# Gemeinsame Umgebung für einrichten.sh und dienst.sh (wird mit „source“ eingebunden).
 # Wartet auf das SA-Kennwort, das der Datenbank-Container beim ersten Start erzeugt.
 for _ in $(seq 1 60); do
   [ -s /geheim/sa-kennwort ] && break
@@ -10,5 +10,6 @@ if [ ! -s /geheim/sa-kennwort ]; then
   exit 1
 fi
 export ConnectionStrings__Kalkulator="Server=db,1433;Database=Kalkulator;User Id=sa;Password=$(cat /geheim/sa-kennwort);TrustServerCertificate=True"
+export ASPNETCORE_ENVIRONMENT=Development
 export Kundenablage__Quelle=Ordner
 export Kundenablage__Ordner="$PWD/.devcontainer/beispielablage"

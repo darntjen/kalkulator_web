@@ -11,6 +11,7 @@ publish/
 # Umgebung und Geheimnisse
 .env
 .env.*
+.devcontainer/.eingerichtet
 !.env.example
 appsettings.*.local.json
 secrets.json
