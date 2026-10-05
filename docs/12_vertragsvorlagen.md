@@ -201,6 +201,19 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
   Vertragswerk gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“. Jede Ausfertigung geht
   höchstens einmal an Paperless.
 
+**Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
+- Arbeitsbereich **15114**, Paperless-Vorlage **50379**. Die Vorlage enthält kein Dokument; sie regelt Slots,
+  Reihenfolge und die Freigaben vor dem Versand. Das Dokument kommt immer in der aktuellen Fassung aus dem Kalkulator.
+- Slots **„Kunde“** und **„Nösse“**, nacheinander: erst unterschreibt der Kunde, dann Nösse.
+- **Kunde:** Name und E-Mail kommen je Vertrag aus dem Kalkulator (vorbelegt mit dem Ansprechpartner).
+- **Nösse:** Es unterschreibt je Vertrag die Geschäftsführung (André Nösse oder Matthias Erhard) oder der technische
+  Leiter (Sascha Manczak). Wer, legt die Person fest, die das Dokument in Paperless freigibt; der Kalkulator setzt nur
+  das Feld (`Paperless:Rollen:Nösse:AusVorlage = true`).
+- Der Kalkulator übergibt nur Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
+  `{{unterschrift.Kunde}}` und `{{unterschrift.Nösse}}` am Anfang der Unterschriftslinie (Frage 12.6).
+- Offen bis zum Test mit echtem Schlüssel (Frage 12.5): ob Paperless die Vorlage zusammen mit einer eigenen PDF-Datei
+  anwendet und ob sich die Person für „Nösse“ auch erst nach der Unterschrift des Kunden zuordnen lässt.
+
 **Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
 
 | Schlüssel | Wert |
