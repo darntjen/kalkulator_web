@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Einmalig nach dem Anlegen: bauen, Datenbank anlegen und Musterkatalog einspielen.
+# Einmalig nach dem Anlegen: bauen, Datenbank anlegen und Musterkatalog einspielen. Protokoll: /tmp/einrichten.log
 set -euo pipefail
+exec > >(tee -a /tmp/einrichten.log) 2>&1
 cd "$(dirname "$0")/.."
 source .devcontainer/umgebung.sh
 dotnet build src/Kalkulator.Web --nologo -v q
