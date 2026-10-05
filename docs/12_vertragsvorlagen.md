@@ -229,14 +229,25 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
 | `Paperless:FeldBreite`, `FeldHoehe` | Größe des Felds in Punkt (Standard 180 × 56) |
 | `Paperless:YVonOben` | Koordinaten ab oberem Seitenrand (Standard) oder ab unterem (`false`) |
 
-**Mit dem echten API-Schlüssel zu prüfen** (die Paperless-Dokumentation war bei der Umsetzung nicht abrufbar; die
-Anfragen folgen den veröffentlichten Beispielen):
-- Hochladen über `POST blobs` mit Name, Größe und MD5-Prüfsumme und anschließendem Upload an `direct_upload.url`.
-- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` vom Typ
-  `Block::Input::SignatureInput` (`owner_participants_slot_names`, `pdf_page_number`, `settings.absolutePosition`,
-  `settings.absoluteSize`).
-- Einheit und Ursprung der Koordinaten (Punkt, oben links) und ob `template_id` zusammen mit einer eigenen PDF-Datei
-  wirkt.
+**Stand der Prüfung gegen die echte API** (05.10.2026, ohne gültigen Schlüssel; Paperless prüft den Aufbau einer
+Anfrage vor der Anmeldung):
+- `POST blobs`: Name, Größe, MD5-Prüfsumme und Typ stehen **auf oberster Ebene** (`filename`, `byte_size`,
+  `checksum`, `content_type`), nicht unter `blob`. Korrigiert; danach folgt der Upload an `direct_upload.url`.
+- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot, `blocks` und `template_id`
+  besteht die Prüfung des Aufbaus. Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
+  `pdf_page_number`, `settings.absolutePosition`, `settings.absoluteSize`) prüft Paperless erst nach der Anmeldung.
+
+**Noch mit echtem Schlüssel zu prüfen:** Einheit und Ursprung der Koordinaten (Punkt, oben oder unten links), ob
+`template_id` zusammen mit einer eigenen PDF-Datei wirkt und ob sich „Nösse“ nach der Unterschrift des Kunden zuordnen
+lässt. Dafür gibt es den **Testlauf**:
+
+1. API-Schlüssel als Codespaces-Secret `Paperless__ApiSchluessel` für das Repository anlegen (GitHub: Settings →
+   Codespaces → Secrets) und den Codespace neu starten. Auf einem Server genügt die Umgebungsvariable.
+2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
+   der Test-„Kunde“).
+3. Der Testlauf legt zwei **Entwürfe** an (nie Versand): A mit Koordinaten ab oberem Rand, B ab unterem. Im Muster-PDF
+   zeigt ein grauer Rahmen, wo das Feld liegen soll. Die Variante, bei der die Felder in den Rahmen fallen, ergibt
+   `Paperless:YVonOben` (A = `true`, B = `false`). Danach beide Entwürfe in Paperless löschen.
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.

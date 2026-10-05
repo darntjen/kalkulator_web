@@ -61,7 +61,7 @@ public class PaperlessUebergabeTests
         var (blob, blobInhalt) = server.Anfragen[0];
         Assert.Equal((HttpMethod.Post, "https://paperless.test/api/v1/blobs"), (blob.Method, blob.RequestUri!.ToString()));
         Assert.Equal("Bearer test-schluessel", blob.Headers.Authorization!.ToString());
-        var b = JsonNode.Parse(blobInhalt)!["blob"]!;
+        var b = JsonNode.Parse(blobInhalt)!; // Felder auf oberster Ebene, wie die API sie verlangt
         Assert.Equal(("Vertrag_MS-A-2026-0001.pdf", "application/pdf", Pdf.Length), (b["filename"]!.GetValue<string>(), b["content_type"]!.GetValue<string>(), b["byte_size"]!.GetValue<int>()));
         Assert.Equal(Convert.ToBase64String(System.Security.Cryptography.MD5.HashData(Pdf)), b["checksum"]!.GetValue<string>());
 

@@ -15,7 +15,13 @@ using Microsoft.EntityFrameworkCore;
 const string ErstbefuellungSchalter = "--erstbefuellung";
 var erstbefuellung = args.Contains(ErstbefuellungSchalter);
 
-var builder = WebApplication.CreateBuilder(args.Where(a => a != ErstbefuellungSchalter).ToArray());
+// „--paperless-test name@firma.de“: zwei Muster-Entwürfe an Paperless übergeben und beenden (Frage 12.5).
+var paperlessTest = Array.IndexOf(args, PaperlessTestlauf.Schalter);
+var paperlessEmpfaenger = paperlessTest >= 0 && paperlessTest + 1 < args.Length ? args[paperlessTest + 1] : "";
+
+var builder = WebApplication.CreateBuilder(args
+    .Where((a, i) => a != ErstbefuellungSchalter && (paperlessTest < 0 || (i != paperlessTest && i != paperlessTest + 1)))
+    .ToArray());
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -59,6 +65,24 @@ if (erstbefuellung)
     await kontext.Database.MigrateAsync();
     var ergebnis = await KatalogErstbefuellung.AusfuehrenAsync(kontext);
     app.Logger.LogInformation("{Meldung}", ergebnis.Meldung);
+    return;
+}
+
+if (paperlessTest >= 0)
+{
+    var einstellungen = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaperlessEinstellungen>>().Value;
+    using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    try
+    {
+        await PaperlessTestlauf.AusfuehrenAsync(
+            einstellungen, paperlessEmpfaenger, e => new PaperlessUebergabe(http, Microsoft.Extensions.Options.Options.Create(e)), Console.Out);
+    }
+    catch (Exception e) when (e is PaperlessFehler or ArgumentException)
+    {
+        Console.Error.WriteLine($"Paperless-Testlauf fehlgeschlagen: {e.Message}");
+        Environment.ExitCode = 1;
+    }
+
     return;
 }
 

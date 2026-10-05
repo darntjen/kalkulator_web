@@ -66,15 +66,13 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
     /// </summary>
     private async Task<string> HochladenAsync(PaperlessEinstellungen e, PaperlessAuftrag auftrag, CancellationToken abbruch)
     {
+        // Die Felder stehen auf oberster Ebene, nicht unter „blob“ (Antwort der API vom 05.10.2026).
         var anfrage = new JsonObject
         {
-            ["blob"] = new JsonObject
-            {
-                ["filename"] = auftrag.Dateiname,
-                ["content_type"] = "application/pdf",
-                ["byte_size"] = auftrag.Pdf.Length,
-                ["checksum"] = Convert.ToBase64String(MD5.HashData(auftrag.Pdf)),
-            },
+            ["filename"] = auftrag.Dateiname,
+            ["content_type"] = "application/pdf",
+            ["byte_size"] = auftrag.Pdf.Length,
+            ["checksum"] = Convert.ToBase64String(MD5.HashData(auftrag.Pdf)),
         };
         var antwort = await SendeAsync(e, HttpMethod.Post, "blobs", anfrage, abbruch);
         var signiert = Kennung(antwort, "signed_id") ?? throw new PaperlessFehler("Paperless hat beim Hochladen keine signed_id zurückgegeben.");
