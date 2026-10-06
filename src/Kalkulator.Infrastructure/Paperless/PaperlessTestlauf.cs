@@ -160,6 +160,7 @@ public static class PaperlessTestlauf
         ApiSchluessel = e.ApiSchluessel,
         ArbeitsbereichId = e.ArbeitsbereichId,
         AblaufVorlageId = e.AblaufVorlageId,
+        Sprache = e.Sprache,
         Versenden = false,
         Rollen = e.Rollen,
         FeldBreite = e.FeldBreite,

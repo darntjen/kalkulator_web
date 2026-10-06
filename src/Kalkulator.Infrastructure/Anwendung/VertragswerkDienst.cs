@@ -374,8 +374,11 @@ public sealed class VertragswerkDienst(
     {
         try
         {
-            var auftrag = Auftrag(paperlessEinstellungen.Value, werk, firma, gesamt, rollen);
-            var id = await paperless.UebergebenAsync(auftrag, abbruch);
+            var e = paperlessEinstellungen.Value;
+            var auftrag = Auftrag(e, werk, firma, gesamt, rollen);
+            var id = e.UeberAblaufVorlage && e.AblaufVorlageId is { } vorlage
+                ? await paperless.UebergebenUeberVorlageAsync(auftrag, vorlage, abbruch)
+                : await paperless.UebergebenAsync(auftrag, abbruch);
             werk.VermerkeUebergabe(id, zeit.GetUtcNow());
         }
         catch (PaperlessFehler e)

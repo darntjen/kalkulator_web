@@ -97,6 +97,12 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
                     ["name"] = auftrag.Name,
                     ["participants"] = Teilnehmer(auftrag),
                 };
+                MitSprache(e, dokument);
+                if (e.Versenden)
+                {
+                    dokument["state"] = "dispatched";
+                }
+
                 var antwort = await SendeAsync(e, HttpMethod.Post, "documents", dokument, abbruch);
                 return Kennung(antwort, "id") ?? throw new PaperlessFehler("Paperless hat das Dokument angelegt, aber keine Kennung (id) zurückgegeben.");
             }
@@ -186,12 +192,23 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
         };
 
         // Kein template_id: Paperless legt das Dokument sonst aus der Vorlage an und lässt das PDF weg.
+        MitSprache(e, dokument);
         if (e.Versenden)
         {
             dokument["state"] = "dispatched";
         }
 
         return dokument;
+    }
+
+    /// <summary>Sprache des Dokuments, in der Paperless es den Unterzeichnern zeigt (sonst Englisch).</summary>
+    private static void MitSprache(PaperlessEinstellungen e, JsonObject dokument)
+    {
+        if (!string.IsNullOrWhiteSpace(e.Sprache))
+        {
+            dokument["original_content_locale"] = e.Sprache.Trim();
+            dokument["rendering_locale"] = e.Sprache.Trim();
+        }
     }
 
     private static JsonObject Teilnehmer(PaperlessAuftrag auftrag)

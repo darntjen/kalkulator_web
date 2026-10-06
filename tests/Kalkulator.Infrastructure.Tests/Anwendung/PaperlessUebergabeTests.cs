@@ -82,6 +82,7 @@ public class PaperlessUebergabeTests
         Assert.False(d.ContainsKey("state"), "Ohne „Versenden“ bleibt das Dokument ein Entwurf für die technische Freigabe.");
         Assert.False(d.ContainsKey("template_id"));
         Assert.Equal("erika@example.org", d["participants"]!["Kunde"]!["email"]!.GetValue<string>());
+        Assert.Equal(("de-DE", "de-DE"), (d["original_content_locale"]!.GetValue<string>(), d["rendering_locale"]!.GetValue<string>()));
 
         var feld = d["blocks"]!["unterschrift_2"]!;
         Assert.Equal("Block::Input::SignatureInput", feld["type"]!.GetValue<string>());
@@ -103,6 +104,9 @@ public class PaperlessUebergabeTests
         Assert.False(d.ContainsKey("template_id"), "Mit template_id legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg.");
         Assert.Equal(200d, d["blocks"]!["unterschrift_1"]!["settings"]!["absolutePosition"]!["y"]!.GetValue<double>());
         Assert.Equal(150d, d["blocks"]!["unterschrift_1"]!["settings"]!["absoluteSize"]!["width"]!.GetValue<double>());
+
+        e.Sprache = "";
+        Assert.False(PaperlessUebergabe.Dokument(e, Auftrag(), "blob").ContainsKey("rendering_locale"), "Ohne Sprache gilt der Paperless-Standard.");
     }
 
     [Fact]
@@ -147,6 +151,24 @@ public class PaperlessUebergabeTests
         Assert.Equal(555L, dokument["template_id"]!.GetValue<long>());
         Assert.False(dokument.ContainsKey("pdf") || dokument.ContainsKey("blocks") || dokument.ContainsKey("state"));
         Assert.Equal("erika@example.org", dokument["participants"]!["Kunde"]!["email"]!.GetValue<string>());
+        Assert.Equal("de-DE", dokument["rendering_locale"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Ueber_Vorlage_mit_Versenden_geht_das_Dokument_sofort_in_den_Ablauf()
+    {
+        var server = new TestServer(
+            (HttpStatusCode.OK, """{"signed_id":"blob-9","direct_upload":{"url":"https://speicher.test/upload/9"}}"""),
+            (HttpStatusCode.OK, ""),
+            (HttpStatusCode.Created, """{"id":555}"""),
+            (HttpStatusCode.Created, """{"id":777}"""),
+            (HttpStatusCode.NoContent, ""));
+        var e = new PaperlessEinstellungen { Adresse = Einstellungen.Adresse, ApiSchluessel = "x", ArbeitsbereichId = 42, Versenden = true };
+
+        await new PaperlessUebergabe(new HttpClient(server), Options.Create(e)).UebergebenUeberVorlageAsync(Auftrag(), 77, CancellationToken.None);
+
+        Assert.Equal("dispatched", JsonNode.Parse(server.Anfragen[3].Inhalt)!["state"]!.GetValue<string>());
+        Assert.False(JsonNode.Parse(server.Anfragen[2].Inhalt)!.AsObject().ContainsKey("state"), "Die Kopie der Vorlage wird nicht versendet.");
     }
 
     [Fact]

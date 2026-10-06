@@ -17,15 +17,26 @@ public sealed class PaperlessEinstellungen
     public long? ArbeitsbereichId { get; set; }
 
     /// <summary>
-    /// Paperless-Vorlage mit Reihenfolge und Freigaben (Ablauf-Vorlage). Ein Dokument entsteht in Paperless entweder aus
-    /// einer Vorlage oder aus einem PDF; mit <c>template_id</c> bliebe das PDF unberücksichtigt (Testlauf 05.10.2026).
-    /// Die Übergabe nutzt sie deshalb noch nicht; ob eine Kopie der Vorlage mit eigenem PDF trägt, prüft der Testlauf.
+    /// Paperless-Vorlage mit der Reihenfolge der Unterschriften (Ablauf-Vorlage). Ein Dokument entsteht in Paperless
+    /// entweder aus einer Vorlage oder aus einem PDF; mit <c>template_id</c> bliebe das PDF unberücksichtigt (Testlauf
+    /// 05.10.2026). Die Reihenfolge (erst Kunde, dann Nösse) lässt sich über die API nur über eine Vorlage vorgeben.
     /// </summary>
     public long? AblaufVorlageId { get; set; }
 
     /// <summary>
-    /// <c>true</c>: Paperless versendet sofort (state „dispatched“). Standard ist <c>false</c>: Das Dokument liegt als
-    /// Entwurf in Paperless, wird dort technisch geprüft und von dort an den Kunden geschickt.
+    /// <c>true</c>: Die Übergabe legt eine Kopie der Ablauf-Vorlage mit dem PDF und den Feldern an und erzeugt das
+    /// Dokument daraus (Weg wie Testlauf D), damit die Reihenfolge der Vorlage gilt. <c>false</c> (Standard): Das
+    /// Dokument entsteht direkt aus dem PDF; alle unterschreiben dann gleichzeitig.
+    /// </summary>
+    public bool UeberAblaufVorlage { get; set; }
+
+    /// <summary>Sprache des Dokuments für die Unterzeichner (<c>original_content_locale</c>, <c>rendering_locale</c>); leer = Paperless-Standard.</summary>
+    public string? Sprache { get; set; } = "de-DE";
+
+    /// <summary>
+    /// <c>true</c>: Paperless versendet sofort (state „dispatched“) und schickt den Teilnehmern die E-Mails selbst, mit
+    /// Ablauf-Vorlage nacheinander. Standard ist <c>false</c>: Das Dokument liegt als Entwurf in Paperless und wird
+    /// dort von Hand versendet. Die Prüfungen durch AVV und Technik liegen ohnehin vor der Übergabe im Kalkulator.
     /// </summary>
     public bool Versenden { get; set; }
 

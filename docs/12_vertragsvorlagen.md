@@ -229,7 +229,9 @@ eine Reihenfolge vorgeben, siehe unten):
   `template_id` legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg; das PDF lässt sich danach nicht
   austauschen. Beim Anlegen aus einem PDF kennen Teilnehmer nur Name und E-Mail, keine Rolle (`approver`) und keine
   Reihenfolge. Reihenfolge und Freigaben gibt es deshalb nur über eine Vorlage (siehe unten, Testlauf D).
-- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
+- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`): Paperless schickt die E-Mails selbst, erst an den Kunden und nach dessen Unterschrift an Nösse, wenn die Übergabe über die Ablauf-Vorlage läuft.
+- **Reihenfolge** (06.10.2026): Bei einem Dokument direkt aus dem PDF unterschreiben alle gleichzeitig; eine Reihenfolge lässt sich über die API nur mit einer Vorlage vorgeben. Mit `Paperless:UeberAblaufVorlage = true` legt die Übergabe eine Kopie der Ablauf-Vorlage mit PDF und Feldern an und erzeugt das Dokument daraus (wie Testlauf D). Voraussetzung: Testlauf D zeigt das PDF und die Reihenfolge Kunde → Nösse.
+- **Sprache:** `Paperless:Sprache` (Standard `de-DE`) setzt `original_content_locale` und `rendering_locale` des Dokuments, damit Paperless es den Unterzeichnern auf Deutsch zeigt.
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
   Vertragswerk mit seinen Freigaben gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“
@@ -259,8 +261,10 @@ eine Reihenfolge vorgeben, siehe unten):
 | `Paperless:ApiSchluessel` | API-Schlüssel aus Paperless (Umgebungsvariable `Paperless__ApiSchluessel`); leer = Übergabe aus |
 | `Paperless:ArbeitsbereichId` | Arbeitsbereich (workspace_id); leer = Übergabe aus |
 | `Paperless:Adresse` | `https://api.paperless.io/api/v1/` |
-| `Paperless:AblaufVorlageId` | Paperless-Vorlage mit Reihenfolge und Freigaben; vorerst nur im Testlauf (Variante D) |
-| `Paperless:Versenden` | `false` = Entwurf für die technische Freigabe, `true` = sofort versenden |
+| `Paperless:AblaufVorlageId` | Paperless-Vorlage mit der Reihenfolge Kunde → Nösse (50379) |
+| `Paperless:UeberAblaufVorlage` | `true` = Übergabe über eine Kopie der Ablauf-Vorlage (Reihenfolge), `false` = direkt aus dem PDF (alle gleichzeitig) |
+| `Paperless:Versenden` | `false` = Entwurf, in Paperless von Hand versenden; `true` = Paperless versendet sofort |
+| `Paperless:Sprache` | Sprache des Dokuments für die Unterzeichner, Standard `de-DE` |
 | `Paperless:Rollen:<Rolle>:Slot` | Slot-Name in Paperless, falls er vom Rollennamen abweicht |
 | `Paperless:Rollen:<Rolle>:AusVorlage` | `true`: Die Person legt die Paperless-Vorlage fest |
 | `Paperless:Rollen:<Rolle>:Name`, `EMail` | fest eingestellte Person, z. B. für die Geschäftsführung |

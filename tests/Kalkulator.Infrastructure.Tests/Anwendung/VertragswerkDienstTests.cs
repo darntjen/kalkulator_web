@@ -73,6 +73,15 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             Auftraege.Add(auftrag);
             return Fehler is { } f ? throw new PaperlessFehler(f) : Task.FromResult($"pl-{Auftraege.Count}");
         }
+
+        /// <summary>Vorlagen, über die übergeben wurde (Weg über die Ablauf-Vorlage).</summary>
+        public List<long> Vorlagen { get; } = [];
+
+        public Task<string> UebergebenUeberVorlageAsync(PaperlessAuftrag auftrag, long vorlageId, CancellationToken abbruch)
+        {
+            Vorlagen.Add(vorlageId);
+            return UebergebenAsync(auftrag, abbruch);
+        }
     }
 
     private readonly TestPaperless _paperless = new();
@@ -521,10 +530,37 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         Assert.Contains("nur die neueste Ausfertigung", ueberholt.Message, StringComparison.Ordinal);
     }
 
-    private async Task BeideFreigebenAsync(string datenbank, int werkId)
+    private async Task BeideFreigebenAsync(string datenbank, int werkId, PaperlessEinstellungen? paperless = null)
     {
-        await DiensteFuer(datenbank, Avv, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
-        await DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
+        await DiensteFuer(datenbank, Avv, paperless: paperless ?? PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
+        await DiensteFuer(datenbank, Technik, paperless: paperless ?? PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
+    }
+
+    [Fact]
+    public async Task Mit_Ablauf_Vorlage_geht_die_Uebergabe_ueber_die_Vorlage_sonst_direkt_aus_dem_PDF()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        var ueberVorlage = new PaperlessEinstellungen
+        {
+            ApiSchluessel = "test",
+            ArbeitsbereichId = 1,
+            AblaufVorlageId = 50379,
+            UeberAblaufVorlage = true,
+            Rollen = PaperlessAn.Rollen,
+        };
+
+        await BeideFreigebenAsync(datenbank, werkId, ueberVorlage);
+
+        Assert.Equal([50379L], _paperless.Vorlagen);
+        Assert.Equal("pl-1", Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt)).PaperlessDokumentId);
+
+        // Ohne den Schalter bleibt es beim Dokument direkt aus dem PDF, auch wenn eine Ablauf-Vorlage eingetragen ist.
+        var zweite = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        ueberVorlage.UeberAblaufVorlage = false;
+        await BeideFreigebenAsync(datenbank, zweite, ueberVorlage);
+        Assert.Equal([50379L], _paperless.Vorlagen);
+        Assert.Equal(2, _paperless.Auftraege.Count);
     }
 
     [Fact]
