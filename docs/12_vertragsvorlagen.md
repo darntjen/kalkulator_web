@@ -139,6 +139,7 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 | § 6 die beiden Zeilen `[ggf. weitere Bundle-Leistungsscheine …]` und `[ggf. weitere Einzel-Leistungsscheine …]` samt der festen Anlagen davor | Absatz `{{#anlagen}}`, Aufzählungspunkt `{{anlage.code}} — {{anlage.bezeichnung}}`, Absatz `{{/anlagen}}` |
 | „Ort, Datum: ____“ | „Ort, Datum: `{{vertrag.datum}}`“ oder unverändert |
 | Unterschrift beim Auftraggeber bzw. bei Nösse | eigene Zeile `{{unterschrift.Kunde}}______________________________` bzw. `{{unterschrift.Nösse}}…` mit 65 pt Abstand davor (Absatz → Abstand vor), darunter klein „Unterschrift“. So liegt das Paperless-Feld im freien Raum über der Linie und nicht über „Ort, Datum“ (Abschnitt 7; umgesetzt in Fassung 1.1, 06.10.2026) |
+| „Ort, Datum: ____“ und „Name, Funktion: ____“ im Unterschriftsblock | entfallen: Paperless ergänzt Name und Datum bei der Unterschrift selbst (Fassung 1.4, 06.10.2026) |
 
 ### Leistungsschein S14 (Vorlage V5.7)
 
