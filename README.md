@@ -80,6 +80,13 @@ Deshalb entsteht im Codespace nur der Grundvertrag (Testbetrieb `Vertragswerk:Um
 3. Rolle **Vertrieb** → Kundenprojekt → „Vertragswerk erzeugen“. Danach prüfen die Rollen FreigabeAvv und
    FreigabeTechnik.
 
+**Paperless im Codespace:** Den API-Schlüssel als Codespaces-Secret anlegen: GitHub → eigenes Profil → Settings →
+Codespaces → Secrets → „New secret“, Name `PAPERLESS__APISCHLUESSEL`, Repository `kalkulator_web` auswählen. Das Secret
+gehört zum eigenen GitHub-Konto und gilt für alle Codespaces dieses Repositorys, unabhängig vom Branch. Ein bereits
+laufender Codespace bekommt es erst nach einem Neustart (Codespace stoppen und wieder starten). Beim Start reicht
+`.devcontainer/geheimnisse.sh` es an die App weiter; im Protokoll steht dann „Secret Paperless__ApiSchluessel für die App
+übernommen“. Ohne Secret entsteht der Vertrag trotzdem, nur die Übergabe an Paperless entfällt.
+
 Eine neue Fassung der Vorlage legt man in den Ordner (Dateiname mit höherer Version, z. B. `… V1.1.docx`) und gleicht
 erneut ab. Nach einer Änderung an `.devcontainer` (wie hier LibreOffice) fragt Codespaces nach „Rebuild Container“.
 Die Datenbank liegt in einem Docker-Volume und bleibt bei einem normalen Rebuild erhalten, bei „Full Rebuild“ nicht;

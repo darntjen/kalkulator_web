@@ -19,3 +19,7 @@ export Vorlagen__Quelle=Ordner
 export Vorlagen__Ordner="$PWD/.devcontainer/vertragsvorlagen"
 export Pdf__Wandler=LibreOffice
 export Vertragswerk__Umfang__0=GRUNDVERTRAG
+# Codespaces-Secrets (z. B. Paperless__ApiSchluessel), von geheimnisse.sh beim Start abgelegt.
+if [ -r /home/vscode/.kalkulator-geheimnisse ]; then
+  . /home/vscode/.kalkulator-geheimnisse
+fi

@@ -68,8 +68,8 @@ public static class Vertragsdaten
             ["vertrag.connectstufe"] = connect is null ? "Standard" : Vertragspaket.Stufe(connect),
             ["summe.monatlich"] = Euro(version.SummeMonatlich),
             ["summe.einmalig"] = Euro(version.SummeEinmalig),
-            ["positionen"] = Positionen(positionen.Where(p => p.Abrechnungsart != Abrechnungsart.Einmalig), services),
-            ["einmalig"] = Positionen(positionen.Where(p => p.Abrechnungsart == Abrechnungsart.Einmalig), services),
+            ["positionen"] = Verguetung(positionen.Where(p => p.Abrechnungsart != Abrechnungsart.Einmalig), services),
+            ["einmalig"] = Verguetung(positionen.Where(p => p.Abrechnungsart == Abrechnungsart.Einmalig), services),
             ["anlagen"] = quelle.Dokumente.Where(d => d.Art != VertragsdokumentArt.Grundvertrag).Select(d => new Datensatz
             {
                 ["anlage.code"] = d.Art switch
@@ -172,6 +172,42 @@ public static class Vertragsdaten
             ["position.gesamtpreis"] = Euro(p.Betrag),
             ["position.abrechnung"] = p.Abrechnungsart == Abrechnungsart.Einmalig ? "einmalig" : "monatlich",
         })];
+
+    /// <summary>
+    /// Vergütungsübersicht des Vertrags: je Service eine Zeile. Besteht ein Service aus mehreren Positionen (z. B. S14
+    /// aus Bausteinen und dem Ausgleich auf die Preisuntergrenze), erscheint er mit Menge 1 und seinem Monatspreis und
+    /// verweist auf seinen Leistungsschein, der die Einzelheiten nennt (Entscheidung 06.10.2026).
+    /// </summary>
+    private static List<Datensatz> Verguetung(IEnumerable<VersionsPosition> positionen, IReadOnlyDictionary<string, Service> services)
+    {
+        var zeilen = new List<Datensatz>();
+        var sichtbar = positionen.Where(p => p.Betrag != 0 || p.Herkunft != PositionsHerkunft.Katalog).ToList();
+        foreach (var gruppe in sichtbar.GroupBy(p => p.Herkunft != PositionsHerkunft.Sonderposition && p.ServiceCode is { } s && services.ContainsKey(s)
+            ? s
+            : $"#{p.Reihenfolge}", StringComparer.Ordinal))
+        {
+            if (gruppe.Count() == 1 || !services.TryGetValue(gruppe.Key, out var service))
+            {
+                zeilen.AddRange(Positionen(gruppe, services));
+                continue;
+            }
+
+            var summe = gruppe.Sum(p => p.Betrag);
+            var schein = ScheinVon(service);
+            zeilen.Add(new Datensatz
+            {
+                ["position.code"] = schein,
+                ["position.bezeichnung"] = $"{service.Bezeichnung}, Einzelheiten siehe Leistungsschein {schein}",
+                ["position.menge"] = Menge(1),
+                ["position.einheit"] = "",
+                ["position.einzelpreis"] = Euro(summe),
+                ["position.gesamtpreis"] = Euro(summe),
+                ["position.abrechnung"] = gruppe.First().Abrechnungsart == Abrechnungsart.Einmalig ? "einmalig" : "monatlich",
+            });
+        }
+
+        return zeilen;
+    }
 
     /// <summary>Code des Leistungsscheins, zu dem ein Service gehört (S01-STD → S01).</summary>
     private static string ScheinVon(Service service) => service.Leistungsschein?.Code ?? service.Code;

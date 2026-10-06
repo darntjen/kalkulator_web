@@ -9,6 +9,7 @@
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
   "postCreateCommand": "bash .devcontainer/einrichten.sh",
+  "postStartCommand": "bash .devcontainer/geheimnisse.sh",
   "forwardPorts": [5226],
   "portsAttributes": {
     "5226": { "label": "Kalkulator", "onAutoForward": "openBrowser" }

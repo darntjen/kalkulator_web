@@ -101,13 +101,16 @@ public class VertragsdatenTests
         Assert.Equal(
             [
                 "S01 | Nösse Connect Standard | 1 | 249,00 € monatlich",
-                "S14 | Grundpauschale Backup | 1 | 99,00 € monatlich",
-                "S14 | Gesicherter Server | 3 | 45,00 € monatlich",
+                "S14 | Server Backup, Einzelheiten siehe Leistungsschein S14 | 1 | 144,00 € monatlich",
                 "Gesamt |  |  | 393,00 €",
                 "S01 | Onboarding XS | 1 | 900,00 € einmalig",
             ],
             tabellen[0]);
         Assert.Equal(["Anlage AVV — Auftragsverarbeitungsvereinbarung", "S01 — Nösse Connect Standard", "S14 — Server Backup"], absaetze.Skip(2));
+
+        // Der Leistungsschein selbst nennt die Bausteine weiterhin einzeln.
+        var schein = Assert.IsType<List<Kalkulator.Documents.Datensatz>>(Vertragsdaten.Fuer(quelle, quelle.Dokumente[3])["schein.positionen"]);
+        Assert.Equal(["Grundpauschale Backup", "Gesicherter Server"], schein.Select(z => z["position.bezeichnung"]));
     }
 
     [Fact]
