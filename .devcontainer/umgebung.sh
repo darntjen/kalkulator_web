@@ -13,3 +13,9 @@ export ConnectionStrings__Kalkulator="Server=db,1433;Database=Kalkulator;User Id
 export ASPNETCORE_ENVIRONMENT=Development
 export Kundenablage__Quelle=Ordner
 export Kundenablage__Ordner="$PWD/.devcontainer/beispielablage"
+# Vertragsvorlagen aus dem Ordner im Repository (statt SharePoint), PDF über LibreOffice. Testbetrieb: Solange nur der
+# Rahmenvertrag umgestellt ist, entsteht im Vertragswerk nur der Grundvertrag (Vertragswerk:Umfang).
+export Vorlagen__Quelle=Ordner
+export Vorlagen__Ordner="$PWD/.devcontainer/vertragsvorlagen"
+export Pdf__Wandler=LibreOffice
+export Vertragswerk__Umfang__0=GRUNDVERTRAG

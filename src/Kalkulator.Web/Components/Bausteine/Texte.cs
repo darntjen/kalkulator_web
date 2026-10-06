@@ -71,6 +71,12 @@ public static class Texte
         _ => "niedrig",
     };
 
+    public static string Vertragsfreigabe(VertragsfreigabeArt art) => art switch
+    {
+        VertragsfreigabeArt.Avv => "AVV",
+        _ => "Technik",
+    };
+
     public static string AnalyseStatus(AnalyseAngebotsStatus status) => status switch
     {
         AnalyseAngebotsStatus.Versendet => "versendet",

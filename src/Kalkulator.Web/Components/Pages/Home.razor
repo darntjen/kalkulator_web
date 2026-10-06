@@ -1,11 +1,36 @@
 @page "/"
 @inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
+@inject VertragswerkDienst Vertragswerk
 
 <PageTitle>Start · Managed-Services-Kalkulator</PageTitle>
 
 <h1>Managed-Services-Kalkulator</h1>
 
 <p>Managed Services kalkulieren, Angebote erstellen und Vertragsunterlagen zusammenstellen.</p>
+
+@if (_offen is { Count: > 0 } offen)
+{
+    <section class="karte" id="offene-freigaben">
+        <div class="karte-kopf">
+            <h2>Offene Freigaben <span class="pille">@offen.Count</span></h2>
+            <span class="unterzeile">Vertragswerke, die auf deine Prüfung warten</span>
+        </div>
+        <ul class="karte-inhalt ablage-liste">
+            @foreach (var o in offen)
+            {
+                <li>
+                    <a href="projekte/@o.ProjektId#vertragswerk"><strong>@o.Firma</strong></a>
+                    <span class="unterzeile">@o.Projekt · Vertrag @o.Nummer, @(o.Ausfertigung). Ausfertigung vom @Texte.Zeitpunkt(o.ErstelltAm) · offen: @string.Join(", ", o.Offen.Select(Texte.Vertragsfreigabe))</span>
+                    <a class="knopf zweit klein" href="vertragswerke/@o.VertragswerkId/ansicht" target="_blank" rel="noopener">Ansehen</a>
+                </li>
+            }
+        </ul>
+    </section>
+}
+else if (new Berechtigung(Benutzer).DarfVertraegeFreigeben)
+{
+    <p class="meldung info">Keine Vertragswerke warten auf deine Freigabe.</p>
+}
 
 <div class="kacheln">
     <a class="kachel" href="projekte">
@@ -24,3 +49,9 @@
         <p>Kennzahlen zu Kalkulationen, Angeboten und Abschlüssen.</p>
     </a>
 </div>
+
+@code {
+    private IReadOnlyList<OffeneVertragsfreigabe>? _offen;
+
+    protected override async Task OnInitializedAsync() => _offen = await Vertragswerk.OffeneFreigabenAsync();
+}

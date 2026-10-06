@@ -29,6 +29,8 @@ public class VertragswerkDienstTests(SqlServerFixture db)
     };
 
     private static readonly TestBenutzer Vertrieb = new("vertrieb@noesse.de", Rollen.Vertrieb);
+    private static readonly TestBenutzer Avv = new("avv@noesse.de", Rollen.FreigabeAvv);
+    private static readonly TestBenutzer Technik = new("technik@noesse.de", Rollen.FreigabeTechnik);
 
     internal sealed record Dienste(KundenprojektDienst Projekte, KalkulationsDienst Kalkulationen, AngebotsDienst Angebote, VertragswerkDienst Vertragswerk);
 
@@ -75,7 +77,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
 
     private readonly TestPaperless _paperless = new();
 
-    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null, PaperlessEinstellungen? paperless = null)
+    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null, PaperlessEinstellungen? paperless = null, List<string>? umfang = null)
     {
         var fabrik = new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, benutzer));
         var einstellungen = Options.Create(new AngebotsEinstellungen { Vorlagenordner = AngebotsdokumentTests.Vorlagenordner() });
@@ -84,7 +86,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             new KalkulationsDienst(fabrik, benutzer, TimeProvider.System),
             new AngebotsDienst(fabrik, benutzer, TimeProvider.System, einstellungen),
             new VertragswerkDienst(fabrik, benutzer, TimeProvider.System, wandler ?? _wandler,
-                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx") }),
+                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx"), Umfang = umfang ?? [] }),
                 _paperless, Options.Create(paperless ?? new PaperlessEinstellungen())));
     }
 
@@ -249,6 +251,37 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         var bereit = await dienste.Vertragswerk.BereitschaftAsync(projekt);
         Assert.Null(bereit.Sperrgrund);
         Assert.True(bereit.DarfErzeugen);
+    }
+
+    [Fact]
+    public async Task Im_Testbetrieb_entsteht_nur_der_Grundvertrag_mit_vollstaendiger_Anlagenliste()
+    {
+        var datenbank = await NeueDatenbankAsync();
+        var dienste = DiensteFuer(datenbank, Vertrieb, umfang: ["Grundvertrag"]);
+        var (projekt, id) = await GewonnenAsync(datenbank, dienste);
+
+        var ohne = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.Contains("GRUNDVERTRAG", ohne.Sperrgrund, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AVV", ohne.Sperrgrund, StringComparison.Ordinal);
+
+        await AktiviereVorlageAsync(datenbank, "GRUNDVERTRAG", Grundvertrag);
+        var bereit = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.Null(bereit.Sperrgrund);
+        Assert.Equal(["GRUNDVERTRAG"], bereit.Vorschau!.Erzeugte.Select(Vertragsvorschau.Code));
+        Assert.Contains(bereit.Vorschau.Ausgelassen, d => d.Dokument.Code == "S01");
+        Assert.Empty((await dienste.Vertragswerk.VorschauAsync(id, ["S01-STD"])).OhneVorlage);
+
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt);
+
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Equal(["GRUNDVERTRAG"], werk.Dokumente.Select(d => d.Code));
+        Assert.Equal(2, _wandler.Dokumente.Count);
+        var grundvertrag = Text(_wandler.Dokumente[0]);
+        Assert.Contains("Anlage AVV — Auftragsverarbeitungsvereinbarung", grundvertrag, StringComparison.Ordinal);
+        Assert.Contains("S01 — ", grundvertrag, StringComparison.Ordinal);
+        var (_, zip) = await dienste.Vertragswerk.DateiAsync(werkId, zip: true);
+        using var archiv = new System.IO.Compression.ZipArchive(new MemoryStream(zip));
+        Assert.Equal(2, archiv.Entries.Count);
     }
 
     [Fact]
@@ -420,6 +453,12 @@ public class VertragswerkDienstTests(SqlServerFixture db)
 
         var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, [.. Kunde, new Unterzeichner("Sonstige", "X", "x@example.org")]);
 
+        // Erst nach den Freigaben durch AVV und Technik geht das Vertragswerk an Paperless.
+        Assert.Empty(_paperless.Auftraege);
+        await DiensteFuer(datenbank, Avv, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
+        Assert.Empty(_paperless.Auftraege);
+        await DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
+
         var auftrag = Assert.Single(_paperless.Auftraege);
         var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
         Assert.Equal(("pl-1", (string?)null), (werk.PaperlessDokumentId, werk.UebergabeFehler));
@@ -450,6 +489,9 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         _paperless.Fehler = "Paperless hat „documents“ abgelehnt (401 Unauthorized).";
 
         var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        var vorFreigabe = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErneutUebergebenAsync(werkId));
+        Assert.Contains("erst nach den Freigaben", vorFreigabe.Message, StringComparison.Ordinal);
+        await BeideFreigebenAsync(datenbank, werkId);
 
         var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
         Assert.Null(werk.PaperlessDokumentId);
@@ -472,10 +514,65 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         // Eine überholte Ausfertigung geht nicht mehr an Paperless.
         _paperless.Fehler = "Paperless nicht erreichbar.";
         var zweite = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        await BeideFreigebenAsync(datenbank, zweite);
         _paperless.Fehler = null;
         await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
         var ueberholt = await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErneutUebergebenAsync(zweite));
         Assert.Contains("nur die neueste Ausfertigung", ueberholt.Message, StringComparison.Ordinal);
+    }
+
+    private async Task BeideFreigebenAsync(string datenbank, int werkId)
+    {
+        await DiensteFuer(datenbank, Avv, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
+        await DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
+    }
+
+    [Fact]
+    public async Task Freigaben_durch_AVV_und_Technik_Ablehnung_sperrt_die_Ausfertigung()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        var avv = DiensteFuer(datenbank, Avv, paperless: PaperlessAn).Vertragswerk;
+        var technik = DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk;
+        var erste = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+
+        // Offene Freigaben je Rolle; der Vertrieb sieht keine, Freigebende sehen das Projekt.
+        Assert.Empty(await dienste.Vertragswerk.OffeneFreigabenAsync());
+        var offen = Assert.Single(await avv.OffeneFreigabenAsync());
+        Assert.Equal((erste, projekt), (offen.VertragswerkId, offen.ProjektId));
+        Assert.Equal([VertragsfreigabeArt.Avv], offen.Offen);
+        Assert.NotEmpty((await avv.DateiAsync(erste, zip: false)).Inhalt);
+
+        // Jede Rolle nur ihre Prüfung; der Vertrieb keine.
+        await Assert.ThrowsAsync<KeinZugriffException>(() => dienste.Vertragswerk.FreigebenAsync(erste, VertragsfreigabeArt.Avv, true));
+        await Assert.ThrowsAsync<KeinZugriffException>(() => avv.FreigebenAsync(erste, VertragsfreigabeArt.Technik, true));
+
+        await avv.FreigebenAsync(erste, VertragsfreigabeArt.Avv, true, " passt ");
+        Assert.Empty(await avv.OffeneFreigabenAsync());
+        var doppelt = await Assert.ThrowsAsync<InvalidOperationException>(() => avv.FreigebenAsync(erste, VertragsfreigabeArt.Avv, true));
+        Assert.Contains("bereits erfolgt", doppelt.Message, StringComparison.Ordinal);
+
+        // Ablehnung nur mit Begründung; sie sperrt die Ausfertigung, nichts geht an Paperless.
+        await Assert.ThrowsAsync<ArgumentException>(() => technik.FreigebenAsync(erste, VertragsfreigabeArt.Technik, false, "  "));
+        await technik.FreigebenAsync(erste, VertragsfreigabeArt.Technik, false, "S14: Sicherungsvolumen falsch");
+        Assert.Empty(_paperless.Auftraege);
+        Assert.Empty(await technik.OffeneFreigabenAsync());
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.True(werk.IstAbgelehnt);
+        Assert.False(werk.IstFreigegeben);
+        Assert.Equal(("passt", "avv@noesse.de"), (werk.Freigabe(VertragsfreigabeArt.Avv)!.Begruendung, werk.Freigabe(VertragsfreigabeArt.Avv)!.Von));
+        Assert.Equal(("S14: Sicherungsvolumen falsch", false), (werk.Freigabe(VertragsfreigabeArt.Technik)!.Begruendung, werk.Freigabe(VertragsfreigabeArt.Technik)!.Erteilt));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => dienste.Vertragswerk.ErneutUebergebenAsync(erste));
+
+        // Neue Ausfertigung: Freigaben beginnen von vorn, die alte lässt sich nicht mehr prüfen.
+        var zweite = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        Assert.Equal(zweite, Assert.Single(await technik.OffeneFreigabenAsync()).VertragswerkId);
+        var ueberholt = await Assert.ThrowsAsync<InvalidOperationException>(() => technik.FreigebenAsync(erste, VertragsfreigabeArt.Technik, true));
+        Assert.Contains("überholt", ueberholt.Message, StringComparison.Ordinal);
+        await technik.FreigebenAsync(zweite, VertragsfreigabeArt.Technik, true);
+        Assert.Empty(_paperless.Auftraege);
+        await avv.FreigebenAsync(zweite, VertragsfreigabeArt.Avv, true);
+        Assert.Equal("pl-1", (await dienste.Vertragswerk.ListeAsync(projekt))[0].PaperlessDokumentId);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => avv.FreigebenAsync(zweite, VertragsfreigabeArt.Avv, true));
     }
 
     [Fact]

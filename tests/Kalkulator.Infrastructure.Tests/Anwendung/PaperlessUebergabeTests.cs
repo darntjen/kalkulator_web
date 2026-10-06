@@ -61,7 +61,7 @@ public class PaperlessUebergabeTests
         var (blob, blobInhalt) = server.Anfragen[0];
         Assert.Equal((HttpMethod.Post, "https://paperless.test/api/v1/blobs"), (blob.Method, blob.RequestUri!.ToString()));
         Assert.Equal("Bearer test-schluessel", blob.Headers.Authorization!.ToString());
-        var b = JsonNode.Parse(blobInhalt)!["blob"]!;
+        var b = JsonNode.Parse(blobInhalt)!; // Felder auf oberster Ebene, wie die API sie verlangt
         Assert.Equal(("Vertrag_MS-A-2026-0001.pdf", "application/pdf", Pdf.Length), (b["filename"]!.GetValue<string>(), b["content_type"]!.GetValue<string>(), b["byte_size"]!.GetValue<int>()));
         Assert.Equal(Convert.ToBase64String(System.Security.Cryptography.MD5.HashData(Pdf)), b["checksum"]!.GetValue<string>());
 
@@ -87,20 +87,20 @@ public class PaperlessUebergabeTests
         Assert.Equal("Block::Input::SignatureInput", feld["type"]!.GetValue<string>());
         Assert.Equal("Nösse", feld["owner_participants_slot_names"]![0]!.GetValue<string>());
         Assert.Equal(3, feld["pdf_page_number"]!.GetValue<int>());
-        // Ursprung oben links: 842 − 200 − 56 = 586.
-        Assert.Equal((320d, 586d), (feld["settings"]!["absolutePosition"]!["x"]!.GetValue<double>(), feld["settings"]!["absolutePosition"]!["y"]!.GetValue<double>()));
-        Assert.Equal((180d, 56d), (feld["settings"]!["absoluteSize"]!["width"]!.GetValue<double>(), feld["settings"]!["absoluteSize"]!["height"]!.GetValue<double>()));
+        // Ursprung oben links: 842 − 200 − 56 = 586 pt; Paperless rechnet in Pixeln (× 96/72).
+        Assert.Equal((426.7, 781.3), (feld["settings"]!["absolutePosition"]!["x"]!.GetValue<double>(), feld["settings"]!["absolutePosition"]!["y"]!.GetValue<double>()));
+        Assert.Equal((240d, 74.7), (feld["settings"]!["absoluteSize"]!["width"]!.GetValue<double>(), feld["settings"]!["absoluteSize"]!["height"]!.GetValue<double>()));
     }
 
     [Fact]
-    public void Mit_Vorlage_Versand_und_PDF_Koordinaten()
+    public void Ablauf_Vorlage_bleibt_beim_PDF_weg_Versand_und_PDF_Koordinaten()
     {
-        var e = new PaperlessEinstellungen { ApiSchluessel = "x", ArbeitsbereichId = 1, VorlageId = 77, Versenden = true, YVonOben = false, FeldBreite = 150, FeldHoehe = 40 };
+        var e = new PaperlessEinstellungen { ApiSchluessel = "x", ArbeitsbereichId = 1, AblaufVorlageId = 77, Versenden = true, YVonOben = false, FeldBreite = 150, FeldHoehe = 40, Skalierung = 1 };
 
         var d = PaperlessUebergabe.Dokument(e, Auftrag(), "blob");
 
         Assert.Equal("dispatched", d["state"]!.GetValue<string>());
-        Assert.Equal(77, d["template_id"]!.GetValue<long>());
+        Assert.False(d.ContainsKey("template_id"), "Mit template_id legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg.");
         Assert.Equal(200d, d["blocks"]!["unterschrift_1"]!["settings"]!["absolutePosition"]!["y"]!.GetValue<double>());
         Assert.Equal(150d, d["blocks"]!["unterschrift_1"]!["settings"]!["absoluteSize"]!["width"]!.GetValue<double>());
     }
@@ -109,7 +109,8 @@ public class PaperlessUebergabeTests
     public async Task Abgelehnte_Anfrage_und_fehlende_Einrichtung_werden_verstaendlich_gemeldet()
     {
         var server = new TestServer(
-            (HttpStatusCode.OK, """{"signed_id":"blob-1"}"""),
+            (HttpStatusCode.OK, """{"signed_id":"blob-1","direct_upload":{"url":"https://speicher.test/upload/1"}}"""),
+            (HttpStatusCode.OK, ""),
             (HttpStatusCode.UnprocessableEntity, """{"errors":{"participants":["ist ung\u00fcltig"]}}"""));
 
         var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
@@ -117,10 +118,79 @@ public class PaperlessUebergabeTests
         Assert.Contains("documents", fehler.Message, StringComparison.Ordinal);
         Assert.Contains("422", fehler.Message, StringComparison.Ordinal);
         Assert.Contains("\"participants\":[\"ist ungültig\"]", fehler.Message, StringComparison.Ordinal);
-        Assert.Equal(2, server.Anfragen.Count);
+        Assert.Equal(3, server.Anfragen.Count);
 
         var aus = await Assert.ThrowsAsync<PaperlessFehler>(() =>
             new PaperlessUebergabe(new HttpClient(new TestServer()), Options.Create(new PaperlessEinstellungen())).UebergebenAsync(Auftrag(), CancellationToken.None));
         Assert.Contains("nicht eingerichtet", aus.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Ueber_Vorlage_kopiert_die_Vorlage_mit_PDF_legt_das_Dokument_an_und_loescht_die_Kopie()
+    {
+        var server = new TestServer(
+            (HttpStatusCode.OK, """{"signed_id":"blob-9","direct_upload":{"url":"https://speicher.test/upload/9"}}"""),
+            (HttpStatusCode.OK, ""),
+            (HttpStatusCode.Created, """{"id":555}"""),
+            (HttpStatusCode.Created, """{"id":777}"""),
+            (HttpStatusCode.NoContent, ""));
+
+        var id = await new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenUeberVorlageAsync(Auftrag(), 77, CancellationToken.None);
+
+        Assert.Equal("777", id);
+        Assert.Equal(
+            ["POST /api/v1/blobs", "PUT /upload/9", "POST /api/v1/templates", "POST /api/v1/documents", "DELETE /api/v1/templates/555"],
+            server.Anfragen.Select(a => $"{a.Anfrage.Method} {a.Anfrage.RequestUri!.AbsolutePath}"));
+        var vorlage = JsonNode.Parse(server.Anfragen[2].Inhalt)!.AsObject();
+        Assert.Equal((77L, "blob-9", 2), (vorlage["template_id"]!.GetValue<long>(), vorlage["pdf"]!.GetValue<string>(), vorlage["blocks"]!.AsObject().Count));
+        var dokument = JsonNode.Parse(server.Anfragen[3].Inhalt)!.AsObject();
+        Assert.Equal(555L, dokument["template_id"]!.GetValue<long>());
+        Assert.False(dokument.ContainsKey("pdf") || dokument.ContainsKey("blocks") || dokument.ContainsKey("state"));
+        Assert.Equal("erika@example.org", dokument["participants"]!["Kunde"]!["email"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Ueber_Vorlage_loescht_die_Kopie_auch_wenn_das_Dokument_scheitert()
+    {
+        var server = new TestServer(
+            (HttpStatusCode.OK, """{"signed_id":"blob-9","direct_upload":{"url":"https://speicher.test/upload/9"}}"""),
+            (HttpStatusCode.OK, ""),
+            (HttpStatusCode.Created, """{"id":555}"""),
+            (HttpStatusCode.UnprocessableEntity, """{"error":"slot missing"}"""),
+            (HttpStatusCode.NoContent, ""));
+
+        var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenUeberVorlageAsync(Auftrag(), 77, CancellationToken.None));
+
+        Assert.Contains("slot missing", fehler.Message, StringComparison.Ordinal);
+        Assert.Equal("DELETE /api/v1/templates/555", $"{server.Anfragen[^1].Anfrage.Method} {server.Anfragen[^1].Anfrage.RequestUri!.AbsolutePath}");
+    }
+
+    [Fact]
+    public async Task Ohne_Upload_Ziel_bricht_die_Uebergabe_ab_statt_ein_leeres_Dokument_anzulegen()
+    {
+        var server = new TestServer((HttpStatusCode.OK, """{"signed_id":"blob-1","upload":{"href":"https://geheim.test/x?sig=abc"}}"""));
+
+        var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).UebergebenAsync(Auftrag(), CancellationToken.None));
+
+        Assert.Single(server.Anfragen);
+        Assert.Contains("kein Upload-Ziel", fehler.Message, StringComparison.Ordinal);
+        Assert.Contains("{signed_id, upload{href}}", fehler.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("sig=abc", fehler.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Protokoll_nennt_Anfrage_Status_und_Aufbau_ohne_Werte()
+    {
+        var ausgabe = new StringWriter();
+        var server = new TestServer((HttpStatusCode.OK, """{"signed_id":"blob-geheim","direct_upload":{"url":"https://speicher.test/u?sig=abc","headers":{"Content-MD5":"x"}}}"""));
+        using var http = new HttpClient(new PaperlessProtokoll(ausgabe, server));
+
+        var antwort = await http.PostAsync("https://paperless.test/api/v1/blobs?token=geheim", new StringContent("{}"));
+
+        Assert.Equal("""    POST paperless.test/api/v1/blobs → 200 {signed_id, direct_upload{url, headers{Content-MD5}}}""", ausgabe.ToString().TrimEnd());
+        Assert.DoesNotContain("geheim", ausgabe.ToString(), StringComparison.Ordinal);
+        Assert.Contains("blob-geheim", await antwort.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 }

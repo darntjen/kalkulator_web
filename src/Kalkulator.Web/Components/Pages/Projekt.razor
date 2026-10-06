@@ -46,7 +46,7 @@ else
                         @if (b.Vorschau is { } vorschau)
                         {
                             <ol class="dokumentliste">
-                                @foreach (var d in vorschau.Dokumente)
+                                @foreach (var d in vorschau.Erzeugte)
                                 {
                                     <li>
                                         @d.Dokument.Bezeichnung
@@ -61,6 +61,10 @@ else
                                     </li>
                                 }
                             </ol>
+                            @if (vorschau.Ausgelassen.Count > 0)
+                            {
+                                <p class="meldung warnung">Testbetrieb: Erzeugt wird nur @string.Join(", ", vorschau.Umfang!). Ohne eigenes Dokument, aber in der Anlagenliste des Vertrags: @string.Join(", ", vorschau.Ausgelassen.Select(d => d.Dokument.Code)).</p>
+                            }
                         }
                         @if (b.Sperrgrund is { } grund)
                         {
@@ -94,7 +98,7 @@ else
                         {
                             <div class="aktionen">
                                 <button type="button" class="knopf" disabled="@(b.Sperrgrund is not null || _erzeugt)" @onclick="VertragswerkErzeugenAsync">@(_erzeugt ? "Erzeuge Vertragswerk …" : "Vertragswerk erzeugen")</button>
-                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen@(b.Paperless ? "; danach geht die Gesamtdatei mit den Unterschriftsfeldern an Paperless zur technischen Freigabe" : "").</span>
+                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen. Danach prüfen AVV und Technik die Gesamtdatei@(b.Paperless ? "; nach beiden Freigaben geht sie mit den Unterschriftsfeldern an Paperless" : "").</span>
                             </div>
                         }
                     </div>
@@ -102,7 +106,7 @@ else
                     {
                         <div class="tab-rahmen">
                             <table class="liste">
-                                <thead><tr><th>Ausfertigung</th><th>Erstellt</th><th>Dokumente</th>@if (MitPaperless) {<th>Paperless</th>}<th></th></tr></thead>
+                                <thead><tr><th>Ausfertigung</th><th>Erstellt</th><th>Dokumente</th><th>Freigaben</th>@if (MitPaperless) {<th>Paperless</th>}<th></th></tr></thead>
                                 <tbody>
                                     @foreach (var w in _vertragswerke)
                                     {
@@ -110,6 +114,50 @@ else
                                             <td><strong>@w.Nummer</strong> · @w.Ausfertigung.</td>
                                             <td>@Texte.Zeitpunkt(w.ErstelltAm)<br /><span class="unterzeile">@w.ErstelltVon</span></td>
                                             <td>@w.Dokumente.Count</td>
+                                            <td class="freigaben">
+                                                @foreach (var art in Enum.GetValues<VertragsfreigabeArt>())
+                                                {
+                                                    var f = w.Freigabe(art);
+                                                    <div class="freigabe">
+                                                        <strong>@Texte.Vertragsfreigabe(art)</strong>
+                                                        @if (f is null)
+                                                        {
+                                                            <span class="pille">@(w.IstAbgelehnt || w.PaperlessDokumentId is not null || w != _vertragswerke[0] ? "entfällt" : "offen")</span>
+                                                        }
+                                                        else if (f.Erteilt)
+                                                        {
+                                                            <span class="pille st-Gewonnen">freigegeben</span>
+                                                            <span class="unterzeile">@f.Von · @Texte.Zeitpunkt(f.Am)@(string.IsNullOrWhiteSpace(f.Begruendung) ? "" : " · " + f.Begruendung)</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="pille st-Verloren">abgelehnt</span>
+                                                            <span class="unterzeile">@f.Von · @Texte.Zeitpunkt(f.Am): @f.Begruendung</span>
+                                                        }
+                                                        @if (f is null && DarfPruefen(w, art))
+                                                        {
+                                                            @if (_ablehnung == (w.Id, art))
+                                                            {
+                                                                <div class="stapel">
+                                                                    <label for="begruendung-@w.Id-@art">Begründung der Ablehnung *</label>
+                                                                    <textarea id="begruendung-@w.Id-@art" rows="2" maxlength="1000" @bind="_begruendung" @bind:event="oninput"></textarea>
+                                                                    <div class="aktionen">
+                                                                        <button type="button" class="knopf gefahr klein" disabled="@string.IsNullOrWhiteSpace(_begruendung)" @onclick="() => PruefenAsync(w.Id, art, false)">Ablehnung senden</button>
+                                                                        <button type="button" class="knopf zweit klein" @onclick="() => _ablehnung = null">Abbrechen</button>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="aktionen">
+                                                                    <button type="button" class="knopf klein" @onclick="() => PruefenAsync(w.Id, art, true)">Freigeben</button>
+                                                                    <button type="button" class="knopf zweit klein" @onclick="() => { _ablehnung = (w.Id, art); _begruendung = null; }">Ablehnen</button>
+                                                                </div>
+                                                            }
+                                                        }
+                                                    </div>
+                                                }
+                                            </td>
                                             @if (MitPaperless)
                                             {
                                                 <td>
@@ -131,9 +179,10 @@ else
                                             }
                                             <td>
                                                 <div class="aktionen">
+                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/ansicht" target="_blank" rel="noopener">Ansehen</a>
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
-                                                    @if (_bereitschaft?.Paperless == true && _bereitschaft.DarfErzeugen && w.PaperlessDokumentId is null && w == _vertragswerke[0])
+                                                    @if (_bereitschaft?.Paperless == true && _bereitschaft.DarfErzeugen && w.PaperlessDokumentId is null && w.IstFreigegeben && w == _vertragswerke[0])
                                                     {
                                                         <button type="button" class="knopf zweit klein" disabled="@_erzeugt" @onclick="() => ErneutUebergebenAsync(w.Id)">@(w.UebergabeFehler is null ? "An Paperless übergeben" : "Erneut übergeben")</button>
                                                     }
@@ -373,6 +422,8 @@ else
     private VertragswerkBereitschaft? _bereitschaft;
     private IReadOnlyList<VertragswerkZeile> _vertragswerke = [];
     private bool _erzeugt;
+    private (int Werk, VertragsfreigabeArt Art)? _ablehnung;
+    private string? _begruendung;
     private readonly Dictionary<string, UnterzeichnerEingabe> _unterzeichner = new(StringComparer.Ordinal);
 
     private sealed class UnterzeichnerEingabe
@@ -506,9 +557,33 @@ else
             { PaperlessDokumentId: { } pid } => ($"Vertragswerk {(neu ? "erzeugt und " : "")}an Paperless übergeben (Dokument {pid}). Technische Freigabe und Versand an den Kunden laufen dort.", false),
             { UebergabeFehler: { } fehler } when neu => ($"Vertragswerk erzeugt und gespeichert, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Bitte später „Erneut übergeben“.", true),
             { UebergabeFehler: { } fehler } => ($"Die Übergabe an Paperless ist erneut fehlgeschlagen: {fehler}", true),
-            _ => ("Vertragswerk erzeugt. Gesamt-PDF und ZIP stehen zum Herunterladen bereit.", false),
+            _ when neu => ("Vertragswerk erzeugt. Es wartet jetzt auf die Freigaben durch AVV und Technik" + (_bereitschaft?.Paperless == true ? "; danach geht es an Paperless." : "."), false),
+            _ => ("Das Vertragswerk ist noch nicht an Paperless übergeben.", false),
         };
     }
+
+    /// <summary>Freigeben bzw. ablehnen dürfen die Rollen der Prüfung, und nur bei der neuesten, noch offenen Ausfertigung.</summary>
+    private bool DarfPruefen(VertragswerkZeile w, VertragsfreigabeArt art) =>
+        w == _vertragswerke[0] && !w.IstAbgelehnt && w.PaperlessDokumentId is null && Vertragswerk.Recht.DarfVertragFreigeben(art);
+
+    private Task PruefenAsync(int werkId, VertragsfreigabeArt art, bool erteilt) => AusfuehrenAsync(async () =>
+    {
+        await Vertragswerk.FreigebenAsync(werkId, art, erteilt, erteilt ? null : _begruendung);
+        (_ablehnung, _begruendung) = (null, null);
+        if (!erteilt)
+        {
+            return ($"{Texte.Vertragsfreigabe(art)}: abgelehnt. Der Vertrieb korrigiert und erzeugt das Vertragswerk neu.", false);
+        }
+
+        var werk = (await Vertragswerk.ListeAsync(Id)).First(w => w.Id == werkId);
+        return werk switch
+        {
+            { PaperlessDokumentId: { } pid } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
+            { UebergabeFehler: { } fehler } => ($"{Texte.Vertragsfreigabe(art)} freigegeben, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Der Vertrieb kann sie wiederholen.", true),
+            { IstFreigegeben: true } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor.", false),
+            _ => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Es fehlt noch die andere Freigabe.", false),
+        };
+    });
 
     /// <summary>Führt eine Aktion aus, zeigt Erfolg oder die fachliche Fehlermeldung und lädt das Projekt neu.</summary>
     private Task AusfuehrenAsync(Func<Task> aktion, string? erfolg) => AusfuehrenAsync(async () =>

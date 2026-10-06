@@ -3,9 +3,9 @@ namespace Kalkulator.Domain.Projekte;
 /// <summary>
 /// Erzeugtes Vertragswerk eines gewonnenen Kundenprojekts (#26, Teil C): alle Dokumente als PDF, eine Gesamtdatei für
 /// den Kunden und ein ZIP. Grundlage sind die eingefrorene Version des angenommenen Angebots und die bei der Erzeugung
-/// aktiven Vorlagenfassungen, die in <see cref="Dokumente"/> festgehalten werden. Unveränderlich bis auf den Vermerk
-/// der Übergabe an Paperless (Teil D); wird es neu erzeugt (z. B. nach einer korrigierten Vorlage), entsteht eine
-/// weitere Ausfertigung.
+/// aktiven Vorlagenfassungen, die in <see cref="Dokumente"/> festgehalten werden. Unveränderlich bis auf die
+/// Vertragsfreigaben (AVV und Technik) und den Vermerk der Übergabe an Paperless (Teil D); wird es neu erzeugt (z. B.
+/// nach einer Ablehnung oder einer korrigierten Vorlage), entsteht eine weitere Ausfertigung ohne Freigaben.
 /// </summary>
 public class Vertragswerk
 {
@@ -44,6 +44,58 @@ public class Vertragswerk
 
     public bool IstUebergeben => PaperlessDokumentId is not null;
 
+    /// <summary>Prüfungen dieser Ausfertigung durch AVV und Technik (Entscheidung 05.10.2026), parallel.</summary>
+    public List<Vertragsfreigabe> Freigaben { get; } = [];
+
+    /// <summary>Eine Ablehnung sperrt die Ausfertigung; der Vertrieb korrigiert und erzeugt neu.</summary>
+    public bool IstAbgelehnt => Freigaben.Any(f => !f.Erteilt);
+
+    /// <summary>Beide Freigaben liegen vor; erst dann geht das Vertragswerk an Paperless.</summary>
+    public bool IstFreigegeben => !IstAbgelehnt && Enum.GetValues<VertragsfreigabeArt>().All(a => Freigaben.Any(f => f.Art == a && f.Erteilt));
+
+    public Vertragsfreigabe? Freigabe(VertragsfreigabeArt art) => Freigaben.FirstOrDefault(f => f.Art == art);
+
+    /// <summary>
+    /// Vermerkt die Freigabe bzw. Ablehnung einer Prüfung. Eine Ablehnung braucht eine Begründung; nach einer Ablehnung
+    /// oder der Übergabe an Paperless ist nichts mehr zu prüfen.
+    /// </summary>
+    public void Pruefe(VertragsfreigabeArt art, bool erteilt, string? begruendung, string von, DateTimeOffset zeitpunkt)
+    {
+        if (!Enum.IsDefined(art))
+        {
+            throw new ArgumentOutOfRangeException(nameof(art));
+        }
+
+        if (IstUebergeben)
+        {
+            throw new InvalidOperationException("Das Vertragswerk ist bereits an Paperless übergeben.");
+        }
+
+        if (IstAbgelehnt)
+        {
+            throw new InvalidOperationException("Diese Ausfertigung wurde abgelehnt. Der Vertrieb korrigiert sie und erzeugt das Vertragswerk neu.");
+        }
+
+        if (Freigabe(art) is not null)
+        {
+            throw new InvalidOperationException("Für diese Ausfertigung ist die Prüfung bereits erfolgt.");
+        }
+
+        begruendung = string.IsNullOrWhiteSpace(begruendung) ? null : begruendung.Trim();
+        if (!erteilt && begruendung is null)
+        {
+            throw new ArgumentException("Bitte begründen, warum das Vertragswerk abgelehnt wird.");
+        }
+
+        if (begruendung is { Length: > 1000 })
+        {
+            throw new ArgumentException("Die Begründung darf höchstens 1000 Zeichen lang sein.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(von);
+        Freigaben.Add(new Vertragsfreigabe { Art = art, Erteilt = erteilt, Begruendung = begruendung, Von = von, Am = zeitpunkt });
+    }
+
     /// <summary>Vermerkt die gelungene Übergabe; ein Vertragswerk geht nur einmal an Paperless.</summary>
     public void VermerkeUebergabe(string dokumentId, DateTimeOffset zeitpunkt)
     {
@@ -69,6 +121,28 @@ public class Vertragswerk
         UebergabeFehler = fehler.Length > 1000 ? fehler[..1000] : fehler;
         UebergabeVersuchtAm = zeitpunkt;
     }
+}
+
+/// <summary>Interne Prüfungen eines Vertragswerks vor der Übergabe an Paperless.</summary>
+public enum VertragsfreigabeArt
+{
+    /// <summary>Auftragsverarbeitung (Datenschutz).</summary>
+    Avv = 1,
+
+    /// <summary>Vertrag aus technischer Sicht.</summary>
+    Technik = 2,
+}
+
+/// <summary>Freigabe oder Ablehnung einer Prüfung für genau eine Ausfertigung.</summary>
+public class Vertragsfreigabe
+{
+    public int Id { get; set; }
+    public int VertragswerkId { get; set; }
+    public VertragsfreigabeArt Art { get; init; }
+    public bool Erteilt { get; init; }
+    public string? Begruendung { get; init; }
+    public required string Von { get; init; }
+    public DateTimeOffset Am { get; init; }
 }
 
 /// <summary>Wer für eine Rolle der Unterschriftsfelder unterschreibt, z. B. Rolle „Kunde“.</summary>

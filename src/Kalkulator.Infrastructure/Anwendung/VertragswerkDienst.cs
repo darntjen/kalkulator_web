@@ -14,20 +14,41 @@ namespace Kalkulator.Infrastructure.Anwendung;
 /// <summary>Ein Dokument des Vertragswerks mit der Vorlage und ihrer aktiven Fassung; ohne aktive Fassung ist <see cref="Fassung"/> leer.</summary>
 public sealed record VertragswerkDokument(Vertragsdokument Dokument, DokumentVorlage? Vorlage, Vorlagenversion? Fassung);
 
-/// <summary>Welche Dokumente ein Vertragswerk umfasst und welche Angaben ihre Vorlagen verlangen.</summary>
-public sealed record Vertragsvorschau(IReadOnlyList<VertragswerkDokument> Dokumente, IReadOnlyList<EingabeDefinition> Eingaben)
+/// <summary>
+/// Welche Dokumente ein Vertragswerk umfasst und welche Angaben ihre Vorlagen verlangen. <see cref="Dokumente"/> sind
+/// alle Dokumente des Vertrags (z. B. für die Anlagenliste im Grundvertrag); erzeugt werden nur die
+/// <see cref="Erzeugte"/>, solange <see cref="Umfang"/> das Vertragswerk im Testbetrieb auf einzelne Vorlagen beschränkt.
+/// </summary>
+public sealed record Vertragsvorschau(IReadOnlyList<VertragswerkDokument> Dokumente, IReadOnlyList<EingabeDefinition> Eingaben, IReadOnlyList<string>? Umfang = null)
 {
-    public IReadOnlyList<VertragswerkDokument> OhneVorlage => [.. Dokumente.Where(d => d.Fassung is null)];
+    public IReadOnlyList<VertragswerkDokument> Erzeugte => [.. Dokumente.Where(ImUmfang)];
+
+    /// <summary>Dokumente, die wegen <see cref="Umfang"/> nicht erzeugt werden.</summary>
+    public IReadOnlyList<VertragswerkDokument> Ausgelassen => [.. Dokumente.Where(d => !ImUmfang(d))];
+
+    public IReadOnlyList<VertragswerkDokument> OhneVorlage => [.. Erzeugte.Where(d => d.Fassung is null)];
 
     /// <summary>Rollen aller Unterschriftsfelder der aktiven Fassungen, sortiert.</summary>
     public IReadOnlyList<string> Unterschriften =>
-        [.. Dokumente.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        [.. Erzeugte.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    /// <summary>Vorlagencode eines Dokuments, z. B. GRUNDVERTRAG oder S14; ohne Vorlage der Code des Dokuments.</summary>
+    public static string Code(VertragswerkDokument d) => d.Vorlage?.Code ?? d.Dokument.Code;
+
+    private bool ImUmfang(VertragswerkDokument d) =>
+        Umfang is not { Count: > 0 } || Umfang.Contains(Code(d), StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class VertragswerkEinstellungen
 {
     /// <summary>Deckblatt der Gesamtdatei (templates/vertrag/Deckblatt.docx); wird mit dem Programm ausgeliefert.</summary>
     public string Deckblatt { get; set; } = "";
+
+    /// <summary>
+    /// Testbetrieb: Vorlagencodes der Dokumente, die erzeugt werden, z. B. nur „GRUNDVERTRAG“, solange die übrigen
+    /// Vorlagen noch nicht umgestellt sind. Leer = alle Dokumente (Normalbetrieb).
+    /// </summary>
+    public List<string> Umfang { get; set; } = [];
 }
 
 /// <summary>
@@ -55,12 +76,32 @@ public sealed record VertragswerkZeile(
     string? PaperlessDokumentId = null,
     DateTimeOffset? UebergebenAm = null,
     string? UebergabeFehler = null,
-    DateTimeOffset? UebergabeVersuchtAm = null);
+    DateTimeOffset? UebergabeVersuchtAm = null,
+    IReadOnlyList<Vertragsfreigabe>? Freigaben = null)
+{
+    public Vertragsfreigabe? Freigabe(VertragsfreigabeArt art) => Freigaben?.FirstOrDefault(f => f.Art == art);
+
+    public bool IstAbgelehnt => Freigaben?.Any(f => !f.Erteilt) == true;
+
+    public bool IstFreigegeben => !IstAbgelehnt && Enum.GetValues<VertragsfreigabeArt>().All(a => Freigabe(a)?.Erteilt == true);
+}
+
+/// <summary>Ein Vertragswerk, das auf eine Freigabe des angemeldeten Benutzers wartet (Startseite).</summary>
+public sealed record OffeneVertragsfreigabe(
+    int VertragswerkId,
+    int ProjektId,
+    string Firma,
+    string Projekt,
+    string Nummer,
+    int Ausfertigung,
+    DateTimeOffset ErstelltAm,
+    IReadOnlyList<VertragsfreigabeArt> Offen);
 
 /// <summary>
 /// Vertragswerk aus dem angenommenen Angebot (#26, Teil C): Dokumente nach Rangfolge, Vertragsangaben, Word-Dateien,
-/// PDFs, Gesamt-PDF und ZIP. Ist Paperless eingerichtet, geht das Gesamt-PDF gleich nach dem Erzeugen mit seinen
-/// Unterschriftsfeldern dorthin (Teil D); schlägt das fehl, bleibt das Vertragswerk erhalten und kann erneut übergeben werden.
+/// PDFs, Gesamt-PDF und ZIP. Jede Ausfertigung prüfen AVV und Technik parallel (Entscheidung 05.10.2026); erst wenn
+/// beide freigegeben haben, geht das Gesamt-PDF mit seinen Unterschriftsfeldern an Paperless (Teil D). Schlägt die
+/// Übergabe fehl, bleibt das Vertragswerk erhalten und kann erneut übergeben werden.
 /// </summary>
 public sealed class VertragswerkDienst(
     IDbContextFactory<KalkulatorDbContext> kontexte,
@@ -90,11 +131,11 @@ public sealed class VertragswerkDienst(
             throw new KeinZugriffException("Diese Kalkulation gehört zu einem Kundenprojekt eines anderen Vertriebsmitarbeiters.");
         }
 
-        return await VorschauAsync(kontext, serviceCodes, abbruch);
+        return await VorschauAsync(kontext, serviceCodes, abbruch, einstellungen.Value.Umfang);
     }
 
     /// <summary>Löst die Services in Dokumente auf und ordnet jedem die Vorlage mit ihrer aktiven Fassung zu.</summary>
-    internal static async Task<Vertragsvorschau> VorschauAsync(KalkulatorDbContext kontext, IEnumerable<string> serviceCodes, CancellationToken abbruch)
+    internal static async Task<Vertragsvorschau> VorschauAsync(KalkulatorDbContext kontext, IEnumerable<string> serviceCodes, CancellationToken abbruch, IReadOnlyList<string>? umfang = null)
     {
         // Alle Services mit Bestandteilen laden; EF verknüpft verschachtelte Bundles selbst.
         var services = await kontext.Services.Include(s => s.Bestandteile).Include(s => s.Leistungsschein).ToListAsync(abbruch);
@@ -108,8 +149,8 @@ public sealed class VertragswerkDienst(
             return new VertragswerkDokument(d, vorlage, vorlage?.AktiveVersion);
         }).ToList();
 
-        var eingaben = Vertragsangaben.Vereinige(dokumente.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Eingaben));
-        return new Vertragsvorschau(dokumente, eingaben);
+        var vorschau = new Vertragsvorschau(dokumente, [], umfang);
+        return vorschau with { Eingaben = Vertragsangaben.Vereinige(vorschau.Erzeugte.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Eingaben)) };
     }
 
     /// <summary>Was zum Erzeugen des Vertragswerks eines Projekts fehlt; für die Projektansicht.</summary>
@@ -124,10 +165,10 @@ public sealed class VertragswerkDienst(
     {
         await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
         await LadeAsync(kontext, projektId, abbruch);
-        var werke = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Dokumente)
+        var werke = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Dokumente).Include(v => v.Freigaben)
             .Where(v => v.KundenprojektId == projektId).OrderByDescending(v => v.Ausfertigung).ToListAsync(abbruch);
         return [.. werke.Select(v => new VertragswerkZeile(v.Id, v.Nummer, v.Ausfertigung, v.ErstelltVon, v.ErstelltAm, [.. v.Dokumente.OrderBy(d => d.Reihenfolge)],
-            v.PaperlessDokumentId, v.UebergebenAm, v.UebergabeFehler, v.UebergabeVersuchtAm))];
+            v.PaperlessDokumentId, v.UebergebenAm, v.UebergabeFehler, v.UebergabeVersuchtAm, [.. v.Freigaben.OrderBy(f => f.Art)]))];
     }
 
     /// <summary>Gesamt-PDF oder ZIP eines erzeugten Vertragswerks.</summary>
@@ -142,8 +183,8 @@ public sealed class VertragswerkDienst(
 
     /// <summary>
     /// Erzeugt das Vertragswerk aus dem angenommenen Angebot: jedes Dokument aus seiner aktiven Vorlagenfassung befüllt und
-    /// als PDF, dazu Deckblatt mit Verzeichnis, Gesamt-PDF und ZIP. Archiviert als neue Ausfertigung und übergibt es,
-    /// falls eingerichtet, an Paperless; <paramref name="unterzeichner"/> nennt dafür die Personen der abgefragten Rollen.
+    /// als PDF, dazu Deckblatt mit Verzeichnis, Gesamt-PDF und ZIP. Archiviert als neue Ausfertigung, die danach AVV und
+    /// Technik prüfen; <paramref name="unterzeichner"/> nennt die Personen der abgefragten Rollen für Paperless.
     /// </summary>
     public async Task<int> ErzeugenAsync(int projektId, IReadOnlyList<Unterzeichner>? unterzeichner = null, CancellationToken abbruch = default)
     {
@@ -163,7 +204,8 @@ public sealed class VertragswerkDienst(
         var personen = PruefeUnterzeichner(bereitschaft.Unterzeichnerrollen ?? [], unterzeichner ?? []);
         var vorschau = bereitschaft.Vorschau!;
         var version = angebot!.Version!;
-        var fassungIds = vorschau.Dokumente.Select(d => d.Fassung!.Id).ToList();
+        var erzeugte = vorschau.Erzeugte;
+        var fassungIds = erzeugte.Select(d => d.Fassung!.Id).ToList();
         var dateien = await kontext.Set<VorlagenDatei>().AsNoTracking().Where(d => fassungIds.Contains(d.VorlagenversionId))
             .ToDictionaryAsync(d => d.VorlagenversionId, d => d.Inhalt, abbruch);
         var katalog = await kontext.Services.AsNoTracking().Include(s => s.Leistungsschein).ToListAsync(abbruch);
@@ -172,7 +214,7 @@ public sealed class VertragswerkDienst(
             katalog, [.. vorschau.Dokumente.Select(d => d.Dokument)], vorschau.Eingaben);
 
         var mappe = new List<MappenDokument>();
-        foreach (var (eintrag, i) in vorschau.Dokumente.Select((d, i) => (d, i)))
+        foreach (var (eintrag, i) in erzeugte.Select((d, i) => (d, i)))
         {
             var fassung = eintrag.Fassung!;
             byte[] docx;
@@ -207,7 +249,7 @@ public sealed class VertragswerkDienst(
             Datei = new VertragswerkDatei { GesamtPdf = gesamt, Zip = Vertragsmappe.Zip(mappe, name + ".pdf", gesamt) },
             Unterzeichner = personen,
         };
-        werk.Dokumente.AddRange(vorschau.Dokumente.Select((d, i) => new VertragswerkEintrag
+        werk.Dokumente.AddRange(erzeugte.Select((d, i) => new VertragswerkEintrag
         {
             Reihenfolge = i + 1,
             Code = d.Vorlage!.Code,
@@ -217,20 +259,87 @@ public sealed class VertragswerkDienst(
         }));
         kontext.Vertragswerke.Add(werk);
         await kontext.SaveChangesAsync(abbruch);
+        return werk.Id;
+    }
 
-        if (paperlessEinstellungen.Value.Aktiv)
+    /// <summary>
+    /// Freigabe oder Ablehnung der neuesten Ausfertigung durch AVV bzw. Technik. Liegt danach auch die andere Freigabe
+    /// vor und ist Paperless eingerichtet, geht das Vertragswerk gleich an Paperless.
+    /// </summary>
+    public async Task FreigebenAsync(int vertragswerkId, VertragsfreigabeArt art, bool erteilt, string? begruendung = null, CancellationToken abbruch = default)
+    {
+        await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
+        var werk = await kontext.Vertragswerke.Include(v => v.Freigaben).Include(v => v.Datei).Include(v => v.Dokumente)
+            .SingleOrDefaultAsync(v => v.Id == vertragswerkId, abbruch)
+            ?? throw new KeyNotFoundException($"Vertragswerk {vertragswerkId} gibt es nicht.");
+        var (projekt, _) = await LadeAsync(kontext, werk.KundenprojektId, abbruch);
+        if (!_recht.DarfVertragFreigeben(art))
         {
-            await UebergebenAsync(kontext, werk, projekt.Kunde.Firma, gesamt, vorschau.Unterschriften, abbruch);
+            throw new KeinZugriffException(art == VertragsfreigabeArt.Avv
+                ? "Die AVV-Freigabe erteilt die Rolle „Freigabe AVV“."
+                : "Die technische Freigabe erteilt die Rolle „Freigabe Technik“.");
         }
 
-        return werk.Id;
+        await PruefeNeuesteAsync(kontext, werk, abbruch);
+        werk.Pruefe(art, erteilt, begruendung, _recht.Name, zeit.GetUtcNow());
+        await kontext.SaveChangesAsync(abbruch);
+
+        if (werk.IstFreigegeben && paperlessEinstellungen.Value.Aktiv)
+        {
+            await UebergebenAsync(kontext, werk, projekt.Kunde!.Firma, werk.Datei!.GesamtPdf, await RollenAsync(kontext, werk, abbruch), abbruch);
+        }
+    }
+
+    /// <summary>Neueste, weder abgelehnte noch übergebene Ausfertigungen, die auf eine Freigabe des Benutzers warten.</summary>
+    public async Task<IReadOnlyList<OffeneVertragsfreigabe>> OffeneFreigabenAsync(CancellationToken abbruch = default)
+    {
+        var arten = Enum.GetValues<VertragsfreigabeArt>().Where(_recht.DarfVertragFreigeben).ToList();
+        if (arten.Count == 0)
+        {
+            return [];
+        }
+
+        await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
+        var werke = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Freigaben)
+            .Where(v => v.PaperlessDokumentId == null).ToListAsync(abbruch);
+        var neueste = werke.GroupBy(v => v.KundenprojektId).Select(g => g.MaxBy(v => v.Ausfertigung)!).Where(v => !v.IstAbgelehnt).ToList();
+        var ids = neueste.Select(v => v.KundenprojektId).ToList();
+        var projekte = await kontext.Kundenprojekte.AsNoTracking().Include(p => p.Kunde)
+            .Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id, abbruch);
+        return [.. neueste
+            .Select(v => (Werk: v, Offen: arten.Where(a => v.Freigabe(a) is null).ToList()))
+            .Where(x => x.Offen.Count > 0 && projekte.ContainsKey(x.Werk.KundenprojektId) && projekte[x.Werk.KundenprojektId].Status == ProjektStatus.Gewonnen)
+            .OrderBy(x => x.Werk.ErstelltAm)
+            .Select(x =>
+            {
+                var p = projekte[x.Werk.KundenprojektId];
+                return new OffeneVertragsfreigabe(x.Werk.Id, p.Id, p.Kunde!.Firma, p.Titel, x.Werk.Nummer, x.Werk.Ausfertigung, x.Werk.ErstelltAm, x.Offen);
+            })];
+    }
+
+    /// <summary>Nur die neueste Ausfertigung wird geprüft und übergeben, damit keine überholte Fassung zum Kunden gelangt.</summary>
+    private static async Task PruefeNeuesteAsync(KalkulatorDbContext kontext, Vertragswerk werk, CancellationToken abbruch)
+    {
+        if (await kontext.Vertragswerke.AnyAsync(v => v.KundenprojektId == werk.KundenprojektId && v.Ausfertigung > werk.Ausfertigung, abbruch))
+        {
+            throw new InvalidOperationException($"Ausfertigung {werk.Ausfertigung} ist überholt; geprüft und übergeben wird nur die neueste Ausfertigung.");
+        }
+    }
+
+    /// <summary>Rollen der Unterschriftsfelder aus den Vorlagenfassungen des Vertragswerks.</summary>
+    private static async Task<IReadOnlyList<string>> RollenAsync(KalkulatorDbContext kontext, Vertragswerk werk, CancellationToken abbruch)
+    {
+        var fassungIds = werk.Dokumente.Select(d => d.VorlagenversionId).ToList();
+        return (await kontext.Set<Vorlagenversion>().AsNoTracking().Where(v => fassungIds.Contains(v.Id)).ToListAsync(abbruch))
+            .SelectMany(v => v.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
     }
 
     /// <summary>Übergibt ein Vertragswerk erneut an Paperless, dessen erste Übergabe fehlgeschlagen ist.</summary>
     public async Task ErneutUebergebenAsync(int vertragswerkId, CancellationToken abbruch = default)
     {
         await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
-        var werk = await kontext.Vertragswerke.Include(v => v.Datei).Include(v => v.Dokumente).SingleOrDefaultAsync(v => v.Id == vertragswerkId, abbruch)
+        var werk = await kontext.Vertragswerke.Include(v => v.Datei).Include(v => v.Dokumente).Include(v => v.Freigaben)
+            .SingleOrDefaultAsync(v => v.Id == vertragswerkId, abbruch)
             ?? throw new KeyNotFoundException($"Vertragswerk {vertragswerkId} gibt es nicht.");
         var (projekt, _) = await LadeAsync(kontext, werk.KundenprojektId, abbruch);
         if (!_recht.DarfBearbeiten(projekt))
@@ -248,16 +357,13 @@ public sealed class VertragswerkDienst(
             throw new InvalidOperationException($"Das Vertragswerk ist bereits an Paperless übergeben (Dokument {werk.PaperlessDokumentId}).");
         }
 
-        // Nur die neueste Ausfertigung geht an Paperless, damit keine überholte Fassung zum Kunden gelangt.
-        if (await kontext.Vertragswerke.AnyAsync(v => v.KundenprojektId == werk.KundenprojektId && v.Ausfertigung > werk.Ausfertigung, abbruch))
+        if (!werk.IstFreigegeben)
         {
-            throw new InvalidOperationException($"Ausfertigung {werk.Ausfertigung} ist überholt; an Paperless geht nur die neueste Ausfertigung.");
+            throw new InvalidOperationException("An Paperless geht das Vertragswerk erst nach den Freigaben durch AVV und Technik.");
         }
 
-        var fassungIds = werk.Dokumente.Select(d => d.VorlagenversionId).ToList();
-        var rollen = (await kontext.Set<Vorlagenversion>().AsNoTracking().Where(v => fassungIds.Contains(v.Id)).ToListAsync(abbruch))
-            .SelectMany(v => v.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
-        await UebergebenAsync(kontext, werk, projekt.Kunde!.Firma, werk.Datei!.GesamtPdf, rollen, abbruch);
+        await PruefeNeuesteAsync(kontext, werk, abbruch);
+        await UebergebenAsync(kontext, werk, projekt.Kunde!.Firma, werk.Datei!.GesamtPdf, await RollenAsync(kontext, werk, abbruch), abbruch);
     }
 
     /// <summary>
@@ -406,7 +512,7 @@ public sealed class VertragswerkDienst(
 
         var version = angebot.Version;
         var text = $"{angebot.Nummer} V{version.Nummer}";
-        var vorschau = await VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch);
+        var vorschau = await VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch, einstellungen.Value.Umfang);
         var fehlend = version.Vertragsangaben.Fehlend(vorschau.Eingaben);
         var grund = version.FreigabeVertriebsleitungVon is null || version.FreigabeSolutionConsultantVon is null
                 ? $"Das Angebot {text} wurde ohne Vertriebsfreigabe von Vertriebsleitung und Solution Consultant erzeugt."
@@ -414,6 +520,8 @@ public sealed class VertragswerkDienst(
                 ? $"Für {string.Join(", ", vorschau.OhneVorlage.Select(d => d.Dokument.Code))} gibt es noch keine freigegebene Vorlage (Katalog › Vertragsvorlagen)."
             : fehlend.Count > 0
                 ? $"Die Vorlagen verlangen inzwischen Angaben, die im Angebot {text} fehlen: {string.Join(", ", fehlend)}. Bitte in der Kalkulation ergänzen und ein neues Angebot erzeugen."
+            : vorschau.Erzeugte.Count == 0
+                ? $"Im Testbetrieb (Vertragswerk:Umfang = {string.Join(", ", vorschau.Umfang!)}) bleibt kein Dokument des Vertrags übrig."
             : wandler is KeinPdfWandler kein
                 ? kein.Grund
             : null;

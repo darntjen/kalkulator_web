@@ -268,6 +268,39 @@ table.liste {
 .st-Verloren { background: var(--kritisch-bg); color: var(--kritisch); }
 .st-Zurueckgestellt { background: var(--weiss); color: var(--grau); border-color: var(--linie); }
 
+.freigaben {
+    min-width: 15rem;
+}
+
+    .freigaben .freigabe {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.25rem 0.5rem;
+    }
+
+        .freigaben .freigabe + .freigabe {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--linie);
+        }
+
+        .freigaben .freigabe .unterzeile,
+        .freigaben .freigabe .aktionen,
+        .freigaben .freigabe .stapel {
+            flex-basis: 100%;
+            margin: 0;
+        }
+
+        .freigaben .freigabe .stapel {
+            gap: 0.4rem;
+        }
+
+        .freigaben .freigabe .pille:not([class*="st-"]) {
+            background: var(--flaeche-2);
+            color: #44555b;
+        }
+
 .felder {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -318,6 +351,11 @@ input[type="text"], input[type="email"], input[type="number"], input[type="month
     .meldung.erfolg {
         background: var(--gut-bg);
         color: var(--gut);
+    }
+
+    .meldung.warnung {
+        background: var(--warn-bg);
+        color: var(--warn);
     }
 
 .markiert {

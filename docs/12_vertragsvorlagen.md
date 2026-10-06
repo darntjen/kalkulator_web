@@ -63,6 +63,7 @@ aktive Fassung bleibt aktiv, bis eine neue freigegeben ist.
 - Was zum Erzeugen vorliegen muss:
   - Das angenommene Angebot ist mit beiden Vertriebsfreigaben entstanden.
   - Jedes Dokument hat eine aktive Fassung; fehlt eine, ist die Erzeugung gesperrt (Entscheidung 04.10.2026).
+    Ausnahme ist der **Testbetrieb** mit `Vertragswerk:Umfang` (siehe unten).
   - Alle Angaben, die die aktiven Fassungen verlangen, stehen im Angebot. Verlangt eine Vorlage nach dem Angebot
     eine neue Angabe, ist ein neues Angebot nötig.
   - Die PDF-Umwandlung ist eingerichtet.
@@ -80,6 +81,16 @@ aktive Fassung bleibt aktiv, bis eine neue freigegeben ist.
   Website (Sites.Selected, Rolle `write`).
 - `Pdf:Wandler` = `LibreOffice`: für Entwicklung und Test (`Pdf:LibreOffice` = Programmpfad).
 - Ohne Eintrag lässt sich kein Vertragswerk erzeugen; die Projektansicht nennt den Grund.
+
+**Testbetrieb mit einzelnen Vorlagen** (Entscheidung 06.10.2026): Solange nicht alle Vorlagen auf Platzhalter
+umgestellt sind, beschränkt `Vertragswerk:Umfang` das Vertragswerk auf die genannten Vorlagencodes, z. B. nur
+`GRUNDVERTRAG` (Umgebungsvariable `Vertragswerk__Umfang__0=GRUNDVERTRAG`). Dann gilt:
+- Erzeugt werden nur diese Dokumente; nur für sie muss eine aktive Fassung vorliegen, und nur ihre Angaben und
+  Unterschriftsfelder zählen.
+- Die Anlagenliste im Grundvertrag (`{{#anlagen}}`) nennt weiterhin alle Dokumente des Vertrags, damit der Text
+  vollständig geprüft werden kann.
+- Die Projektansicht zeigt einen Hinweis „Testbetrieb“ mit den ausgelassenen Dokumenten.
+- Im Normalbetrieb bleibt `Vertragswerk:Umfang` leer. Der Codespace setzt ihn auf `GRUNDVERTRAG`.
 
 ## 4. Platzhalter
 
@@ -172,34 +183,73 @@ die Prüfung nach dem ersten Abgleich je Vorlage an.
    | `Pdf:Wandler` | `Graph` (oder `LibreOffice` zum Testen, leer = keine Vertragswerke) |
    | `Pdf:Ordnerpfad` | Arbeitsordner für die Umwandlung, z. B. `Kalkulator/PDF-Umwandlung` |
    | `Paperless:…` | Übergabe an Paperless, siehe Abschnitt 7 |
+   | `Vertragswerk:Umfang` | nur im Testbetrieb: Vorlagencodes, die erzeugt werden (z. B. `GRUNDVERTRAG`); leer = alle |
 
 Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgleich meldet dann, was fehlt.
 
 ## 7. Übergabe an Paperless (Teil D)
 
-Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt im Kalkulator, die technische Freigabe in
-Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kunden.
+Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt vor dem Angebot im Kalkulator. Das
+erzeugte Vertragswerk prüfen danach **AVV** und **Technik**, ebenfalls im Kalkulator (Vertragsfreigabe, siehe unten).
+Erst nach beiden Freigaben geht es an Paperless; Paperless schickt es zur Unterschrift an den Kunden und danach an
+Nösse.
 
-**Ablauf** (Entscheidungen 04.10.2026):
-- Die Übergabe geschieht **automatisch beim Erzeugen** des Vertragswerks, sobald Paperless eingerichtet ist.
+**Vertragsfreigabe** (Entscheidungen 05.10.2026; Paperless kann bei Dokumenten aus einem PDF weder Freigaben noch
+eine Reihenfolge vorgeben, siehe unten):
+- Neue App-Rollen **`FreigabeAvv`** (heute Matthias Erhard) und **`FreigabeTechnik`** (heute Christian Leinen,
+  Sascha Manczak, Till Elsner). Sie kommen zu den übrigen Rollen einer Person hinzu; die IT weist sie über
+  Entra-Gruppen zu.
+- Geprüft wird die **Gesamtdatei** der neuesten Ausfertigung. Sie öffnet sich mit „Ansehen“ im Browser.
+- Beide Prüfungen laufen **parallel**, in beliebiger Reihenfolge. Je Ausfertigung und Prüfung gibt es genau eine
+  Entscheidung; wer, wann und die Begründung werden gespeichert.
+- **Ablehnung** nur mit Begründung (höchstens 1000 Zeichen). Sie sperrt die Ausfertigung: Die andere Prüfung entfällt,
+  und der Vertrieb korrigiert (Kalkulation, Vertragsangaben oder Vorlage) und erzeugt das Vertragswerk neu. Die neue
+  Ausfertigung beginnt ohne Freigaben.
+- Eine neuere Ausfertigung macht ältere überholt; geprüft und übergeben wird nur die neueste.
+- Die Startseite zeigt Personen mit einer Prüfrolle die **offenen Freigaben** (neueste Ausfertigung, nicht abgelehnt,
+  noch nicht übergeben, Projekt „Gewonnen“). Eine Benachrichtigung per E-Mail gibt es noch nicht.
+- Ausfertigungen, die vor dieser Änderung schon übergeben wurden, zeigen „entfällt“.
+
+**Ablauf der Übergabe** (Entscheidungen 04.10.2026, angepasst 05.10.2026):
+- Die Übergabe geschieht **automatisch mit der zweiten Freigabe**, sobald Paperless eingerichtet ist. Ohne Paperless
+  endet der Ablauf mit den Freigaben; die Gesamtdatei geht dann von Hand weiter.
   Voraussetzungen wie bisher: beide Vertriebsfreigaben und das Projekt mit angenommenem Angebot auf „Gewonnen“.
 - Übergeben wird die **Gesamtdatei** (Deckblatt und alle Dokumente) mit den Unterschriftsfeldern.
 - **Unterschriftsfelder aus den Vorlagen:** Das Produktmanagement setzt in Word `{{unterschrift.Rolle}}` an die
   Unterschriftslinie, z. B. `{{unterschrift.Kunde}}` beim Auftraggeber. Der Kalkulator schreibt dort eine
   unsichtbare Marke (weiß, 1 pt), findet sie nach der PDF-Umwandlung wieder und gibt Paperless je Marke ein
   Unterschriftsfeld mit Seite und Lage. Die linke untere Ecke des Felds liegt auf der Marke; der Platzhalter gehört
-  deshalb an den Anfang der Unterschriftslinie.
+  deshalb an den Anfang der Unterschriftslinie. Das Feld ist etwa 6,4 × 2 cm groß (`Paperless:FeldBreite`/`FeldHoehe`,
+  180 × 56 pt); darüber und rechts davon muss so viel Platz frei sein, sonst liegt es über Text wie „Ort, Datum“.
 - **Rollen und Personen:** Die Rolle ist der Slot in Paperless, sofern `Paperless:Rollen` nichts anderes sagt.
   Rollen, die nicht fest eingestellt sind (in der Regel „Kunde“), fragt die Projektansicht vor dem Erzeugen ab:
   Name und E-Mail-Adresse. Für „Kunde“ ist der Ansprechpartner vorbelegt.
-- **Paperless-Vorlage regelt den Ablauf:** Mit `Paperless:VorlageId` wird die Paperless-Vorlage mitgegeben. Rollen
-  mit `AusVorlage = true` (z. B. die Geschäftsführung) bekommen nur das Feld; die Person legt die Vorlage fest.
-- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, den die technische Freigabe prüft und von dort
-  versendet. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
+- **Paperless-Vorlage und PDF:** Ein Paperless-Dokument entsteht entweder aus einer Vorlage oder aus einem PDF. Mit
+  `template_id` legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg; das PDF lässt sich danach nicht
+  austauschen. Beim Anlegen aus einem PDF kennen Teilnehmer nur Name und E-Mail, keine Rolle (`approver`) und keine
+  Reihenfolge. Reihenfolge und Freigaben gibt es deshalb nur über eine Vorlage (siehe unten, Testlauf D).
+- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`).
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
-  Vertragswerk gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“. Jede Ausfertigung geht
-  höchstens einmal an Paperless.
+  Vertragswerk mit seinen Freigaben gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“
+  (nur nach beiden Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
+
+**Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
+- Arbeitsbereich **15114**. Die Paperless-Vorlage **50379** (Ablauf-Vorlage) enthält kein Dokument; sie regelt die
+  Reihenfolge und die beiden Freigaben vor dem Versand. Sie wird gebraucht, weil Reihenfolge und Freigaben anders nicht
+  vorzugeben sind.
+- Slots **„Kunde“** und **„Nösse“**, nacheinander: erst unterschreibt der Kunde, dann Nösse.
+- **Kunde:** Name und E-Mail kommen je Vertrag aus dem Kalkulator (vorbelegt mit dem Ansprechpartner).
+- **Nösse:** Es unterschreibt immer **Sascha Manczak** (technischer Leiter), fest eingestellt.
+- **Freigaben:** AVV durch Matthias Erhard; Vertrag aus technischer Sicht durch Christian Leinen, Sascha Manczak oder
+  Till Elsner. Sie laufen jetzt im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`, siehe oben), weil Paperless
+  sie bei Dokumenten aus einem PDF nicht übernimmt.
+- Der Kalkulator übergibt nur Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
+  `{{unterschrift.Kunde}}` und `{{unterschrift.Nösse}}` am Anfang der Unterschriftslinie (Frage 12.6).
+- Die Übergabe legt den Entwurf **direkt aus dem PDF** an (Testlauf E: PDF und Felder passen). Die Ablauf-Vorlage
+  50379 wird dafür nicht gebraucht; sie bleibt nur für den Testlauf D eingestellt.
+- **Offen:** ob Paperless bei Dokumenten aus einem PDF die Reihenfolge der Teilnehmer (erst Kunde, dann Nösse)
+  einhält oder an beide gleichzeitig sendet.
 
 **Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
 
@@ -208,22 +258,42 @@ Paperless. Paperless schickt das Vertragswerk danach zur Unterschrift an den Kun
 | `Paperless:ApiSchluessel` | API-Schlüssel aus Paperless (Umgebungsvariable `Paperless__ApiSchluessel`); leer = Übergabe aus |
 | `Paperless:ArbeitsbereichId` | Arbeitsbereich (workspace_id); leer = Übergabe aus |
 | `Paperless:Adresse` | `https://api.paperless.io/api/v1/` |
-| `Paperless:VorlageId` | optionale Paperless-Vorlage (template_id) |
+| `Paperless:AblaufVorlageId` | Paperless-Vorlage mit Reihenfolge und Freigaben; vorerst nur im Testlauf (Variante D) |
 | `Paperless:Versenden` | `false` = Entwurf für die technische Freigabe, `true` = sofort versenden |
 | `Paperless:Rollen:<Rolle>:Slot` | Slot-Name in Paperless, falls er vom Rollennamen abweicht |
 | `Paperless:Rollen:<Rolle>:AusVorlage` | `true`: Die Person legt die Paperless-Vorlage fest |
 | `Paperless:Rollen:<Rolle>:Name`, `EMail` | fest eingestellte Person, z. B. für die Geschäftsführung |
 | `Paperless:FeldBreite`, `FeldHoehe` | Größe des Felds in Punkt (Standard 180 × 56) |
 | `Paperless:YVonOben` | Koordinaten ab oberem Seitenrand (Standard) oder ab unterem (`false`) |
+| `Paperless:Skalierung` | Umrechnung Punkt → Paperless-Einheit, Standard 96/72 (Paperless rechnet in Pixeln) |
 
-**Mit dem echten API-Schlüssel zu prüfen** (die Paperless-Dokumentation war bei der Umsetzung nicht abrufbar; die
-Anfragen folgen den veröffentlichten Beispielen):
-- Hochladen über `POST blobs` mit Name, Größe und MD5-Prüfsumme und anschließendem Upload an `direct_upload.url`.
-- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` vom Typ
-  `Block::Input::SignatureInput` (`owner_participants_slot_names`, `pdf_page_number`, `settings.absolutePosition`,
-  `settings.absoluteSize`).
-- Einheit und Ursprung der Koordinaten (Punkt, oben links) und ob `template_id` zusammen mit einer eigenen PDF-Datei
-  wirkt.
+**Stand der Prüfung gegen die echte API** (05.10.2026, ohne gültigen Schlüssel; Paperless prüft den Aufbau einer
+Anfrage vor der Anmeldung):
+- `POST blobs`: Name, Größe, MD5-Prüfsumme und Typ stehen **auf oberster Ebene** (`filename`, `byte_size`,
+  `checksum`, `content_type`), nicht unter `blob`. Korrigiert; danach folgt der Upload an `direct_upload.url`.
+- `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` besteht die
+  Prüfung des Aufbaus; ebenso `POST templates` mit `template_id`, `pdf` und `blocks` (Kopie der Ablauf-Vorlage). Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
+  `pdf_page_number`, `settings.absolutePosition`, `settings.absoluteSize`) prüft Paperless erst nach der Anmeldung.
+
+**Erkenntnisse aus den Testläufen mit echtem Schlüssel** (05.10.2026):
+- Upload und Anlegen funktionieren. Dokumente **mit** `template_id` kamen leer an: Paperless baut sie aus der (leeren)
+  Vorlage und lässt das PDF weg. Ohne Vorlage war das PDF da.
+- Die Felder lagen links und deutlich oberhalb der Linie: Paperless rechnet in Pixeln (1/96 Zoll), der Kalkulator in
+  Punkt (1/72 Zoll). Lage und Größe werden jetzt mit `Paperless:Skalierung` (96/72) umgerechnet.
+- Ein Feld ohne Teilnehmer im Slot (früher „Nösse“) erscheint ohne Zuordnung; „Nösse“ ist jetzt fest Sascha Manczak.
+
+**Testlauf** (noch offen: Lage nach der Umrechnung und Variante D):
+
+1. API-Schlüssel als Codespaces-Secret `Paperless__ApiSchluessel` für das Repository anlegen (GitHub: Settings →
+   Codespaces → Secrets) und den Codespace neu starten. Für Variante D braucht der Schlüssel zusätzlich das Recht
+   `template.write`. Auf einem Server genügt die Umgebungsvariable.
+2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
+   der Test-„Kunde“; „Nösse“ ist Sascha Manczak, es wird nichts versendet).
+3. Der Testlauf legt zwei **Entwürfe** an: **D** über eine Kopie der Ablauf-Vorlage mit dem Muster-PDF (die Kopie wird
+   danach gelöscht) und **E** direkt aus dem PDF. Im Muster-PDF zeigt ein grauer Rahmen, wo das Feld liegen soll.
+   Prüfen: PDF sichtbar? Felder im Rahmen? Bei D Reihenfolge und Freigaben übernommen? Danach beide Entwürfe löschen.
+4. Der Testlauf protokolliert jede Anfrage mit Status und dem Aufbau der Antwort (nur Feldnamen, keine Werte). Bei
+   Fehlern dieses Protokoll weitergeben.
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.

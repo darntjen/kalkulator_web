@@ -13,7 +13,13 @@ public static class Rollen
     public const string Fuehrung = "Fuehrung";
     public const string Admin = "Admin";
 
-    public static readonly IReadOnlyList<string> Alle = [Vertrieb, Consultant, Vertriebsleitung, Produktmanagement, Fuehrung, Admin];
+    /// <summary>Freigabe der Auftragsverarbeitung im Vertragswerk (heute Matthias Erhard).</summary>
+    public const string FreigabeAvv = "FreigabeAvv";
+
+    /// <summary>Freigabe des Vertragswerks aus technischer Sicht (heute Christian Leinen, Sascha Manczak, Till Elsner).</summary>
+    public const string FreigabeTechnik = "FreigabeTechnik";
+
+    public static readonly IReadOnlyList<string> Alle = [Vertrieb, Consultant, Vertriebsleitung, Produktmanagement, Fuehrung, Admin, FreigabeAvv, FreigabeTechnik];
 }
 
 /// <summary>
@@ -27,8 +33,21 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
     private bool Vertrieb => benutzer.IstInRolle(Rollen.Vertrieb);
     private bool Leitung => benutzer.IstInRolle(Rollen.Vertriebsleitung);
 
-    /// <summary>Vertriebsleitung, Consultant und Führung sehen alle Kundenprojekte; der Vertrieb nur seine eigenen.</summary>
-    public bool SiehtAlleProjekte => Leitung || benutzer.IstInRolle(Rollen.Consultant) || benutzer.IstInRolle(Rollen.Fuehrung);
+    /// <summary>
+    /// Vertriebsleitung, Consultant, Führung und die Vertragsfreigaben sehen alle Kundenprojekte; der Vertrieb nur seine
+    /// eigenen.
+    /// </summary>
+    public bool SiehtAlleProjekte => Leitung || benutzer.IstInRolle(Rollen.Consultant) || benutzer.IstInRolle(Rollen.Fuehrung) || DarfVertraegeFreigeben;
+
+    /// <summary>Freigabe eines Vertragswerks vor der Übergabe an Paperless: AVV bzw. Technik (Entscheidung 05.10.2026).</summary>
+    public bool DarfVertragFreigeben(VertragsfreigabeArt art) => art switch
+    {
+        VertragsfreigabeArt.Avv => benutzer.IstInRolle(Rollen.FreigabeAvv),
+        VertragsfreigabeArt.Technik => benutzer.IstInRolle(Rollen.FreigabeTechnik),
+        _ => false,
+    };
+
+    public bool DarfVertraegeFreigeben => benutzer.IstInRolle(Rollen.FreigabeAvv) || benutzer.IstInRolle(Rollen.FreigabeTechnik);
 
     public bool DarfProjekteSehen => SiehtAlleProjekte || Vertrieb;
 

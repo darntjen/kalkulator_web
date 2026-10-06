@@ -2,7 +2,10 @@
 # die App liest es von dort (umgebung.sh). Es steht nirgends im Repository.
 services:
   app:
-    image: mcr.microsoft.com/devcontainers/dotnet:10.0
+    # .NET 10 mit LibreOffice für die PDF-Umwandlung (Dockerfile)
+    build:
+      context: .
+      dockerfile: Dockerfile
     # Hauptprozess ist dienst.sh aus dem Repository: er startet und überwacht die App (Port 5226).
     command:
       - /bin/bash
