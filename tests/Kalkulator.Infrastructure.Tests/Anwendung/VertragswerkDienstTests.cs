@@ -77,7 +77,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
 
     private readonly TestPaperless _paperless = new();
 
-    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null, PaperlessEinstellungen? paperless = null)
+    private Dienste DiensteFuer(string datenbank, TestBenutzer benutzer, Kalkulator.Infrastructure.Vorlagen.IPdfWandler? wandler = null, PaperlessEinstellungen? paperless = null, List<string>? umfang = null)
     {
         var fabrik = new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, benutzer));
         var einstellungen = Options.Create(new AngebotsEinstellungen { Vorlagenordner = AngebotsdokumentTests.Vorlagenordner() });
@@ -86,7 +86,7 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             new KalkulationsDienst(fabrik, benutzer, TimeProvider.System),
             new AngebotsDienst(fabrik, benutzer, TimeProvider.System, einstellungen),
             new VertragswerkDienst(fabrik, benutzer, TimeProvider.System, wandler ?? _wandler,
-                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx") }),
+                Options.Create(new VertragswerkEinstellungen { Deckblatt = Path.Combine(AngebotsdokumentTests.Vorlagenordner(), "..", "vertrag", "Deckblatt.docx"), Umfang = umfang ?? [] }),
                 _paperless, Options.Create(paperless ?? new PaperlessEinstellungen())));
     }
 
@@ -251,6 +251,37 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         var bereit = await dienste.Vertragswerk.BereitschaftAsync(projekt);
         Assert.Null(bereit.Sperrgrund);
         Assert.True(bereit.DarfErzeugen);
+    }
+
+    [Fact]
+    public async Task Im_Testbetrieb_entsteht_nur_der_Grundvertrag_mit_vollstaendiger_Anlagenliste()
+    {
+        var datenbank = await NeueDatenbankAsync();
+        var dienste = DiensteFuer(datenbank, Vertrieb, umfang: ["Grundvertrag"]);
+        var (projekt, id) = await GewonnenAsync(datenbank, dienste);
+
+        var ohne = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.Contains("GRUNDVERTRAG", ohne.Sperrgrund, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("AVV", ohne.Sperrgrund, StringComparison.Ordinal);
+
+        await AktiviereVorlageAsync(datenbank, "GRUNDVERTRAG", Grundvertrag);
+        var bereit = await dienste.Vertragswerk.BereitschaftAsync(projekt);
+        Assert.Null(bereit.Sperrgrund);
+        Assert.Equal(["GRUNDVERTRAG"], bereit.Vorschau!.Erzeugte.Select(Vertragsvorschau.Code));
+        Assert.Contains(bereit.Vorschau.Ausgelassen, d => d.Dokument.Code == "S01");
+        Assert.Empty((await dienste.Vertragswerk.VorschauAsync(id, ["S01-STD"])).OhneVorlage);
+
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt);
+
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Equal(["GRUNDVERTRAG"], werk.Dokumente.Select(d => d.Code));
+        Assert.Equal(2, _wandler.Dokumente.Count);
+        var grundvertrag = Text(_wandler.Dokumente[0]);
+        Assert.Contains("Anlage AVV — Auftragsverarbeitungsvereinbarung", grundvertrag, StringComparison.Ordinal);
+        Assert.Contains("S01 — ", grundvertrag, StringComparison.Ordinal);
+        var (_, zip) = await dienste.Vertragswerk.DateiAsync(werkId, zip: true);
+        using var archiv = new System.IO.Compression.ZipArchive(new MemoryStream(zip));
+        Assert.Equal(2, archiv.Entries.Count);
     }
 
     [Fact]

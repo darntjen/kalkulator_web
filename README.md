@@ -70,6 +70,21 @@ ersetzt `.devcontainer/beispielablage` mit erfundenen Kanalordnern. Das Protokol
 `/tmp/kalkulator.log`. Die Adresse ist privat (nur mit dem eigenen GitHub-Konto); bitte keine echten Kundendaten
 eingeben. Das SA-Kennwort des SQL Servers erzeugt der Datenbank-Container beim ersten Start selbst; es steht nicht im Repository.
 
+**Verträge im Codespace:** Der Container bringt LibreOffice für die PDF-Umwandlung mit. Die Vertragsvorlagen kommen aus
+`.devcontainer/vertragsvorlagen` (gleiche Ordnerstruktur wie in SharePoint); im Moment liegt dort nur der Rahmenvertrag.
+Deshalb entsteht im Codespace nur der Grundvertrag (Testbetrieb `Vertragswerk:Umfang`). Ablauf:
+
+1. Rolle **Produktmanagement** → Katalog › Vertragsvorlagen → „Jetzt abgleichen“ → beim Grundvertrag „Fassungen“ →
+   „Freigeben und aktivieren“.
+2. Kundenprojekt mit Kalkulation, Vertriebsfreigaben (Vertriebsleitung, Consultant), Angebot, Status „Gewonnen“.
+3. Rolle **Vertrieb** → Kundenprojekt → „Vertragswerk erzeugen“. Danach prüfen die Rollen FreigabeAvv und
+   FreigabeTechnik.
+
+Eine neue Fassung der Vorlage legt man in den Ordner (Dateiname mit höherer Version, z. B. `… V1.1.docx`) und gleicht
+erneut ab. Nach einer Änderung an `.devcontainer` (wie hier LibreOffice) fragt Codespaces nach „Rebuild Container“.
+Die Datenbank liegt in einem Docker-Volume und bleibt bei einem normalen Rebuild erhalten, bei „Full Rebuild“ nicht;
+die Einrichtung spielt danach neue Migrationen ein.
+
 ### Anmeldung bis zur Einrichtung von Entra ID
 
 Bis die Anmeldung über Entra ID steht (Issue #4), ist man in der **Entwicklungsumgebung** automatisch

@@ -63,6 +63,7 @@ aktive Fassung bleibt aktiv, bis eine neue freigegeben ist.
 - Was zum Erzeugen vorliegen muss:
   - Das angenommene Angebot ist mit beiden Vertriebsfreigaben entstanden.
   - Jedes Dokument hat eine aktive Fassung; fehlt eine, ist die Erzeugung gesperrt (Entscheidung 04.10.2026).
+    Ausnahme ist der **Testbetrieb** mit `Vertragswerk:Umfang` (siehe unten).
   - Alle Angaben, die die aktiven Fassungen verlangen, stehen im Angebot. Verlangt eine Vorlage nach dem Angebot
     eine neue Angabe, ist ein neues Angebot nötig.
   - Die PDF-Umwandlung ist eingerichtet.
@@ -80,6 +81,16 @@ aktive Fassung bleibt aktiv, bis eine neue freigegeben ist.
   Website (Sites.Selected, Rolle `write`).
 - `Pdf:Wandler` = `LibreOffice`: für Entwicklung und Test (`Pdf:LibreOffice` = Programmpfad).
 - Ohne Eintrag lässt sich kein Vertragswerk erzeugen; die Projektansicht nennt den Grund.
+
+**Testbetrieb mit einzelnen Vorlagen** (Entscheidung 06.10.2026): Solange nicht alle Vorlagen auf Platzhalter
+umgestellt sind, beschränkt `Vertragswerk:Umfang` das Vertragswerk auf die genannten Vorlagencodes, z. B. nur
+`GRUNDVERTRAG` (Umgebungsvariable `Vertragswerk__Umfang__0=GRUNDVERTRAG`). Dann gilt:
+- Erzeugt werden nur diese Dokumente; nur für sie muss eine aktive Fassung vorliegen, und nur ihre Angaben und
+  Unterschriftsfelder zählen.
+- Die Anlagenliste im Grundvertrag (`{{#anlagen}}`) nennt weiterhin alle Dokumente des Vertrags, damit der Text
+  vollständig geprüft werden kann.
+- Die Projektansicht zeigt einen Hinweis „Testbetrieb“ mit den ausgelassenen Dokumenten.
+- Im Normalbetrieb bleibt `Vertragswerk:Umfang` leer. Der Codespace setzt ihn auf `GRUNDVERTRAG`.
 
 ## 4. Platzhalter
 
@@ -172,6 +183,7 @@ die Prüfung nach dem ersten Abgleich je Vorlage an.
    | `Pdf:Wandler` | `Graph` (oder `LibreOffice` zum Testen, leer = keine Vertragswerke) |
    | `Pdf:Ordnerpfad` | Arbeitsordner für die Umwandlung, z. B. `Kalkulator/PDF-Umwandlung` |
    | `Paperless:…` | Übergabe an Paperless, siehe Abschnitt 7 |
+   | `Vertragswerk:Umfang` | nur im Testbetrieb: Vorlagencodes, die erzeugt werden (z. B. `GRUNDVERTRAG`); leer = alle |
 
 Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgleich meldet dann, was fehlt.
 
@@ -207,7 +219,8 @@ eine Reihenfolge vorgeben, siehe unten):
   Unterschriftslinie, z. B. `{{unterschrift.Kunde}}` beim Auftraggeber. Der Kalkulator schreibt dort eine
   unsichtbare Marke (weiß, 1 pt), findet sie nach der PDF-Umwandlung wieder und gibt Paperless je Marke ein
   Unterschriftsfeld mit Seite und Lage. Die linke untere Ecke des Felds liegt auf der Marke; der Platzhalter gehört
-  deshalb an den Anfang der Unterschriftslinie.
+  deshalb an den Anfang der Unterschriftslinie. Das Feld ist etwa 6,4 × 2 cm groß (`Paperless:FeldBreite`/`FeldHoehe`,
+  180 × 56 pt); darüber und rechts davon muss so viel Platz frei sein, sonst liegt es über Text wie „Ort, Datum“.
 - **Rollen und Personen:** Die Rolle ist der Slot in Paperless, sofern `Paperless:Rollen` nichts anderes sagt.
   Rollen, die nicht fest eingestellt sind (in der Regel „Kunde“), fragt die Projektansicht vor dem Erzeugen ab:
   Name und E-Mail-Adresse. Für „Kunde“ ist der Ansprechpartner vorbelegt.

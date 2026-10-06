@@ -14,20 +14,41 @@ namespace Kalkulator.Infrastructure.Anwendung;
 /// <summary>Ein Dokument des Vertragswerks mit der Vorlage und ihrer aktiven Fassung; ohne aktive Fassung ist <see cref="Fassung"/> leer.</summary>
 public sealed record VertragswerkDokument(Vertragsdokument Dokument, DokumentVorlage? Vorlage, Vorlagenversion? Fassung);
 
-/// <summary>Welche Dokumente ein Vertragswerk umfasst und welche Angaben ihre Vorlagen verlangen.</summary>
-public sealed record Vertragsvorschau(IReadOnlyList<VertragswerkDokument> Dokumente, IReadOnlyList<EingabeDefinition> Eingaben)
+/// <summary>
+/// Welche Dokumente ein Vertragswerk umfasst und welche Angaben ihre Vorlagen verlangen. <see cref="Dokumente"/> sind
+/// alle Dokumente des Vertrags (z. B. für die Anlagenliste im Grundvertrag); erzeugt werden nur die
+/// <see cref="Erzeugte"/>, solange <see cref="Umfang"/> das Vertragswerk im Testbetrieb auf einzelne Vorlagen beschränkt.
+/// </summary>
+public sealed record Vertragsvorschau(IReadOnlyList<VertragswerkDokument> Dokumente, IReadOnlyList<EingabeDefinition> Eingaben, IReadOnlyList<string>? Umfang = null)
 {
-    public IReadOnlyList<VertragswerkDokument> OhneVorlage => [.. Dokumente.Where(d => d.Fassung is null)];
+    public IReadOnlyList<VertragswerkDokument> Erzeugte => [.. Dokumente.Where(ImUmfang)];
+
+    /// <summary>Dokumente, die wegen <see cref="Umfang"/> nicht erzeugt werden.</summary>
+    public IReadOnlyList<VertragswerkDokument> Ausgelassen => [.. Dokumente.Where(d => !ImUmfang(d))];
+
+    public IReadOnlyList<VertragswerkDokument> OhneVorlage => [.. Erzeugte.Where(d => d.Fassung is null)];
 
     /// <summary>Rollen aller Unterschriftsfelder der aktiven Fassungen, sortiert.</summary>
     public IReadOnlyList<string> Unterschriften =>
-        [.. Dokumente.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        [.. Erzeugte.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Unterschriften).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+
+    /// <summary>Vorlagencode eines Dokuments, z. B. GRUNDVERTRAG oder S14; ohne Vorlage der Code des Dokuments.</summary>
+    public static string Code(VertragswerkDokument d) => d.Vorlage?.Code ?? d.Dokument.Code;
+
+    private bool ImUmfang(VertragswerkDokument d) =>
+        Umfang is not { Count: > 0 } || Umfang.Contains(Code(d), StringComparer.OrdinalIgnoreCase);
 }
 
 public sealed class VertragswerkEinstellungen
 {
     /// <summary>Deckblatt der Gesamtdatei (templates/vertrag/Deckblatt.docx); wird mit dem Programm ausgeliefert.</summary>
     public string Deckblatt { get; set; } = "";
+
+    /// <summary>
+    /// Testbetrieb: Vorlagencodes der Dokumente, die erzeugt werden, z. B. nur „GRUNDVERTRAG“, solange die übrigen
+    /// Vorlagen noch nicht umgestellt sind. Leer = alle Dokumente (Normalbetrieb).
+    /// </summary>
+    public List<string> Umfang { get; set; } = [];
 }
 
 /// <summary>
@@ -110,11 +131,11 @@ public sealed class VertragswerkDienst(
             throw new KeinZugriffException("Diese Kalkulation gehört zu einem Kundenprojekt eines anderen Vertriebsmitarbeiters.");
         }
 
-        return await VorschauAsync(kontext, serviceCodes, abbruch);
+        return await VorschauAsync(kontext, serviceCodes, abbruch, einstellungen.Value.Umfang);
     }
 
     /// <summary>Löst die Services in Dokumente auf und ordnet jedem die Vorlage mit ihrer aktiven Fassung zu.</summary>
-    internal static async Task<Vertragsvorschau> VorschauAsync(KalkulatorDbContext kontext, IEnumerable<string> serviceCodes, CancellationToken abbruch)
+    internal static async Task<Vertragsvorschau> VorschauAsync(KalkulatorDbContext kontext, IEnumerable<string> serviceCodes, CancellationToken abbruch, IReadOnlyList<string>? umfang = null)
     {
         // Alle Services mit Bestandteilen laden; EF verknüpft verschachtelte Bundles selbst.
         var services = await kontext.Services.Include(s => s.Bestandteile).Include(s => s.Leistungsschein).ToListAsync(abbruch);
@@ -128,8 +149,8 @@ public sealed class VertragswerkDienst(
             return new VertragswerkDokument(d, vorlage, vorlage?.AktiveVersion);
         }).ToList();
 
-        var eingaben = Vertragsangaben.Vereinige(dokumente.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Eingaben));
-        return new Vertragsvorschau(dokumente, eingaben);
+        var vorschau = new Vertragsvorschau(dokumente, [], umfang);
+        return vorschau with { Eingaben = Vertragsangaben.Vereinige(vorschau.Erzeugte.Where(d => d.Fassung is not null).SelectMany(d => d.Fassung!.Eingaben)) };
     }
 
     /// <summary>Was zum Erzeugen des Vertragswerks eines Projekts fehlt; für die Projektansicht.</summary>
@@ -183,7 +204,8 @@ public sealed class VertragswerkDienst(
         var personen = PruefeUnterzeichner(bereitschaft.Unterzeichnerrollen ?? [], unterzeichner ?? []);
         var vorschau = bereitschaft.Vorschau!;
         var version = angebot!.Version!;
-        var fassungIds = vorschau.Dokumente.Select(d => d.Fassung!.Id).ToList();
+        var erzeugte = vorschau.Erzeugte;
+        var fassungIds = erzeugte.Select(d => d.Fassung!.Id).ToList();
         var dateien = await kontext.Set<VorlagenDatei>().AsNoTracking().Where(d => fassungIds.Contains(d.VorlagenversionId))
             .ToDictionaryAsync(d => d.VorlagenversionId, d => d.Inhalt, abbruch);
         var katalog = await kontext.Services.AsNoTracking().Include(s => s.Leistungsschein).ToListAsync(abbruch);
@@ -192,7 +214,7 @@ public sealed class VertragswerkDienst(
             katalog, [.. vorschau.Dokumente.Select(d => d.Dokument)], vorschau.Eingaben);
 
         var mappe = new List<MappenDokument>();
-        foreach (var (eintrag, i) in vorschau.Dokumente.Select((d, i) => (d, i)))
+        foreach (var (eintrag, i) in erzeugte.Select((d, i) => (d, i)))
         {
             var fassung = eintrag.Fassung!;
             byte[] docx;
@@ -227,7 +249,7 @@ public sealed class VertragswerkDienst(
             Datei = new VertragswerkDatei { GesamtPdf = gesamt, Zip = Vertragsmappe.Zip(mappe, name + ".pdf", gesamt) },
             Unterzeichner = personen,
         };
-        werk.Dokumente.AddRange(vorschau.Dokumente.Select((d, i) => new VertragswerkEintrag
+        werk.Dokumente.AddRange(erzeugte.Select((d, i) => new VertragswerkEintrag
         {
             Reihenfolge = i + 1,
             Code = d.Vorlage!.Code,
@@ -490,7 +512,7 @@ public sealed class VertragswerkDienst(
 
         var version = angebot.Version;
         var text = $"{angebot.Nummer} V{version.Nummer}";
-        var vorschau = await VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch);
+        var vorschau = await VorschauAsync(kontext, version.Positionen.Select(p => p.ServiceCode).OfType<string>(), abbruch, einstellungen.Value.Umfang);
         var fehlend = version.Vertragsangaben.Fehlend(vorschau.Eingaben);
         var grund = version.FreigabeVertriebsleitungVon is null || version.FreigabeSolutionConsultantVon is null
                 ? $"Das Angebot {text} wurde ohne Vertriebsfreigabe von Vertriebsleitung und Solution Consultant erzeugt."
@@ -498,6 +520,8 @@ public sealed class VertragswerkDienst(
                 ? $"Für {string.Join(", ", vorschau.OhneVorlage.Select(d => d.Dokument.Code))} gibt es noch keine freigegebene Vorlage (Katalog › Vertragsvorlagen)."
             : fehlend.Count > 0
                 ? $"Die Vorlagen verlangen inzwischen Angaben, die im Angebot {text} fehlen: {string.Join(", ", fehlend)}. Bitte in der Kalkulation ergänzen und ein neues Angebot erzeugen."
+            : vorschau.Erzeugte.Count == 0
+                ? $"Im Testbetrieb (Vertragswerk:Umfang = {string.Join(", ", vorschau.Umfang!)}) bleibt kein Dokument des Vertrags übrig."
             : wandler is KeinPdfWandler kein
                 ? kein.Grund
             : null;

@@ -353,6 +353,11 @@ input[type="text"], input[type="email"], input[type="number"], input[type="month
         color: var(--gut);
     }
 
+    .meldung.warnung {
+        background: var(--warn-bg);
+        color: var(--warn);
+    }
+
 .markiert {
     color: var(--orange);
     font-weight: bold;

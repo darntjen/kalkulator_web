@@ -46,7 +46,7 @@ else
                         @if (b.Vorschau is { } vorschau)
                         {
                             <ol class="dokumentliste">
-                                @foreach (var d in vorschau.Dokumente)
+                                @foreach (var d in vorschau.Erzeugte)
                                 {
                                     <li>
                                         @d.Dokument.Bezeichnung
@@ -61,6 +61,10 @@ else
                                     </li>
                                 }
                             </ol>
+                            @if (vorschau.Ausgelassen.Count > 0)
+                            {
+                                <p class="meldung warnung">Testbetrieb: Erzeugt wird nur @string.Join(", ", vorschau.Umfang!). Ohne eigenes Dokument, aber in der Anlagenliste des Vertrags: @string.Join(", ", vorschau.Ausgelassen.Select(d => d.Dokument.Code)).</p>
+                            }
                         }
                         @if (b.Sperrgrund is { } grund)
                         {
