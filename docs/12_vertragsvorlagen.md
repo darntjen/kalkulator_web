@@ -138,7 +138,7 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 | § 3 einmalige Leistungen (neu, falls gewünscht) | eigene Tabellenzeile `{{#einmalig}}{{position.code}}` … `{{position.gesamtpreis}}{{/einmalig}}`, Summe `{{summe.einmalig}}` |
 | § 6 die beiden Zeilen `[ggf. weitere Bundle-Leistungsscheine …]` und `[ggf. weitere Einzel-Leistungsscheine …]` samt der festen Anlagen davor | Absatz `{{#anlagen}}`, Aufzählungspunkt `{{anlage.code}} — {{anlage.bezeichnung}}`, Absatz `{{/anlagen}}` |
 | „Ort, Datum: ____“ | „Ort, Datum: `{{vertrag.datum}}`“ oder unverändert |
-| „Unterschrift: ____“ beim Auftraggeber bzw. bei Nösse | `{{unterschrift.Kunde}}____` bzw. `{{unterschrift.Nösse}}____` am Anfang der Linie (Abschnitt 7) |
+| Unterschrift beim Auftraggeber bzw. bei Nösse | eigene Zeile `{{unterschrift.Kunde}}______________________________` bzw. `{{unterschrift.Nösse}}…` mit 65 pt Abstand davor (Absatz → Abstand vor), darunter klein „Unterschrift“. So liegt das Paperless-Feld im freien Raum über der Linie und nicht über „Ort, Datum“ (Abschnitt 7; umgesetzt in Fassung 1.1, 06.10.2026) |
 
 ### Leistungsschein S14 (Vorlage V5.7)
 
