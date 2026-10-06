@@ -227,10 +227,10 @@ eine Reihenfolge vorgeben, siehe unten):
   Name und E-Mail-Adresse. Für „Kunde“ ist der Ansprechpartner vorbelegt.
 - **Paperless-Vorlage und PDF:** Ein Paperless-Dokument entsteht entweder aus einer Vorlage oder aus einem PDF. Mit
   `template_id` legt Paperless das Dokument aus der Vorlage an und lässt das PDF weg; das PDF lässt sich danach nicht
-  austauschen. Beim Anlegen aus einem PDF kennen Teilnehmer nur Name und E-Mail, keine Rolle (`approver`) und keine
-  Reihenfolge. Reihenfolge und Freigaben gibt es deshalb nur über eine Vorlage (siehe unten, Testlauf D).
-- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`): Paperless schickt die E-Mails selbst, erst an den Kunden und nach dessen Unterschrift an Nösse, wenn die Übergabe über die Ablauf-Vorlage läuft.
-- **Reihenfolge** (06.10.2026): Bei einem Dokument direkt aus dem PDF unterschreiben alle gleichzeitig; eine Reihenfolge lässt sich über die API nur mit einer Vorlage vorgeben. Mit `Paperless:UeberAblaufVorlage = true` legt die Übergabe eine Kopie der Ablauf-Vorlage mit PDF und Feldern an und erzeugt das Dokument daraus (wie Testlauf D). Voraussetzung: Testlauf D zeigt das PDF und die Reihenfolge Kunde → Nösse.
+  austauschen. Auch eine Kopie einer Vorlage mit eigenem PDF zeigt das PDF nicht (Testlauf D, 06.10.2026). Die
+  Übergabe legt das Dokument deshalb immer direkt aus dem PDF an.
+- **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`): Paperless schickt die E-Mails selbst, erst an den Kunden und nach dessen Unterschrift an Nösse.
+- **Reihenfolge** (06.10.2026): Paperless lässt in der Reihenfolge unterschreiben, in der die Teilnehmer in der Anfrage stehen (Testlauf E: erst Kunde, dann Nösse). Der Kalkulator ordnet sie nach `Paperless:Reihenfolge` (Standard `Kunde`, `Nösse`), unabhängig davon, wo die Felder im PDF stehen. Im Grundvertrag steht der Provider links und damit zuerst; ohne diese Ordnung hätte Nösse vor dem Kunden gestanden.
 - **Sprache:** `Paperless:Sprache` (Standard `de-DE`) setzt `original_content_locale` und `rendering_locale` des Dokuments, damit Paperless es den Unterzeichnern auf Deutsch zeigt.
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
@@ -238,21 +238,17 @@ eine Reihenfolge vorgeben, siehe unten):
   (nur nach beiden Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
 
 **Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
-- Arbeitsbereich **15114**. Die Paperless-Vorlage **50379** (Ablauf-Vorlage) enthält kein Dokument; sie regelt die
-  Reihenfolge und die beiden Freigaben vor dem Versand. Sie wird gebraucht, weil Reihenfolge und Freigaben anders nicht
-  vorzugeben sind.
+- Arbeitsbereich **15114**. Die Paperless-Vorlage 50379 (Ablauf-Vorlage) wird nicht mehr gebraucht: Reihenfolge über
+  die Teilnehmer der Anfrage, Freigaben im Kalkulator.
 - Slots **„Kunde“** und **„Nösse“**, nacheinander: erst unterschreibt der Kunde, dann Nösse.
 - **Kunde:** Name und E-Mail kommen je Vertrag aus dem Kalkulator (vorbelegt mit dem Ansprechpartner).
 - **Nösse:** Es unterschreibt immer **Sascha Manczak** (technischer Leiter), fest eingestellt.
 - **Freigaben:** AVV durch Matthias Erhard; Vertrag aus technischer Sicht durch Christian Leinen, Sascha Manczak oder
   Till Elsner. Sie laufen jetzt im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`, siehe oben), weil Paperless
   sie bei Dokumenten aus einem PDF nicht übernimmt.
-- Der Kalkulator übergibt nur Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
+- Der Kalkulator übergibt bis auf Weiteres Entwürfe (`Versenden = false`). In den Vertragsvorlagen stehen dafür
   `{{unterschrift.Kunde}}` und `{{unterschrift.Nösse}}` am Anfang der Unterschriftslinie (Frage 12.6).
-- Die Übergabe legt den Entwurf **direkt aus dem PDF** an (Testlauf E: PDF und Felder passen). Die Ablauf-Vorlage
-  50379 wird dafür nicht gebraucht; sie bleibt nur für den Testlauf D eingestellt.
-- **Offen:** ob Paperless bei Dokumenten aus einem PDF die Reihenfolge der Teilnehmer (erst Kunde, dann Nösse)
-  einhält oder an beide gleichzeitig sendet.
+- Die Übergabe legt den Entwurf **direkt aus dem PDF** an (Testlauf E: PDF, Felder und Reihenfolge passen).
 
 **Konfiguration** (Abschnitt `Paperless`; der Schlüssel gehört nicht ins Repository):
 
@@ -261,8 +257,7 @@ eine Reihenfolge vorgeben, siehe unten):
 | `Paperless:ApiSchluessel` | API-Schlüssel aus Paperless (Umgebungsvariable `Paperless__ApiSchluessel`); leer = Übergabe aus |
 | `Paperless:ArbeitsbereichId` | Arbeitsbereich (workspace_id); leer = Übergabe aus |
 | `Paperless:Adresse` | `https://api.paperless.io/api/v1/` |
-| `Paperless:AblaufVorlageId` | Paperless-Vorlage mit der Reihenfolge Kunde → Nösse (50379) |
-| `Paperless:UeberAblaufVorlage` | `true` = Übergabe über eine Kopie der Ablauf-Vorlage (Reihenfolge), `false` = direkt aus dem PDF (alle gleichzeitig) |
+| `Paperless:Reihenfolge` | Rollen in der Reihenfolge der Unterschriften, Standard `Kunde`, `Nösse` |
 | `Paperless:Versenden` | `false` = Entwurf, in Paperless von Hand versenden; `true` = Paperless versendet sofort |
 | `Paperless:Sprache` | Sprache des Dokuments für die Unterzeichner, Standard `de-DE` |
 | `Paperless:Rollen:<Rolle>:Slot` | Slot-Name in Paperless, falls er vom Rollennamen abweicht |
@@ -277,7 +272,7 @@ Anfrage vor der Anmeldung):
 - `POST blobs`: Name, Größe, MD5-Prüfsumme und Typ stehen **auf oberster Ebene** (`filename`, `byte_size`,
   `checksum`, `content_type`), nicht unter `blob`. Korrigiert; danach folgt der Upload an `direct_upload.url`.
 - `POST documents` mit `workspace_id`, `name`, `pdf` (signed_id), `participants` je Slot und `blocks` besteht die
-  Prüfung des Aufbaus; ebenso `POST templates` mit `template_id`, `pdf` und `blocks` (Kopie der Ablauf-Vorlage). Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
+  Prüfung des Aufbaus. Die Blöcke (`Block::Input::SignatureInput` mit `owner_participants_slot_names`,
   `pdf_page_number`, `settings.absolutePosition`, `settings.absoluteSize`) prüft Paperless erst nach der Anmeldung.
 
 **Erkenntnisse aus den Testläufen mit echtem Schlüssel** (05.10.2026):
@@ -287,17 +282,19 @@ Anfrage vor der Anmeldung):
   Punkt (1/72 Zoll). Lage und Größe werden jetzt mit `Paperless:Skalierung` (96/72) umgerechnet.
 - Ein Feld ohne Teilnehmer im Slot (früher „Nösse“) erscheint ohne Zuordnung; „Nösse“ ist jetzt fest Sascha Manczak.
 
-**Testlauf** (noch offen: Lage nach der Umrechnung und Variante D):
+- Testläufe 06.10.2026: Die Felder liegen nach der Umrechnung richtig. D (Kopie der Ablauf-Vorlage mit eigenem PDF)
+  zeigt das PDF nicht und ist entfallen; E (direkt aus dem PDF) zeigt PDF und Felder und hält die Reihenfolge ein.
+
+**Testlauf:**
 
 1. API-Schlüssel als Codespaces-Secret `PAPERLESS__APISCHLUESSEL` für das Repository anlegen (GitHub: Settings →
    Codespaces → Secrets) und den Codespace neu starten. Das Secret gilt für alle Codespaces des Repositorys,
-   unabhängig vom Branch; `.devcontainer/geheimnisse.sh` reicht es beim Start an die App weiter. Für Variante D braucht der Schlüssel zusätzlich das Recht
-   `template.write`. Auf einem Server genügt die Umgebungsvariable.
+   unabhängig vom Branch; `.devcontainer/geheimnisse.sh` reicht es beim Start an die App weiter. Auf einem Server genügt die Umgebungsvariable.
 2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
    der Test-„Kunde“; „Nösse“ ist Sascha Manczak, es wird nichts versendet).
-3. Der Testlauf legt zwei **Entwürfe** an: **D** über eine Kopie der Ablauf-Vorlage mit dem Muster-PDF (die Kopie wird
-   danach gelöscht) und **E** direkt aus dem PDF. Im Muster-PDF zeigt ein grauer Rahmen, wo das Feld liegen soll.
-   Prüfen: PDF sichtbar? Felder im Rahmen? Bei D Reihenfolge und Freigaben übernommen? Danach beide Entwürfe löschen.
+3. Der Testlauf legt einen **Entwurf** direkt aus dem Muster-PDF an. Im PDF steht Nösse wie im Grundvertrag oben,
+   der Kunde unten; ein grauer Rahmen zeigt, wo das Feld liegen soll. Prüfen: PDF sichtbar? Felder im Rahmen? Erst
+   Kunde, dann Nösse? Sprache Deutsch? Danach den Entwurf löschen.
 4. Der Testlauf protokolliert jede Anfrage mit Status und dem Aufbau der Antwort (nur Feldnamen, keine Werte). Bei
    Fehlern dieses Protokoll weitergeben.
 

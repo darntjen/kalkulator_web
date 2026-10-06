@@ -17,25 +17,18 @@ public sealed class PaperlessEinstellungen
     public long? ArbeitsbereichId { get; set; }
 
     /// <summary>
-    /// Paperless-Vorlage mit der Reihenfolge der Unterschriften (Ablauf-Vorlage). Ein Dokument entsteht in Paperless
-    /// entweder aus einer Vorlage oder aus einem PDF; mit <c>template_id</c> bliebe das PDF unberücksichtigt (Testlauf
-    /// 05.10.2026). Die Reihenfolge (erst Kunde, dann Nösse) lässt sich über die API nur über eine Vorlage vorgeben.
+    /// Reihenfolge der Unterschriften als Rollennamen (Entscheidung 05.10.2026: erst der Kunde, dann Nösse). In dieser
+    /// Reihenfolge stehen die Teilnehmer in der Anfrage; Paperless lässt sie danach nacheinander unterschreiben
+    /// (Testlauf E, 06.10.2026). Rollen, die hier fehlen, folgen in der Reihenfolge ihrer Felder im PDF.
     /// </summary>
-    public long? AblaufVorlageId { get; set; }
-
-    /// <summary>
-    /// <c>true</c>: Die Übergabe legt eine Kopie der Ablauf-Vorlage mit dem PDF und den Feldern an und erzeugt das
-    /// Dokument daraus (Weg wie Testlauf D), damit die Reihenfolge der Vorlage gilt. <c>false</c> (Standard): Das
-    /// Dokument entsteht direkt aus dem PDF; alle unterschreiben dann gleichzeitig.
-    /// </summary>
-    public bool UeberAblaufVorlage { get; set; }
+    public List<string> Reihenfolge { get; set; } = ["Kunde", "Nösse"];
 
     /// <summary>Sprache des Dokuments für die Unterzeichner (<c>original_content_locale</c>, <c>rendering_locale</c>); leer = Paperless-Standard.</summary>
     public string? Sprache { get; set; } = "de-DE";
 
     /// <summary>
-    /// <c>true</c>: Paperless versendet sofort (state „dispatched“) und schickt den Teilnehmern die E-Mails selbst, mit
-    /// Ablauf-Vorlage nacheinander. Standard ist <c>false</c>: Das Dokument liegt als Entwurf in Paperless und wird
+    /// <c>true</c>: Paperless versendet sofort (state „dispatched“) und schickt den Teilnehmern die E-Mails selbst, in
+    /// der <see cref="Reihenfolge"/>. Standard ist <c>false</c>: Das Dokument liegt als Entwurf in Paperless und wird
     /// dort von Hand versendet. Die Prüfungen durch AVV und Technik liegen ohnehin vor der Übergabe im Kalkulator.
     /// </summary>
     public bool Versenden { get; set; }
@@ -64,6 +57,10 @@ public sealed class PaperlessEinstellungen
     public double Skalierung { get; set; } = 96d / 72d;
 
     public bool Aktiv => !string.IsNullOrWhiteSpace(ApiSchluessel) && ArbeitsbereichId is not null;
+
+    /// <summary>Rollen in der <see cref="Reihenfolge"/> der Unterschriften; nicht genannte behalten ihre Reihenfolge dahinter.</summary>
+    public IEnumerable<string> Ordne(IEnumerable<string> rollen) =>
+        rollen.Distinct(StringComparer.Ordinal).OrderBy(r => Reihenfolge.IndexOf(r) is var i and >= 0 ? i : int.MaxValue);
 
     /// <summary>Einstellung einer Rolle; ohne Eintrag gilt der Rollenname als Slot und die Person wird abgefragt.</summary>
     public PaperlessRolle Rolle(string rolle) => Rollen.TryGetValue(rolle, out var r) ? r : new PaperlessRolle();

@@ -73,15 +73,6 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             Auftraege.Add(auftrag);
             return Fehler is { } f ? throw new PaperlessFehler(f) : Task.FromResult($"pl-{Auftraege.Count}");
         }
-
-        /// <summary>Vorlagen, über die übergeben wurde (Weg über die Ablauf-Vorlage).</summary>
-        public List<long> Vorlagen { get; } = [];
-
-        public Task<string> UebergebenUeberVorlageAsync(PaperlessAuftrag auftrag, long vorlageId, CancellationToken abbruch)
-        {
-            Vorlagen.Add(vorlageId);
-            return UebergebenAsync(auftrag, abbruch);
-        }
     }
 
     private readonly TestPaperless _paperless = new();
@@ -425,9 +416,9 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             "{{position.code}}",
             "{{/positionen}}",
             "Gesamt {{summe.monatlich}}",
-            "Auftraggeber {{unterschrift.Kunde}}",
             "Auftragnehmer {{unterschrift.Nösse}}",
-            "Zeuge {{unterschrift.Zeuge}}"));
+            "Zeuge {{unterschrift.Zeuge}}",
+            "Auftraggeber {{unterschrift.Kunde}}"));
         return (datenbank, dienste, projekt);
     }
 
@@ -475,11 +466,12 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         Assert.Equal($"Vertrag {werk.Nummer} – Muster Spedition GmbH", auftrag.Name);
         Assert.Equal((await dienste.Vertragswerk.DateiAsync(werkId, zip: false)).Inhalt, auftrag.Pdf);
 
-        // Kunde aus der Eingabe, Zeuge fest eingestellt; die Geschäftsführung legt die Paperless-Vorlage fest.
+        // Kunde aus der Eingabe, Zeuge fest eingestellt; die Geschäftsführung legt die Paperless-Vorlage fest. Der Kunde
+        // steht als Erster in der Anfrage, auch wenn sein Feld im PDF zuletzt kommt: Paperless lässt in dieser Reihenfolge unterschreiben.
         Assert.Equal(
             [new PaperlessTeilnehmer("Kunde", "Erika Beispiel", "erika.beispiel@example.org"), new PaperlessTeilnehmer("Zeuge", "Max Muster", "max.muster@noesse.de")],
             auftrag.Teilnehmer);
-        Assert.Equal(["Kunde", "Geschaeftsfuehrung", "Zeuge"], auftrag.Felder.Select(f => f.Slot));
+        Assert.Equal(["Geschaeftsfuehrung", "Zeuge", "Kunde"], auftrag.Felder.Select(f => f.Slot));
         Assert.All(auftrag.Felder, f => Assert.Equal(3, f.Stelle.Seite)); // Deckblatt, AVV, dann Grundvertrag
 
         await using var kontext = db.NeuerKontextAufDatenbank(datenbank);
@@ -530,37 +522,10 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         Assert.Contains("nur die neueste Ausfertigung", ueberholt.Message, StringComparison.Ordinal);
     }
 
-    private async Task BeideFreigebenAsync(string datenbank, int werkId, PaperlessEinstellungen? paperless = null)
+    private async Task BeideFreigebenAsync(string datenbank, int werkId)
     {
-        await DiensteFuer(datenbank, Avv, paperless: paperless ?? PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
-        await DiensteFuer(datenbank, Technik, paperless: paperless ?? PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
-    }
-
-    [Fact]
-    public async Task Mit_Ablauf_Vorlage_geht_die_Uebergabe_ueber_die_Vorlage_sonst_direkt_aus_dem_PDF()
-    {
-        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
-        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
-        var ueberVorlage = new PaperlessEinstellungen
-        {
-            ApiSchluessel = "test",
-            ArbeitsbereichId = 1,
-            AblaufVorlageId = 50379,
-            UeberAblaufVorlage = true,
-            Rollen = PaperlessAn.Rollen,
-        };
-
-        await BeideFreigebenAsync(datenbank, werkId, ueberVorlage);
-
-        Assert.Equal([50379L], _paperless.Vorlagen);
-        Assert.Equal("pl-1", Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt)).PaperlessDokumentId);
-
-        // Ohne den Schalter bleibt es beim Dokument direkt aus dem PDF, auch wenn eine Ablauf-Vorlage eingetragen ist.
-        var zweite = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
-        ueberVorlage.UeberAblaufVorlage = false;
-        await BeideFreigebenAsync(datenbank, zweite, ueberVorlage);
-        Assert.Equal([50379L], _paperless.Vorlagen);
-        Assert.Equal(2, _paperless.Auftraege.Count);
+        await DiensteFuer(datenbank, Avv, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Avv, erteilt: true);
+        await DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
     }
 
     [Fact]
