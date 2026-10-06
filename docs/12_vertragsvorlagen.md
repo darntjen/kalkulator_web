@@ -133,7 +133,7 @@ meldet sie als Hinweis, beim Grundvertrag als Fehler, weil die Pflicht-Platzhalt
 | `[Vertragsnummer]` | `{{vertrag.nummer}}` |
 | § 2 Abs. 1 `[Vertragsbeginn]` | `{{vertrag.beginn}}` |
 | § 1 Abs. 2 „in der … vereinbarten Stufe (Standard, Premium oder Enterprise)“ | optional „in der Stufe `{{vertrag.connectstufe}}`“ |
-| § 3 Tabelle: die vier Beispielzeilen (S01, B05, S34, B03) | eine Zeile: 1. Zelle `{{#positionen}}{{position.code}}`, dann `{{position.bezeichnung}}`, `{{position.menge}}`, `{{position.einzelpreis}}`, letzte Zelle `{{position.gesamtpreis}}{{/positionen}}` |
+| § 3 Tabelle: die vier Beispielzeilen (S01, B05, S34, B03) | eine Zeile: 1. Zelle `{{#positionen}}{{position.code}}`, dann `{{position.bezeichnung}}`, `{{position.menge}}`, `{{position.einzelpreis}}`, letzte Zelle `{{position.gesamtpreis}}{{/positionen}}`. Keine feste Zeilenhöhe und kein Zeilenumbruch nach `{{#positionen}}`, sonst werden alle Zeilen hoch. Je Service erscheint eine Zeile; Services aus mehreren Bausteinen (z. B. S14) mit Menge 1, Monatspreis und „Einzelheiten siehe Leistungsschein S14“ (06.10.2026) |
 | § 3 „Gesamtbetrag (netto, monatlich)“ 1.391,80 € | `{{summe.monatlich}}` |
 | § 3 einmalige Leistungen (neu, falls gewünscht) | eigene Tabellenzeile `{{#einmalig}}{{position.code}}` … `{{position.gesamtpreis}}{{/einmalig}}`, Summe `{{summe.einmalig}}` |
 | § 6 die beiden Zeilen `[ggf. weitere Bundle-Leistungsscheine …]` und `[ggf. weitere Einzel-Leistungsscheine …]` samt der festen Anlagen davor | Absatz `{{#anlagen}}`, Aufzählungspunkt `{{anlage.code}} — {{anlage.bezeichnung}}`, Absatz `{{/anlagen}}` |
@@ -284,8 +284,9 @@ Anfrage vor der Anmeldung):
 
 **Testlauf** (noch offen: Lage nach der Umrechnung und Variante D):
 
-1. API-Schlüssel als Codespaces-Secret `Paperless__ApiSchluessel` für das Repository anlegen (GitHub: Settings →
-   Codespaces → Secrets) und den Codespace neu starten. Für Variante D braucht der Schlüssel zusätzlich das Recht
+1. API-Schlüssel als Codespaces-Secret `PAPERLESS__APISCHLUESSEL` für das Repository anlegen (GitHub: Settings →
+   Codespaces → Secrets) und den Codespace neu starten. Das Secret gilt für alle Codespaces des Repositorys,
+   unabhängig vom Branch; `.devcontainer/geheimnisse.sh` reicht es beim Start an die App weiter. Für Variante D braucht der Schlüssel zusätzlich das Recht
    `template.write`. Auf einem Server genügt die Umgebungsvariable.
 2. Im Terminal: `dotnet run --project src/Kalkulator.Web -- --paperless-test name@noesse.de` (eigene Adresse; sie ist
    der Test-„Kunde“; „Nösse“ ist Sascha Manczak, es wird nichts versendet).
