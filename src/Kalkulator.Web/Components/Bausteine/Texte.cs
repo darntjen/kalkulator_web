@@ -71,8 +71,13 @@ public static class Texte
         _ => "niedrig",
     };
 
+    /// <summary>Meldung nach einer Freigabe, die noch nicht die letzte war, z. B. „Es fehlen noch: AVV, Technik.“</summary>
+    public static string FehlendeFreigaben(IReadOnlyList<VertragsfreigabeArt> fehlend) =>
+        fehlend.Count == 1 ? $"Es fehlt noch: {Vertragsfreigabe(fehlend[0])}." : $"Es fehlen noch: {string.Join(", ", fehlend.Select(Vertragsfreigabe))}.";
+
     public static string Vertragsfreigabe(VertragsfreigabeArt art) => art switch
     {
+        VertragsfreigabeArt.Vertriebsleitung => "Vertriebsleitung",
         VertragsfreigabeArt.Avv => "AVV",
         _ => "Technik",
     };

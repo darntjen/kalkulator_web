@@ -42,15 +42,22 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
     /// </summary>
     public bool SiehtAlleProjekte => Admin || Leitung || benutzer.IstInRolle(Rollen.Consultant) || benutzer.IstInRolle(Rollen.Fuehrung) || DarfVertraegeFreigeben;
 
-    /// <summary>Freigabe eines Vertragswerks vor der Übergabe an Paperless: AVV bzw. Technik (Entscheidung 05.10.2026).</summary>
+    /// <summary>
+    /// Freigabe eines Vertragswerks vor der Übergabe an Paperless: zuerst die Vertriebsleitung (Entscheidung 07.10.2026),
+    /// dann AVV bzw. Technik (Entscheidung 05.10.2026).
+    /// </summary>
     public bool DarfVertragFreigeben(VertragsfreigabeArt art) => art switch
     {
+        VertragsfreigabeArt.Vertriebsleitung => Admin || Leitung,
         VertragsfreigabeArt.Avv => Admin || benutzer.IstInRolle(Rollen.FreigabeAvv),
         VertragsfreigabeArt.Technik => Admin || benutzer.IstInRolle(Rollen.FreigabeTechnik),
         _ => false,
     };
 
-    public bool DarfVertraegeFreigeben => Admin || benutzer.IstInRolle(Rollen.FreigabeAvv) || benutzer.IstInRolle(Rollen.FreigabeTechnik);
+    /// <summary>Erzeugt die Vertriebsleitung ein Vertragswerk selbst, entfällt ihre Freigabe (Entscheidung 07.10.2026).</summary>
+    public bool IstVertriebsleitung => Leitung;
+
+    public bool DarfVertraegeFreigeben => Admin || Leitung || benutzer.IstInRolle(Rollen.FreigabeAvv) || benutzer.IstInRolle(Rollen.FreigabeTechnik);
 
     public bool DarfProjekteSehen => SiehtAlleProjekte || Vertrieb;
 

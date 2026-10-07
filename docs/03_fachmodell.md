@@ -76,7 +76,7 @@ erDiagram
 | **Dokument** | Erzeugte Datei | Typ (Angebot/Vertragspaket), Nummer, Dateiname, Vorlagenversionen, erzeugt am/von |
 | **Vertragsangaben** | Angaben, die die Vertragsvorlagen über `{{eingabe.…}}` verlangen (#26) | Werte (Text, Auswahl) und Listen; gepflegt am Arbeitsstand, eingefroren mit der Kalkulationsversion |
 | **Vertragswerk** | Erzeugtes Vertragswerk eines gewonnenen Projekts (#26) | Vertragsnummer (= Angebotsnummer), Ausfertigung, angenommenes Angebot, Dokumente in Rangfolge mit verwendeter Vorlagenfassung, Gesamt-PDF und ZIP; unveränderlich bis auf die Vertragsfreigaben und den Vermerk der Übergabe an Paperless (Dokumentkennung, Zeitpunkt, Fehler) und die dafür erfassten Unterzeichner |
-| **Vertragsfreigabe** | Prüfung einer Ausfertigung des Vertragswerks vor Paperless (Entscheidung 05.10.2026) | Art (AVV / Technik), freigegeben oder abgelehnt, wer, wann, Begründung (bei Ablehnung Pflicht). Je Ausfertigung und Art genau eine; parallel. Eine Ablehnung sperrt die Ausfertigung, der Vertrieb erzeugt neu. Nach beiden Freigaben geht die Ausfertigung an Paperless |
+| **Vertragsfreigabe** | Prüfung einer Ausfertigung des Vertragswerks vor Paperless (Entscheidungen 05.10. und 07.10.2026) | Art (Vertriebsleitung / AVV / Technik), freigegeben oder abgelehnt, wer, wann, Begründung (bei Ablehnung Pflicht). Je Ausfertigung und Art genau eine. Zuerst die Vertriebsleitung (beim Erzeugen vermerkt, wenn sie selbst erzeugt), danach AVV und Technik parallel. Eine Ablehnung sperrt die Ausfertigung, der Vertrieb erzeugt neu. Nach allen Freigaben geht die Ausfertigung an Paperless |
 
 ## Projektstatus eines Kundenprojekts (bestätigt 25.09.2026, am Kundenprojekt seit 29.09.2026)
 

@@ -35,7 +35,25 @@ public class BerechtigungTests
 
         Assert.True(avv.DarfVertragFreigeben(VertragsfreigabeArt.Avv));
         Assert.False(avv.DarfVertragFreigeben(VertragsfreigabeArt.Technik));
+        Assert.False(avv.DarfVertragFreigeben(VertragsfreigabeArt.Vertriebsleitung));
         Assert.False(avv.DarfKatalogFreigeben);
         Assert.False(avv.DarfSonderpositionenFreigeben);
+    }
+
+    [Fact]
+    public void Vertriebsleitung_gibt_Vertraege_als_Erste_frei_aber_nicht_AVV_und_Technik()
+    {
+        var leitung = new Berechtigung(new TestBenutzer("vl@noesse.de", Rollen.Vertriebsleitung));
+        var vertrieb = new Berechtigung(new TestBenutzer("vertrieb@noesse.de", Rollen.Vertrieb));
+
+        Assert.True(leitung.IstVertriebsleitung);
+        Assert.True(leitung.DarfVertraegeFreigeben);
+        Assert.True(leitung.DarfVertragFreigeben(VertragsfreigabeArt.Vertriebsleitung));
+        Assert.False(leitung.DarfVertragFreigeben(VertragsfreigabeArt.Avv));
+        Assert.False(leitung.DarfVertragFreigeben(VertragsfreigabeArt.Technik));
+
+        Assert.False(vertrieb.IstVertriebsleitung);
+        Assert.False(vertrieb.DarfVertraegeFreigeben);
+        Assert.All(Enum.GetValues<VertragsfreigabeArt>(), a => Assert.False(vertrieb.DarfVertragFreigeben(a)));
     }
 }

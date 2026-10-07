@@ -191,8 +191,8 @@ Ist die Konfiguration unvollständig, startet der Kalkulator trotzdem. Der Abgle
 ## 7. Übergabe an Paperless (Teil D)
 
 Die kaufmännische Freigabe (Vertriebsleitung und Solution Consultant) liegt vor dem Angebot im Kalkulator. Das
-erzeugte Vertragswerk prüfen danach **AVV** und **Technik**, ebenfalls im Kalkulator (Vertragsfreigabe, siehe unten).
-Erst nach beiden Freigaben geht es an Paperless; Paperless schickt es zur Unterschrift an den Kunden und danach an
+erzeugte Vertragswerk gibt danach zuerst die **Vertriebsleitung** frei, anschließend prüfen **AVV** und **Technik**,
+alles im Kalkulator (Vertragsfreigabe, siehe unten). Erst nach allen Freigaben geht es an Paperless; Paperless schickt es zur Unterschrift an den Kunden und danach an
 Nösse.
 
 **Vertragsfreigabe** (Entscheidungen 05.10.2026; Paperless kann bei Dokumenten aus einem PDF weder Freigaben noch
@@ -200,19 +200,26 @@ eine Reihenfolge vorgeben, siehe unten):
 - Neue App-Rollen **`FreigabeAvv`** (heute Matthias Erhard) und **`FreigabeTechnik`** (heute Christian Leinen,
   Sascha Manczak, Till Elsner). Sie kommen zu den übrigen Rollen einer Person hinzu; die IT weist sie über
   Entra-Gruppen zu.
+- **Zuerst die Vertriebsleitung** (Entscheidung 07.10.2026): Hat der Vertrieb das Vertragswerk erzeugt, gibt die
+  Vertriebsleitung (Rolle `Vertriebsleitung`) es frei oder lehnt es mit Begründung ab. Erst danach sehen AVV und Technik
+  die Ausfertigung. Hat die Vertriebsleitung das Vertragswerk selbst erzeugt, entfällt ihre Prüfung: Die Freigabe wird
+  beim Erzeugen mit dem Vermerk „Von der Vertriebsleitung erzeugt“ gespeichert, und AVV und Technik sehen es sofort.
 - Geprüft wird die **Gesamtdatei** der neuesten Ausfertigung. Sie öffnet sich mit „Ansehen“ im Browser.
-- Beide Prüfungen laufen **parallel**, in beliebiger Reihenfolge. Je Ausfertigung und Prüfung gibt es genau eine
+- AVV und Technik prüfen danach **parallel**, in beliebiger Reihenfolge. Je Ausfertigung und Prüfung gibt es genau eine
   Entscheidung; wer, wann und die Begründung werden gespeichert.
-- **Ablehnung** nur mit Begründung (höchstens 1000 Zeichen). Sie sperrt die Ausfertigung: Die andere Prüfung entfällt,
+- **Ablehnung** nur mit Begründung (höchstens 1000 Zeichen). Sie sperrt die Ausfertigung: Die übrigen Prüfungen entfallen,
   und der Vertrieb korrigiert (Kalkulation, Vertragsangaben oder Vorlage) und erzeugt das Vertragswerk neu. Die neue
   Ausfertigung beginnt ohne Freigaben.
 - Eine neuere Ausfertigung macht ältere überholt; geprüft und übergeben wird nur die neueste.
-- Die Startseite zeigt Personen mit einer Prüfrolle die **offenen Freigaben** (neueste Ausfertigung, nicht abgelehnt,
-  noch nicht übergeben, Projekt „Gewonnen“). Dort lässt sich direkt freigeben oder mit Begründung ablehnen; „Vertrag
+- Die Startseite zeigt der Vertriebsleitung und Personen mit einer Prüfrolle die **offenen Freigaben** (neueste
+  Ausfertigung, nicht abgelehnt, noch nicht übergeben, Projekt „Gewonnen“; AVV und Technik erst nach der
+  Vertriebsleitung). Dort lässt sich direkt freigeben oder mit Begründung ablehnen; „Vertrag
   ansehen“ öffnet die Gesamtdatei (Entscheidung 07.10.2026). Mehr zeigt das Kundenprojekt. Eine Benachrichtigung per
   E-Mail gibt es noch nicht.
-- Der Admin darf beide Prüfungen erteilen.
-- Ausfertigungen, die vor dieser Änderung schon übergeben wurden, zeigen „entfällt“.
+- Der Admin darf alle drei Prüfungen erteilen.
+- Ausfertigungen, die vor dieser Änderung schon übergeben wurden, zeigen „entfällt“. Das gilt seit dem 07.10.2026 auch
+  für die Spalte Vertriebsleitung bei älteren Ausfertigungen. Eine noch offene ältere Ausfertigung braucht zuerst die
+  Freigabe der Vertriebsleitung.
 
 **Ablauf der Übergabe** (Entscheidungen 04.10.2026, angepasst 05.10.2026):
 - Die Übergabe geschieht **automatisch mit der zweiten Freigabe**, sobald Paperless eingerichtet ist. Ohne Paperless
@@ -238,7 +245,7 @@ eine Reihenfolge vorgeben, siehe unten):
 - **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
   Vertragswerk mit seinen Freigaben gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“
-  (nur nach beiden Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
+  (nur nach allen Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
 
 **Einrichtung bei Nösse** (Entscheidungen 05.10.2026):
 - Arbeitsbereich **15114**. Die Paperless-Vorlage 50379 (Ablauf-Vorlage) wird nicht mehr gebraucht: Reihenfolge über

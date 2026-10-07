@@ -104,10 +104,11 @@ else if (new Berechtigung(Benutzer).DarfVertraegeFreigeben)
             (_meldung, _meldungIstFehler) = (erteilt, werk) switch
             {
                 (false, _) => ($"{wer} abgelehnt. Der Vertrieb korrigiert und erzeugt das Vertragswerk neu.", false),
-                (true, { PaperlessDokumentId: { } pid }) => ($"{wer} freigegeben. Beide Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
+                (true, { PaperlessDokumentId: { } pid }) => ($"{wer} freigegeben. Alle Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
                 (true, { UebergabeFehler: { } fehler }) => ($"{wer} freigegeben, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler}", true),
-                (true, { IstFreigegeben: true }) => ($"{wer} freigegeben. Beide Freigaben liegen vor.", false),
-                _ => ($"{wer} freigegeben. Es fehlt noch die andere Freigabe.", false),
+                (true, { IstFreigegeben: true }) => ($"{wer} freigegeben. Alle Freigaben liegen vor.", false),
+                (true, { } w) => ($"{wer} freigegeben. {Texte.FehlendeFreigaben(w.Fehlend)}", false),
+                _ => ($"{wer} freigegeben.", false),
             };
         }
         catch (Exception e) when (e is InvalidOperationException or ArgumentException or KeyNotFoundException)
