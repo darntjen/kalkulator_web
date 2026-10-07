@@ -98,7 +98,7 @@ else
                         {
                             <div class="aktionen">
                                 <button type="button" class="knopf" disabled="@(b.Sperrgrund is not null || _erzeugt)" @onclick="VertragswerkErzeugenAsync">@(_erzeugt ? "Erzeuge Vertragswerk …" : "Vertragswerk erzeugen")</button>
-                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen. Danach prüfen AVV und Technik die Gesamtdatei@(b.Paperless ? "; nach beiden Freigaben geht sie mit den Unterschriftsfeldern an Paperless" : "").</span>
+                                <span class="unterzeile">Befüllt alle Dokumente, wandelt sie in PDF und fasst sie mit Deckblatt zu einer Gesamtdatei zusammen. Danach gibt die Vertriebsleitung die Gesamtdatei frei (entfällt, wenn sie selbst erzeugt), anschließend prüfen AVV und Technik@(b.Paperless ? "; nach allen Freigaben geht sie mit den Unterschriftsfeldern an Paperless" : "").</span>
                             </div>
                         }
                     </div>
@@ -115,14 +115,14 @@ else
                                             <td>@Texte.Zeitpunkt(w.ErstelltAm)<br /><span class="unterzeile">@w.ErstelltVon</span></td>
                                             <td>@w.Dokumente.Count</td>
                                             <td class="freigaben">
-                                                @foreach (var art in Enum.GetValues<VertragsfreigabeArt>())
+                                                @foreach (var art in Kalkulator.Domain.Projekte.Vertragswerk.Pruefungen)
                                                 {
                                                     var f = w.Freigabe(art);
                                                     <div class="freigabe">
                                                         <strong>@Texte.Vertragsfreigabe(art)</strong>
                                                         @if (f is null)
                                                         {
-                                                            <span class="pille">@(w.IstAbgelehnt || w.PaperlessDokumentId is not null || w != _vertragswerke[0] ? "entfällt" : "offen")</span>
+                                                            <span class="pille">@(w.IstAbgelehnt || w.PaperlessDokumentId is not null || w != _vertragswerke[0] ? "entfällt" : w.IstVorgelegt(art) ? "offen" : "nach Vertriebsleitung")</span>
                                                         }
                                                         else if (f.Erteilt)
                                                         {
@@ -557,14 +557,19 @@ else
             { PaperlessDokumentId: { } pid } => ($"Vertragswerk {(neu ? "erzeugt und " : "")}an Paperless übergeben (Dokument {pid}). Technische Freigabe und Versand an den Kunden laufen dort.", false),
             { UebergabeFehler: { } fehler } when neu => ($"Vertragswerk erzeugt und gespeichert, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Bitte später „Erneut übergeben“.", true),
             { UebergabeFehler: { } fehler } => ($"Die Übergabe an Paperless ist erneut fehlgeschlagen: {fehler}", true),
-            _ when neu => ("Vertragswerk erzeugt. Es wartet jetzt auf die Freigaben durch AVV und Technik" + (_bereitschaft?.Paperless == true ? "; danach geht es an Paperless." : "."), false),
+            { } w when neu => ("Vertragswerk erzeugt. " + (w.IstVorgelegt(VertragsfreigabeArt.Avv)
+                ? "Die Freigabe der Vertriebsleitung ist mit dem Erzeugen vermerkt; es wartet jetzt auf AVV und Technik"
+                : "Es wartet jetzt auf die Freigabe der Vertriebsleitung, danach auf AVV und Technik") + (_bereitschaft?.Paperless == true ? "; danach geht es an Paperless." : "."), false),
             _ => ("Das Vertragswerk ist noch nicht an Paperless übergeben.", false),
         };
     }
 
-    /// <summary>Freigeben bzw. ablehnen dürfen die Rollen der Prüfung, und nur bei der neuesten, noch offenen Ausfertigung.</summary>
+    /// <summary>
+    /// Freigeben bzw. ablehnen dürfen die Rollen der Prüfung, und nur bei der neuesten, noch offenen Ausfertigung; AVV und
+    /// Technik erst nach der Vertriebsleitung.
+    /// </summary>
     private bool DarfPruefen(VertragswerkZeile w, VertragsfreigabeArt art) =>
-        w == _vertragswerke[0] && !w.IstAbgelehnt && w.PaperlessDokumentId is null && Vertragswerk.Recht.DarfVertragFreigeben(art);
+        w == _vertragswerke[0] && !w.IstAbgelehnt && w.PaperlessDokumentId is null && w.IstVorgelegt(art) && Vertragswerk.Recht.DarfVertragFreigeben(art);
 
     private Task PruefenAsync(int werkId, VertragsfreigabeArt art, bool erteilt) => AusfuehrenAsync(async () =>
     {
@@ -578,11 +583,11 @@ else
         var werk = (await Vertragswerk.ListeAsync(Id)).First(w => w.Id == werkId);
         return werk switch
         {
-            { PaperlessDokumentId: { } pid } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
+            { PaperlessDokumentId: { } pid } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Alle Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
             { UebergabeFehler: { } fehler } => ($"{Texte.Vertragsfreigabe(art)} freigegeben, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Der Vertrieb kann sie wiederholen.", true),
-            { IstFreigegeben: true } when _bereitschaft?.Paperless != true => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor, aber die Übergabe an Paperless ist nicht eingerichtet (API-Schlüssel Paperless__ApiSchluessel fehlt). Das Vertragswerk wurde nicht übergeben.", true),
-            { IstFreigegeben: true } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor.", false),
-            _ => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Es fehlt noch die andere Freigabe.", false),
+            { IstFreigegeben: true } when _bereitschaft?.Paperless != true => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Alle Freigaben liegen vor, aber die Übergabe an Paperless ist nicht eingerichtet (API-Schlüssel Paperless__ApiSchluessel fehlt). Das Vertragswerk wurde nicht übergeben.", true),
+            { IstFreigegeben: true } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Alle Freigaben liegen vor.", false),
+            _ => ($"{Texte.Vertragsfreigabe(art)} freigegeben. {Texte.FehlendeFreigaben(werk.Fehlend)}", false),
         };
     });
 

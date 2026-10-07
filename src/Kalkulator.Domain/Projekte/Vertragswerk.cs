@@ -4,7 +4,7 @@ namespace Kalkulator.Domain.Projekte;
 /// Erzeugtes Vertragswerk eines gewonnenen Kundenprojekts (#26, Teil C): alle Dokumente als PDF, eine Gesamtdatei für
 /// den Kunden und ein ZIP. Grundlage sind die eingefrorene Version des angenommenen Angebots und die bei der Erzeugung
 /// aktiven Vorlagenfassungen, die in <see cref="Dokumente"/> festgehalten werden. Unveränderlich bis auf die
-/// Vertragsfreigaben (AVV und Technik) und den Vermerk der Übergabe an Paperless (Teil D); wird es neu erzeugt (z. B.
+/// Vertragsfreigaben (Vertriebsleitung, dann AVV und Technik) und den Vermerk der Übergabe an Paperless (Teil D); wird es neu erzeugt (z. B.
 /// nach einer Ablehnung oder einer korrigierten Vorlage), entsteht eine weitere Ausfertigung ohne Freigaben.
 /// </summary>
 public class Vertragswerk
@@ -44,20 +44,41 @@ public class Vertragswerk
 
     public bool IstUebergeben => PaperlessDokumentId is not null;
 
-    /// <summary>Prüfungen dieser Ausfertigung durch AVV und Technik (Entscheidung 05.10.2026), parallel.</summary>
+    /// <summary>
+    /// Reihenfolge der Prüfungen: Zuerst gibt die Vertriebsleitung frei (Entscheidung 07.10.2026), danach prüfen AVV und
+    /// Technik parallel (Entscheidung 05.10.2026).
+    /// </summary>
+    public static readonly IReadOnlyList<VertragsfreigabeArt> Pruefungen =
+        [VertragsfreigabeArt.Vertriebsleitung, VertragsfreigabeArt.Avv, VertragsfreigabeArt.Technik];
+
+    /// <summary>Vermerk an der Freigabe der Vertriebsleitung, wenn sie das Vertragswerk selbst erzeugt hat.</summary>
+    public const string BeimErzeugen = "Von der Vertriebsleitung erzeugt";
+
+    /// <summary>Prüfungen dieser Ausfertigung durch Vertriebsleitung, AVV und Technik.</summary>
     public List<Vertragsfreigabe> Freigaben { get; } = [];
 
     /// <summary>Eine Ablehnung sperrt die Ausfertigung; der Vertrieb korrigiert und erzeugt neu.</summary>
     public bool IstAbgelehnt => Freigaben.Any(f => !f.Erteilt);
 
-    /// <summary>Beide Freigaben liegen vor; erst dann geht das Vertragswerk an Paperless.</summary>
-    public bool IstFreigegeben => !IstAbgelehnt && Enum.GetValues<VertragsfreigabeArt>().All(a => Freigaben.Any(f => f.Art == a && f.Erteilt));
+    /// <summary>Alle Freigaben liegen vor; erst dann geht das Vertragswerk an Paperless.</summary>
+    public bool IstFreigegeben => !IstAbgelehnt && Pruefungen.All(a => Freigaben.Any(f => f.Art == a && f.Erteilt));
 
     public Vertragsfreigabe? Freigabe(VertragsfreigabeArt art) => Freigaben.FirstOrDefault(f => f.Art == art);
 
     /// <summary>
-    /// Vermerkt die Freigabe bzw. Ablehnung einer Prüfung. Eine Ablehnung braucht eine Begründung; nach einer Ablehnung
-    /// oder der Übergabe an Paperless ist nichts mehr zu prüfen.
+    /// Ob die Prüfung <paramref name="art"/> schon vorgelegt wird: die Vertriebsleitung sofort, AVV und Technik erst nach
+    /// ihrer Freigabe.
+    /// </summary>
+    public bool IstVorgelegt(VertragsfreigabeArt art) => IstVorgelegt(art, Freigabe);
+
+    /// <summary>Gemeinsame Regel für das Vertragswerk und seine Listenansicht.</summary>
+    public static bool IstVorgelegt(VertragsfreigabeArt art, Func<VertragsfreigabeArt, Vertragsfreigabe?> freigabe) =>
+        art == VertragsfreigabeArt.Vertriebsleitung || freigabe(VertragsfreigabeArt.Vertriebsleitung)?.Erteilt == true;
+
+    /// <summary>
+    /// Vermerkt die Freigabe bzw. Ablehnung einer Prüfung. Eine Ablehnung braucht eine Begründung; AVV und Technik prüfen
+    /// erst nach der Freigabe der Vertriebsleitung; nach einer Ablehnung oder der Übergabe an Paperless ist nichts mehr zu
+    /// prüfen.
     /// </summary>
     public void Pruefe(VertragsfreigabeArt art, bool erteilt, string? begruendung, string von, DateTimeOffset zeitpunkt)
     {
@@ -81,6 +102,11 @@ public class Vertragswerk
             throw new InvalidOperationException("Für diese Ausfertigung ist die Prüfung bereits erfolgt.");
         }
 
+        if (!IstVorgelegt(art))
+        {
+            throw new InvalidOperationException("Zuerst gibt die Vertriebsleitung das Vertragswerk frei; danach prüfen AVV und Technik.");
+        }
+
         begruendung = string.IsNullOrWhiteSpace(begruendung) ? null : begruendung.Trim();
         if (!erteilt && begruendung is null)
         {
@@ -95,6 +121,13 @@ public class Vertragswerk
         ArgumentException.ThrowIfNullOrWhiteSpace(von);
         Freigaben.Add(new Vertragsfreigabe { Art = art, Erteilt = erteilt, Begruendung = begruendung, Von = von, Am = zeitpunkt });
     }
+
+    /// <summary>
+    /// Hat die Vertriebsleitung das Vertragswerk selbst erzeugt, entfällt ihre Prüfung (Entscheidung 07.10.2026): Die
+    /// Freigabe wird beim Erzeugen vermerkt, und AVV und Technik sehen das Vertragswerk sofort.
+    /// </summary>
+    public void GibFreigabeBeimErzeugen(DateTimeOffset zeitpunkt) =>
+        Pruefe(VertragsfreigabeArt.Vertriebsleitung, true, BeimErzeugen, ErstelltVon, zeitpunkt);
 
     /// <summary>Vermerkt die gelungene Übergabe; ein Vertragswerk geht nur einmal an Paperless.</summary>
     public void VermerkeUebergabe(string dokumentId, DateTimeOffset zeitpunkt)
@@ -131,6 +164,9 @@ public enum VertragsfreigabeArt
 
     /// <summary>Vertrag aus technischer Sicht.</summary>
     Technik = 2,
+
+    /// <summary>Freigabe durch die Vertriebsleitung, bevor AVV und Technik prüfen (Entscheidung 07.10.2026).</summary>
+    Vertriebsleitung = 3,
 }
 
 /// <summary>Freigabe oder Ablehnung einer Prüfung für genau eine Ausfertigung.</summary>

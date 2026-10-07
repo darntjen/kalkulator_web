@@ -59,3 +59,10 @@ abbilden.
 - Das Dokument trägt die Sprache `de-DE` (`Paperless:Sprache`).
 
 Einzelheiten: `docs/12_vertragsvorlagen.md`, Abschnitt 7.
+
+## Nachtrag 2026-10-07: Vertriebsleitung vor AVV und Technik
+
+Ein vom Vertrieb erzeugtes Vertragswerk gibt zuerst die Vertriebsleitung frei; erst danach sehen und prüfen AVV und
+Technik es. Erzeugt die Vertriebsleitung selbst, wird ihre Freigabe beim Erzeugen vermerkt. Die Freigabe ist eine
+weitere Art der Vertragsfreigabe (`Vertriebsleitung`); ein Schema-Update ist nicht nötig, weil die Art als Text
+gespeichert wird. An Paperless geht das Vertragswerk mit der letzten der drei Freigaben.

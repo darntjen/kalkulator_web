@@ -77,8 +77,8 @@ Deshalb entsteht im Codespace nur der Grundvertrag (Testbetrieb `Vertragswerk:Um
 1. Rolle **Produktmanagement** → Katalog › Vertragsvorlagen → „Jetzt abgleichen“ → beim Grundvertrag „Fassungen“ →
    „Freigeben und aktivieren“.
 2. Kundenprojekt mit Kalkulation, Vertriebsfreigaben (Vertriebsleitung, Consultant), Angebot, Status „Gewonnen“.
-3. Rolle **Vertrieb** → Kundenprojekt → „Vertragswerk erzeugen“. Danach prüfen die Rollen FreigabeAvv und
-   FreigabeTechnik.
+3. Rolle **Vertrieb** → Kundenprojekt → „Vertragswerk erzeugen“. Danach gibt die Rolle Vertriebsleitung frei, dann
+   prüfen die Rollen FreigabeAvv und FreigabeTechnik (jeweils auf der Startseite unter „Offene Freigaben“).
 
 **Paperless im Codespace:** Den API-Schlüssel als Codespaces-Secret anlegen: GitHub → eigenes Profil → Settings →
 Codespaces → Secrets → „New secret“, Name `PAPERLESS__APISCHLUESSEL`, Repository `kalkulator_web` auswählen. Das Secret
@@ -211,10 +211,10 @@ Pdf__Wandler=LibreOffice Vorlagen__Quelle=Ordner Vorlagen__Ordner=/pfad/zum/03_V
 
 Technik: ADR-0007.
 
-Das erzeugte Vertragswerk prüfen AVV und Technik im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`): Sie
-öffnen die Gesamtdatei im Browser und geben frei oder lehnen mit Begründung ab; offene Prüfungen stehen auf der
+Das erzeugte Vertragswerk gibt zuerst die Vertriebsleitung frei (entfällt, wenn sie es selbst erzeugt hat); danach
+prüfen AVV und Technik im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`). Alle öffnen die Gesamtdatei im Browser und geben frei oder lehnen mit Begründung ab; offene Prüfungen stehen auf der
 Startseite. Nach einer Ablehnung erzeugt der Vertrieb das Vertragswerk neu. Ist Paperless eingerichtet
-(`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei mit der zweiten Freigabe
+(`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei mit der letzten Freigabe
 automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless. Einrichtung: `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
 
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen

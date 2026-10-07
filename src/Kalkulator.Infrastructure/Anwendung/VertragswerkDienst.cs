@@ -83,7 +83,13 @@ public sealed record VertragswerkZeile(
 
     public bool IstAbgelehnt => Freigaben?.Any(f => !f.Erteilt) == true;
 
-    public bool IstFreigegeben => !IstAbgelehnt && Enum.GetValues<VertragsfreigabeArt>().All(a => Freigabe(a)?.Erteilt == true);
+    public bool IstFreigegeben => !IstAbgelehnt && Vertragswerk.Pruefungen.All(a => Freigabe(a)?.Erteilt == true);
+
+    /// <summary>AVV und Technik sehen die Ausfertigung erst nach der Freigabe der Vertriebsleitung.</summary>
+    public bool IstVorgelegt(VertragsfreigabeArt art) => Vertragswerk.IstVorgelegt(art, Freigabe);
+
+    /// <summary>Prüfungen, die noch fehlen, in der Reihenfolge des Ablaufs.</summary>
+    public IReadOnlyList<VertragsfreigabeArt> Fehlend => [.. Vertragswerk.Pruefungen.Where(a => Freigabe(a)?.Erteilt != true)];
 }
 
 /// <summary>Ein Vertragswerk, das auf eine Freigabe des angemeldeten Benutzers wartet (Startseite).</summary>
@@ -99,9 +105,10 @@ public sealed record OffeneVertragsfreigabe(
 
 /// <summary>
 /// Vertragswerk aus dem angenommenen Angebot (#26, Teil C): Dokumente nach Rangfolge, Vertragsangaben, Word-Dateien,
-/// PDFs, Gesamt-PDF und ZIP. Jede Ausfertigung prüfen AVV und Technik parallel (Entscheidung 05.10.2026); erst wenn
-/// beide freigegeben haben, geht das Gesamt-PDF mit seinen Unterschriftsfeldern an Paperless (Teil D). Schlägt die
-/// Übergabe fehl, bleibt das Vertragswerk erhalten und kann erneut übergeben werden.
+/// PDFs, Gesamt-PDF und ZIP. Jede Ausfertigung gibt zuerst die Vertriebsleitung frei (Entscheidung 07.10.2026), danach
+/// prüfen AVV und Technik parallel (Entscheidung 05.10.2026); erst wenn alle freigegeben haben, geht das Gesamt-PDF
+/// mit seinen Unterschriftsfeldern an Paperless (Teil D). Schlägt die Übergabe fehl, bleibt das Vertragswerk erhalten
+/// und kann erneut übergeben werden.
 /// </summary>
 public sealed class VertragswerkDienst(
     IDbContextFactory<KalkulatorDbContext> kontexte,
@@ -183,8 +190,9 @@ public sealed class VertragswerkDienst(
 
     /// <summary>
     /// Erzeugt das Vertragswerk aus dem angenommenen Angebot: jedes Dokument aus seiner aktiven Vorlagenfassung befüllt und
-    /// als PDF, dazu Deckblatt mit Verzeichnis, Gesamt-PDF und ZIP. Archiviert als neue Ausfertigung, die danach AVV und
-    /// Technik prüfen; <paramref name="unterzeichner"/> nennt die Personen der abgefragten Rollen für Paperless.
+    /// als PDF, dazu Deckblatt mit Verzeichnis, Gesamt-PDF und ZIP. Archiviert als neue Ausfertigung, die danach die
+    /// Vertriebsleitung und dann AVV und Technik prüfen; erzeugt die Vertriebsleitung selbst, entfällt ihre Prüfung;
+    /// <paramref name="unterzeichner"/> nennt die Personen der abgefragten Rollen für Paperless.
     /// </summary>
     public async Task<int> ErzeugenAsync(int projektId, IReadOnlyList<Unterzeichner>? unterzeichner = null, CancellationToken abbruch = default)
     {
@@ -257,14 +265,19 @@ public sealed class VertragswerkDienst(
             VorlagenversionId = d.Fassung!.Id,
             Fassung = Fassung(d),
         }));
+        if (_recht.IstVertriebsleitung)
+        {
+            werk.GibFreigabeBeimErzeugen(werk.ErstelltAm);
+        }
+
         kontext.Vertragswerke.Add(werk);
         await kontext.SaveChangesAsync(abbruch);
         return werk.Id;
     }
 
     /// <summary>
-    /// Freigabe oder Ablehnung der neuesten Ausfertigung durch AVV bzw. Technik. Liegt danach auch die andere Freigabe
-    /// vor und ist Paperless eingerichtet, geht das Vertragswerk gleich an Paperless.
+    /// Freigabe oder Ablehnung der neuesten Ausfertigung durch Vertriebsleitung, AVV bzw. Technik. Liegen danach alle
+    /// Freigaben vor und ist Paperless eingerichtet, geht das Vertragswerk gleich an Paperless.
     /// </summary>
     public async Task FreigebenAsync(int vertragswerkId, VertragsfreigabeArt art, bool erteilt, string? begruendung = null, CancellationToken abbruch = default)
     {
@@ -275,9 +288,12 @@ public sealed class VertragswerkDienst(
         var (projekt, _) = await LadeAsync(kontext, werk.KundenprojektId, abbruch);
         if (!_recht.DarfVertragFreigeben(art))
         {
-            throw new KeinZugriffException(art == VertragsfreigabeArt.Avv
-                ? "Die AVV-Freigabe erteilt die Rolle „Freigabe AVV“."
-                : "Die technische Freigabe erteilt die Rolle „Freigabe Technik“.");
+            throw new KeinZugriffException(art switch
+            {
+                VertragsfreigabeArt.Vertriebsleitung => "Diese Freigabe erteilt die Vertriebsleitung.",
+                VertragsfreigabeArt.Avv => "Die AVV-Freigabe erteilt die Rolle „Freigabe AVV“.",
+                _ => "Die technische Freigabe erteilt die Rolle „Freigabe Technik“.",
+            });
         }
 
         await PruefeNeuesteAsync(kontext, werk, abbruch);
@@ -290,10 +306,13 @@ public sealed class VertragswerkDienst(
         }
     }
 
-    /// <summary>Neueste, weder abgelehnte noch übergebene Ausfertigungen, die auf eine Freigabe des Benutzers warten.</summary>
+    /// <summary>
+    /// Neueste, weder abgelehnte noch übergebene Ausfertigungen, die auf eine Freigabe des Benutzers warten; AVV und
+    /// Technik erst, wenn die Vertriebsleitung freigegeben hat.
+    /// </summary>
     public async Task<IReadOnlyList<OffeneVertragsfreigabe>> OffeneFreigabenAsync(CancellationToken abbruch = default)
     {
-        var arten = Enum.GetValues<VertragsfreigabeArt>().Where(_recht.DarfVertragFreigeben).ToList();
+        var arten = Vertragswerk.Pruefungen.Where(_recht.DarfVertragFreigeben).ToList();
         if (arten.Count == 0)
         {
             return [];
@@ -307,7 +326,7 @@ public sealed class VertragswerkDienst(
         var projekte = await kontext.Kundenprojekte.AsNoTracking().Include(p => p.Kunde)
             .Where(p => ids.Contains(p.Id)).ToDictionaryAsync(p => p.Id, abbruch);
         return [.. neueste
-            .Select(v => (Werk: v, Offen: arten.Where(a => v.Freigabe(a) is null).ToList()))
+            .Select(v => (Werk: v, Offen: arten.Where(a => v.Freigabe(a) is null && v.IstVorgelegt(a)).ToList()))
             .Where(x => x.Offen.Count > 0 && projekte.ContainsKey(x.Werk.KundenprojektId) && projekte[x.Werk.KundenprojektId].Status == ProjektStatus.Gewonnen)
             .OrderBy(x => x.Werk.ErstelltAm)
             .Select(x =>
@@ -359,7 +378,7 @@ public sealed class VertragswerkDienst(
 
         if (!werk.IstFreigegeben)
         {
-            throw new InvalidOperationException("An Paperless geht das Vertragswerk erst nach den Freigaben durch AVV und Technik.");
+            throw new InvalidOperationException("An Paperless geht das Vertragswerk erst nach den Freigaben durch Vertriebsleitung, AVV und Technik.");
         }
 
         await PruefeNeuesteAsync(kontext, werk, abbruch);
