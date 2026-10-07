@@ -580,6 +580,7 @@ else
         {
             { PaperlessDokumentId: { } pid } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
             { UebergabeFehler: { } fehler } => ($"{Texte.Vertragsfreigabe(art)} freigegeben, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler} Der Vertrieb kann sie wiederholen.", true),
+            { IstFreigegeben: true } when _bereitschaft?.Paperless != true => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor, aber die Übergabe an Paperless ist nicht eingerichtet (API-Schlüssel Paperless__ApiSchluessel fehlt). Das Vertragswerk wurde nicht übergeben.", true),
             { IstFreigegeben: true } => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Beide Freigaben liegen vor.", false),
             _ => ($"{Texte.Vertragsfreigabe(art)} freigegeben. Es fehlt noch die andere Freigabe.", false),
         };
