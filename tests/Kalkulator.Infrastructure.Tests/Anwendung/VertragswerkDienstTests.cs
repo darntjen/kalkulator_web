@@ -313,6 +313,12 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         using (var deckblatt = DocumentFormat.OpenXml.Packaging.WordprocessingDocument.Open(new MemoryStream(_wandler.Dokumente[^1]), false))
         {
             Assert.Contains("1Auftragsverarbeitungsvereinbarung", deckblatt.MainDocumentPart!.Document!.Body!.InnerText, StringComparison.Ordinal);
+
+            // Kunde wie Nösse: Firma in einem Absatz, Anschrift in einer Zeile darunter.
+            var absaetze = deckblatt.MainDocumentPart.Document.Body.Elements<DocumentFormat.OpenXml.Wordprocessing.Paragraph>().Select(p => p.InnerText).ToList();
+            var firma = absaetze.IndexOf("Muster Spedition GmbH");
+            Assert.True(firma > 0, string.Join(" | ", absaetze));
+            Assert.Equal("Hafenstraße 12, 26135 Oldenburg", absaetze[firma + 1]);
         }
 
         var (pdfName, pdf) = await dienste.Vertragswerk.DateiAsync(werkId, zip: false);

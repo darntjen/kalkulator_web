@@ -338,7 +338,11 @@ public sealed partial class PreislistenDienst(IDbContextFactory<KalkulatorDbCont
     /// <summary>Gibt einen Entwurf frei; danach ist er unveränderlich und gilt ab seinem Gültigkeitsdatum.</summary>
     public async Task FreigebenAsync(int id, CancellationToken abbruch = default)
     {
-        PruefePflegen();
+        if (!_recht.DarfKatalogFreigeben)
+        {
+            throw new KeinZugriffException("Preislisten gibt nur das Produktmanagement oder der Admin frei.");
+        }
+
         await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
         var fehler = (await PruefenAsync(kontext, id, abbruch)).Where(h => h.IstFehler).ToList();
         if (fehler.Count > 0)

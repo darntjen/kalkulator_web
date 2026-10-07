@@ -208,7 +208,10 @@ eine Reihenfolge vorgeben, siehe unten):
   Ausfertigung beginnt ohne Freigaben.
 - Eine neuere Ausfertigung macht ältere überholt; geprüft und übergeben wird nur die neueste.
 - Die Startseite zeigt Personen mit einer Prüfrolle die **offenen Freigaben** (neueste Ausfertigung, nicht abgelehnt,
-  noch nicht übergeben, Projekt „Gewonnen“). Eine Benachrichtigung per E-Mail gibt es noch nicht.
+  noch nicht übergeben, Projekt „Gewonnen“). Dort lässt sich direkt freigeben oder mit Begründung ablehnen; „Vertrag
+  ansehen“ öffnet die Gesamtdatei (Entscheidung 07.10.2026). Mehr zeigt das Kundenprojekt. Eine Benachrichtigung per
+  E-Mail gibt es noch nicht.
+- Der Admin darf beide Prüfungen erteilen.
 - Ausfertigungen, die vor dieser Änderung schon übergeben wurden, zeigen „entfällt“.
 
 **Ablauf der Übergabe** (Entscheidungen 04.10.2026, angepasst 05.10.2026):

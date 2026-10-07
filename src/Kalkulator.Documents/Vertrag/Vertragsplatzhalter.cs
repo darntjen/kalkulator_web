@@ -38,6 +38,7 @@ public static class Vertragsplatzhalter
         new("kunde.plz", PlatzhalterArt.Text, "Postleitzahl", "26135"),
         new("kunde.ort", PlatzhalterArt.Text, "Ort", "Oldenburg"),
         new("kunde.anschrift", PlatzhalterArt.Text, "Firma und Anschrift, mehrzeilig", "Muster Spedition GmbH\nHafenstraße 12\n26135 Oldenburg"),
+        new("kunde.adresszeile", PlatzhalterArt.Text, "Straße, PLZ und Ort in einer Zeile (ohne Firma)", "Hafenstraße 12, 26135 Oldenburg"),
         new("kunde.ansprechpartner", PlatzhalterArt.Text, "Ansprechpartner des Kunden", "Frau Beispiel"),
         new("kunde.navision", PlatzhalterArt.Text, "Navision-Kundennummer", "K10042"),
         new("vertrag.nummer", PlatzhalterArt.Text, "Vertragsnummer", "MS-V-2026-0001"),

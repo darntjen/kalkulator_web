@@ -385,7 +385,7 @@ else
                             </div>
                         }
 
-                        @if (_editierbar)
+                        @if (_freigeben)
                         {
                             <div class="stapel">
                                 <label class="schalter"><input type="checkbox" @bind="_bestaetigt" /> Ich habe die Preisliste geprüft. Nach der Freigabe ist sie unveränderlich und gilt ab dem @liste.GueltigAb.ToString("dd.MM.yyyy").</label>
@@ -393,6 +393,9 @@ else
                                     <button type="button" class="knopf" disabled="@(fehler.Count > 0 || !_bestaetigt)" @onclick="FreigebenAsync">Preisliste freigeben</button>
                                 </div>
                             </div>
+                        }
+                        @if (_editierbar)
+                        {
                             <hr />
                             <div class="stapel">
                                 <label class="schalter"><input type="checkbox" @bind="_loeschenBestaetigt" /> Diesen Entwurf endgültig löschen</label>
@@ -431,7 +434,7 @@ else
     }
 
     private PreislistenAnsicht? _a;
-    private bool _editierbar, _meldungIstFehler, _nurAuffaellige, _bestaetigt, _loeschenBestaetigt;
+    private bool _editierbar, _freigeben, _meldungIstFehler, _nurAuffaellige, _bestaetigt, _loeschenBestaetigt;
     private string? _ladefehler, _meldung, _bezeichnung, _neuerParameter;
     private DateTime _gueltigAb;
     private string _reiter = "preise";
@@ -456,6 +459,7 @@ else
 
             var liste = _a.Preisliste;
             _editierbar = liste.IstAenderbar && Dienst.Recht.DarfKatalogPflegen;
+            _freigeben = liste.IstAenderbar && Dienst.Recht.DarfKatalogFreigeben;
             _bezeichnung = liste.Bezeichnung;
             _gueltigAb = liste.GueltigAb.ToDateTime(TimeOnly.MinValue);
             var komponenten = _a.Services.SelectMany(s => s.Preiskomponenten).ToList();
