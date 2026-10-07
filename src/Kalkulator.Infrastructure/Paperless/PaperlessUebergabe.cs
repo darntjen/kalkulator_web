@@ -23,13 +23,6 @@ public interface IPaperlessUebergabe
 {
     /// <summary>Legt das Dokument in Paperless an und gibt seine Kennung zurück; Fehler als <see cref="PaperlessFehler"/>.</summary>
     Task<string> UebergebenAsync(PaperlessAuftrag auftrag, CancellationToken abbruch);
-
-    /// <summary>
-    /// Versuch für Reihenfolge und Freigaben (Frage 12.5): Kopie der Ablauf-Vorlage mit dem PDF und den Feldern anlegen,
-    /// daraus das Dokument erzeugen und die Kopie wieder löschen. Bisher nur im Testlauf genutzt.
-    /// </summary>
-    Task<string> UebergebenUeberVorlageAsync(PaperlessAuftrag auftrag, long vorlageId, CancellationToken abbruch) =>
-        throw new NotSupportedException();
 }
 
 public sealed class PaperlessFehler(string meldung) : InvalidOperationException(meldung);
@@ -56,62 +49,6 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
             var blob = await HochladenAsync(e, auftrag, abbruch);
             var antwort = await SendeAsync(e, HttpMethod.Post, "documents", Dokument(e, auftrag, blob), abbruch);
             return Kennung(antwort, "id") ?? throw new PaperlessFehler("Paperless hat das Dokument angelegt, aber keine Kennung (id) zurückgegeben.");
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new PaperlessFehler($"Paperless ist nicht erreichbar: {ex.Message}");
-        }
-        catch (TaskCanceledException) when (!abbruch.IsCancellationRequested)
-        {
-            throw new PaperlessFehler("Paperless hat nicht rechtzeitig geantwortet.");
-        }
-    }
-
-    public async Task<string> UebergebenUeberVorlageAsync(PaperlessAuftrag auftrag, long vorlageId, CancellationToken abbruch)
-    {
-        var e = einstellungen.Value;
-        if (!e.Aktiv)
-        {
-            throw new PaperlessFehler("Die Übergabe an Paperless ist nicht eingerichtet (Paperless:ApiSchluessel und Paperless:ArbeitsbereichId).");
-        }
-
-        try
-        {
-            var blob = await HochladenAsync(e, auftrag, abbruch);
-            var kopie = new JsonObject
-            {
-                ["workspace_id"] = e.ArbeitsbereichId,
-                ["template_id"] = vorlageId,
-                ["name"] = auftrag.Name,
-                ["pdf"] = blob,
-                ["blocks"] = Bloecke(e, auftrag),
-            };
-            var vorlage = Kennung(await SendeAsync(e, HttpMethod.Post, "templates", kopie, abbruch), "id")
-                ?? throw new PaperlessFehler("Paperless hat die Kopie der Vorlage angelegt, aber keine Kennung (id) zurückgegeben.");
-            try
-            {
-                var dokument = new JsonObject
-                {
-                    ["workspace_id"] = e.ArbeitsbereichId,
-                    ["template_id"] = long.Parse(vorlage, CultureInfo.InvariantCulture),
-                    ["name"] = auftrag.Name,
-                    ["participants"] = Teilnehmer(auftrag),
-                };
-                var antwort = await SendeAsync(e, HttpMethod.Post, "documents", dokument, abbruch);
-                return Kennung(antwort, "id") ?? throw new PaperlessFehler("Paperless hat das Dokument angelegt, aber keine Kennung (id) zurückgegeben.");
-            }
-            finally
-            {
-                // Die Kopie wird nur für dieses Dokument gebraucht; schlägt das Löschen fehl, bleibt sie liegen.
-                try
-                {
-                    await SendeAsync(e, HttpMethod.Delete, $"templates/{vorlage}", null, CancellationToken.None);
-                }
-                catch (Exception ex) when (ex is PaperlessFehler or HttpRequestException)
-                {
-                    // bewusst ignoriert
-                }
-            }
         }
         catch (HttpRequestException ex)
         {
@@ -186,12 +123,23 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
         };
 
         // Kein template_id: Paperless legt das Dokument sonst aus der Vorlage an und lässt das PDF weg.
+        MitSprache(e, dokument);
         if (e.Versenden)
         {
             dokument["state"] = "dispatched";
         }
 
         return dokument;
+    }
+
+    /// <summary>Sprache des Dokuments, in der Paperless es den Unterzeichnern zeigt (sonst Englisch).</summary>
+    private static void MitSprache(PaperlessEinstellungen e, JsonObject dokument)
+    {
+        if (!string.IsNullOrWhiteSpace(e.Sprache))
+        {
+            dokument["original_content_locale"] = e.Sprache.Trim();
+            dokument["rendering_locale"] = e.Sprache.Trim();
+        }
     }
 
     private static JsonObject Teilnehmer(PaperlessAuftrag auftrag)

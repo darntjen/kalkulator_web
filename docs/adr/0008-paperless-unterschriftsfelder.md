@@ -53,6 +53,9 @@ abbilden.
   erzeugt neu.
 - Die Übergabe geschieht **nicht mehr beim Erzeugen**, sondern automatisch mit der zweiten Freigabe. „Erneut
   übergeben“ gibt es nur für freigegebene Ausfertigungen.
-- Für Nösse unterschreibt fest Sascha Manczak; Kunde zuerst, dann Nösse.
+- Für Nösse unterschreibt fest Sascha Manczak; Kunde zuerst, dann Nösse. Paperless lässt in der Reihenfolge der
+  Teilnehmer in der Anfrage unterschreiben; der Kalkulator ordnet sie nach `Paperless:Reihenfolge`. Eine Kopie der
+  Ablauf-Vorlage mit eigenem PDF zeigt das PDF nicht (Testlauf D) und entfällt.
+- Das Dokument trägt die Sprache `de-DE` (`Paperless:Sprache`).
 
 Einzelheiten: `docs/12_vertragsvorlagen.md`, Abschnitt 7.

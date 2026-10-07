@@ -416,9 +416,9 @@ public class VertragswerkDienstTests(SqlServerFixture db)
             "{{position.code}}",
             "{{/positionen}}",
             "Gesamt {{summe.monatlich}}",
-            "Auftraggeber {{unterschrift.Kunde}}",
             "Auftragnehmer {{unterschrift.Nösse}}",
-            "Zeuge {{unterschrift.Zeuge}}"));
+            "Zeuge {{unterschrift.Zeuge}}",
+            "Auftraggeber {{unterschrift.Kunde}}"));
         return (datenbank, dienste, projekt);
     }
 
@@ -466,11 +466,12 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         Assert.Equal($"Vertrag {werk.Nummer} – Muster Spedition GmbH", auftrag.Name);
         Assert.Equal((await dienste.Vertragswerk.DateiAsync(werkId, zip: false)).Inhalt, auftrag.Pdf);
 
-        // Kunde aus der Eingabe, Zeuge fest eingestellt; die Geschäftsführung legt die Paperless-Vorlage fest.
+        // Kunde aus der Eingabe, Zeuge fest eingestellt; die Geschäftsführung legt die Paperless-Vorlage fest. Der Kunde
+        // steht als Erster in der Anfrage, auch wenn sein Feld im PDF zuletzt kommt: Paperless lässt in dieser Reihenfolge unterschreiben.
         Assert.Equal(
             [new PaperlessTeilnehmer("Kunde", "Erika Beispiel", "erika.beispiel@example.org"), new PaperlessTeilnehmer("Zeuge", "Max Muster", "max.muster@noesse.de")],
             auftrag.Teilnehmer);
-        Assert.Equal(["Kunde", "Geschaeftsfuehrung", "Zeuge"], auftrag.Felder.Select(f => f.Slot));
+        Assert.Equal(["Geschaeftsfuehrung", "Zeuge", "Kunde"], auftrag.Felder.Select(f => f.Slot));
         Assert.All(auftrag.Felder, f => Assert.Equal(3, f.Stelle.Seite)); // Deckblatt, AVV, dann Grundvertrag
 
         await using var kontext = db.NeuerKontextAufDatenbank(datenbank);

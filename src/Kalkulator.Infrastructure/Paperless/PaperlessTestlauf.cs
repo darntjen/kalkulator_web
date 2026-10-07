@@ -1,4 +1,3 @@
-using System.Globalization;
 using Kalkulator.Documents.Vertrag;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
@@ -8,16 +7,16 @@ namespace Kalkulator.Infrastructure.Paperless;
 
 /// <summary>
 /// Testlauf gegen die echte Paperless-API (Frage 12.5), ohne Vertragsvorlagen und PDF-Umwandlung: Ein Muster-PDF mit
-/// erfundenem Inhalt und je einem Unterschriftsfeld für „Kunde“ und „Nösse“ geht als Entwurf an Paperless, einmal über
-/// eine Kopie der Ablauf-Vorlage (D, Reihenfolge und Freigaben) und einmal direkt aus dem PDF (E). Ein grauer Rahmen im
-/// PDF zeigt, wo das Feld liegen soll. Aufruf: <c>dotnet run --project src/Kalkulator.Web -- --paperless-test name@firma.de</c>.
+/// erfundenem Inhalt und je einem Unterschriftsfeld für „Nösse“ und „Kunde“ geht als Entwurf direkt aus dem PDF an
+/// Paperless, wie bei der echten Übergabe. Ein grauer Rahmen im PDF zeigt, wo das Feld liegen soll. Der Weg über eine
+/// Kopie der Ablauf-Vorlage (früher Variante D) entfällt: Paperless übernimmt dabei das PDF nicht (06.10.2026). Aufruf: <c>dotnet run --project src/Kalkulator.Web -- --paperless-test name@firma.de</c>.
 /// </summary>
 public static class PaperlessTestlauf
 {
     public const string Schalter = "--paperless-test";
 
-    /// <summary>Rollen des Muster-PDFs in Unterschriftsreihenfolge.</summary>
-    public static readonly IReadOnlyList<string> Rollen = ["Kunde", "Nösse"];
+    /// <summary>Rollen des Muster-PDFs von oben nach unten; Nösse steht wie im Grundvertrag vor dem Kunden.</summary>
+    public static readonly IReadOnlyList<string> Rollen = ["Nösse", "Kunde"];
 
     /// <summary>Linker Rand und Höhe der Unterschriftslinien in Punkt vom unteren Seitenrand (A4: 595 × 842).</summary>
     private const double Rand = 72;
@@ -43,7 +42,7 @@ public static class PaperlessTestlauf
             "Prüfung löschen.",
             "",
             "Prüfen: Liegt das Unterschriftsfeld von Paperless im grauen Rahmen über der jeweiligen Linie?",
-            "Bei Variante D: Sind Reihenfolge (erst Kunde, dann Nösse) und Freigaben aus der Vorlage übernommen?",
+            "Unterschreibt erst der Kunde und danach Noesse? Ist die Sprache Deutsch?",
         ];
         for (var i = 0; i < hinweis.Length; i++)
         {
@@ -68,8 +67,9 @@ public static class PaperlessTestlauf
     }
 
     /// <summary>
-    /// Legt die Varianten D und E als Entwurf an und gibt die Kennungen der Paperless-Dokumente zurück. Der Kunde ist die
-    /// angegebene Adresse; „Nösse“ kommt aus den Einstellungen (fest eingestellte Person).
+    /// Legt ein Muster-Dokument direkt aus dem PDF als Entwurf an und gibt die Kennung des Paperless-Dokuments zurück.
+    /// Der Kunde ist die angegebene Adresse; „Nösse“ kommt aus den Einstellungen (fest eingestellte Person). Im PDF
+    /// steht Nösse wie im Grundvertrag zuerst; die Teilnehmer gehen trotzdem in der Reihenfolge Kunde, Nösse an Paperless.
     /// </summary>
     public static async Task<IReadOnlyList<string>> AusfuehrenAsync(
         PaperlessEinstellungen einstellungen,
@@ -89,39 +89,14 @@ public static class PaperlessTestlauf
         }
 
         var e = Kopie(einstellungen);
-        ausgabe.WriteLine($"Paperless-Testlauf: Arbeitsbereich {e.ArbeitsbereichId}, Ablauf-Vorlage {e.AblaufVorlageId?.ToString(CultureInfo.InvariantCulture) ?? "keine"}, Skalierung {e.Skalierung:0.###}, nur Entwürfe.");
-        var kennungen = new List<string>();
-        var varianten = new List<(string Name, string Zusatz, Func<PaperlessAuftrag, Task<string>> Anlegen)>();
-        if (e.AblaufVorlageId is { } vorlage)
-        {
-            varianten.Add(("D", $"über eine Kopie der Ablauf-Vorlage {vorlage}", a => uebergabe(e).UebergebenUeberVorlageAsync(a, vorlage, abbruch)));
-        }
-
-        varianten.Add(("E", "direkt aus dem PDF, ohne Vorlage", a => uebergabe(e).UebergebenAsync(a, abbruch)));
-        foreach (var (variante, zusatz, anlegen) in varianten)
-        {
-            var titel = $"Kalkulator-Testlauf {variante} (bitte löschen)";
-            ausgabe.WriteLine($"  {variante}: {zusatz}");
-            var pdf = MusterPdf(titel, zusatz, e.FeldBreite, e.FeldHoehe);
-            var auftrag = Auftrag(e, titel, pdf, empfaenger.Trim());
-            string kennung;
-            try
-            {
-                kennung = await anlegen(auftrag);
-            }
-            catch (PaperlessFehler f)
-            {
-                // Eine Variante darf scheitern (z. B. D, wenn Paperless keine Vorlage mit eigenem PDF kopiert).
-                ausgabe.WriteLine($"  {variante}: fehlgeschlagen: {f.Message}");
-                continue;
-            }
-
-            kennungen.Add(kennung);
-            ausgabe.WriteLine($"  {variante}: Dokument {kennung} angelegt, {pdf.Length} Byte PDF, Teilnehmer {string.Join(", ", auftrag.Teilnehmer.Select(t => $"{t.Slot} = {t.Name}"))}.");
-        }
-
-        ausgabe.WriteLine("Fertig. In Paperless prüfen: PDF zu sehen? Felder im grauen Rahmen? Bei D: Reihenfolge und Freigaben aus der Vorlage? Danach die Entwürfe löschen.");
-        return kennungen;
+        ausgabe.WriteLine($"Paperless-Testlauf: Arbeitsbereich {e.ArbeitsbereichId}, Sprache {e.Sprache}, Skalierung {e.Skalierung:0.###}, nur Entwurf.");
+        const string titel = "Kalkulator-Testlauf (bitte löschen)";
+        var pdf = MusterPdf(titel, "direkt aus dem PDF, Reihenfolge Kunde vor Nösse", e.FeldBreite, e.FeldHoehe);
+        var auftrag = Auftrag(e, titel, pdf, empfaenger.Trim());
+        var kennung = await uebergabe(e).UebergebenAsync(auftrag, abbruch);
+        ausgabe.WriteLine($"Dokument {kennung} angelegt, {pdf.Length} Byte PDF, Teilnehmer in dieser Reihenfolge: {string.Join(", ", auftrag.Teilnehmer.Select(t => $"{t.Slot} = {t.Name}"))}.");
+        ausgabe.WriteLine("In Paperless prüfen: PDF zu sehen? Felder im grauen Rahmen? Erst Kunde, dann Nösse? Sprache Deutsch? Danach den Entwurf löschen.");
+        return [kennung];
     }
 
     /// <summary>Die eingebaute Standardschrift kennt keine Umlaute und typografischen Zeichen; ersetzt sie lesbar.</summary>
@@ -134,13 +109,13 @@ public static class PaperlessTestlauf
     internal static PaperlessAuftrag Auftrag(PaperlessEinstellungen e, string titel, byte[] pdf, string empfaenger)
     {
         var stellen = Unterschriftsfelder.Finde(pdf);
+        string Slot(string rolle) => string.IsNullOrWhiteSpace(e.Rolle(rolle).Slot) ? rolle : e.Rolle(rolle).Slot!.Trim();
+        var felder = stellen.Select(s => new PaperlessFeld(Slot(s.Rolle), s)).ToList();
         var teilnehmer = new List<PaperlessTeilnehmer>();
-        var felder = new List<PaperlessFeld>();
-        foreach (var stelle in stellen)
+        foreach (var name in e.Ordne(stellen.Select(s => s.Rolle)))
         {
-            var rolle = e.Rolle(stelle.Rolle);
-            var slot = string.IsNullOrWhiteSpace(rolle.Slot) ? stelle.Rolle : rolle.Slot.Trim();
-            felder.Add(new PaperlessFeld(slot, stelle));
+            var rolle = e.Rolle(name);
+            var slot = Slot(name);
             if (rolle.AusVorlage || teilnehmer.Any(t => t.Slot == slot))
             {
                 continue;
@@ -148,7 +123,7 @@ public static class PaperlessTestlauf
 
             teilnehmer.Add(rolle.Fest
                 ? new PaperlessTeilnehmer(slot, rolle.Name!.Trim(), rolle.EMail!.Trim())
-                : new PaperlessTeilnehmer(slot, $"Test {stelle.Rolle}", empfaenger));
+                : new PaperlessTeilnehmer(slot, $"Test {name}", empfaenger));
         }
 
         return new PaperlessAuftrag(titel, "Kalkulator-Testlauf.pdf", pdf, teilnehmer, felder);
@@ -159,7 +134,8 @@ public static class PaperlessTestlauf
         Adresse = e.Adresse,
         ApiSchluessel = e.ApiSchluessel,
         ArbeitsbereichId = e.ArbeitsbereichId,
-        AblaufVorlageId = e.AblaufVorlageId,
+        Reihenfolge = e.Reihenfolge,
+        Sprache = e.Sprache,
         Versenden = false,
         Rollen = e.Rollen,
         FeldBreite = e.FeldBreite,

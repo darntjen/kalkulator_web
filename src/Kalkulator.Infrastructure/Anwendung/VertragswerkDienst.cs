@@ -374,7 +374,8 @@ public sealed class VertragswerkDienst(
     {
         try
         {
-            var auftrag = Auftrag(paperlessEinstellungen.Value, werk, firma, gesamt, rollen);
+            var e = paperlessEinstellungen.Value;
+            var auftrag = Auftrag(e, werk, firma, gesamt, rollen);
             var id = await paperless.UebergebenAsync(auftrag, abbruch);
             werk.VermerkeUebergabe(id, zeit.GetUtcNow());
         }
@@ -406,7 +407,8 @@ public sealed class VertragswerkDienst(
         }
 
         var teilnehmer = new List<PaperlessTeilnehmer>();
-        foreach (var rolle in stellen.Select(s => s.Rolle).Distinct(StringComparer.Ordinal))
+        // Paperless lässt in der Reihenfolge der Teilnehmer unterschreiben: erst der Kunde, dann Nösse.
+        foreach (var rolle in e.Ordne(stellen.Select(s => s.Rolle)))
         {
             var einstellung = e.Rolle(rolle);
             var slot = string.IsNullOrWhiteSpace(einstellung.Slot) ? rolle : einstellung.Slot.Trim();
