@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Hauptprozess des App-Containers: startet die App, sobald die Einrichtung (einrichten.sh) fertig ist,
-# und startet sie nach einem Absturz oder „pkill -f Kalkulator.Web“ nach 10 Sekunden neu.
+# und startet sie nach einem Absturz oder „pkill -u vscode -f 'net10.0/Kalkulator.Web'“ nach 10 Sekunden neu.
 # So läuft sie unabhängig davon, ob ein Fenster offen ist. Ausgabe in /tmp/kalkulator.log.
 cd "$(dirname "$0")/.."
 repo="$PWD"

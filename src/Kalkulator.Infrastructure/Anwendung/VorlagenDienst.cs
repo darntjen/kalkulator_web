@@ -88,7 +88,11 @@ public sealed class VorlagenDienst(IDbContextFactory<KalkulatorDbContext> kontex
 
     private async Task EntscheideAsync(int fassungId, Action<DokumentVorlage, Vorlagenversion> entscheidung, CancellationToken abbruch)
     {
-        PruefePflegen();
+        if (!_recht.DarfKatalogFreigeben)
+        {
+            throw new KeinZugriffException("Vertragsvorlagen gibt nur das Produktmanagement oder der Admin frei.");
+        }
+
         await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
         var vorlage = await kontext.DokumentVorlagen.Include(d => d.Versionen)
             .SingleOrDefaultAsync(d => d.Versionen.Any(v => v.Id == fassungId), abbruch)

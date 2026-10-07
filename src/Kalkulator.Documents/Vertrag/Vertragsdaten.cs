@@ -59,6 +59,7 @@ public static class Vertragsdaten
             ["kunde.plz"] = kunde.Postleitzahl ?? "",
             ["kunde.ort"] = kunde.Ort ?? "",
             ["kunde.anschrift"] = string.Join("\n", new[] { kunde.Firma, kunde.Strasse, ort }.Where(t => !string.IsNullOrWhiteSpace(t))),
+            ["kunde.adresszeile"] = string.Join(", ", new[] { kunde.Strasse, ort }.Where(t => !string.IsNullOrWhiteSpace(t))),
             ["kunde.ansprechpartner"] = kunde.Ansprechpartner ?? "",
             ["kunde.navision"] = kunde.NavisionKundennummer ?? "",
             ["vertrag.nummer"] = quelle.Vertragsnummer,

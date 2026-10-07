@@ -90,8 +90,7 @@ public class KundenprojektDienstTests(SqlServerFixture db)
     }
 
     [Theory]
-    [InlineData(Rollen.Produktmanagement)]
-    [InlineData(Rollen.Admin)]
+    [InlineData(Rollen.Produktmanagement)] // Der Admin sieht seit 07.10.2026 alles (BerechtigungTests).
     public async Task Ohne_passende_Rolle_gibt_es_keine_Kundenprojekte(string rolle)
     {
         var dienst = await DienstAsync(Neu(rolle));

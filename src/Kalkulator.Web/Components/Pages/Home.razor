@@ -1,4 +1,5 @@
 @page "/"
+@rendermode InteractiveServer
 @inject Kalkulator.Infrastructure.Persistenz.IBenutzerKontext Benutzer
 @inject VertragswerkDienst Vertragswerk
 
@@ -8,6 +9,11 @@
 
 <p>Managed Services kalkulieren, Angebote erstellen und Vertragsunterlagen zusammenstellen.</p>
 
+@if (_meldung is not null)
+{
+    <p class="meldung @(_meldungIstFehler ? "fehler" : "erfolg")">@_meldung</p>
+}
+
 @if (_offen is { Count: > 0 } offen)
 {
     <section class="karte" id="offene-freigaben">
@@ -15,13 +21,33 @@
             <h2>Offene Freigaben <span class="pille">@offen.Count</span></h2>
             <span class="unterzeile">Vertragswerke, die auf deine Prüfung warten</span>
         </div>
-        <ul class="karte-inhalt ablage-liste">
+        <ul class="karte-inhalt freigabeliste">
             @foreach (var o in offen)
             {
-                <li>
-                    <a href="projekte/@o.ProjektId#vertragswerk"><strong>@o.Firma</strong></a>
-                    <span class="unterzeile">@o.Projekt · Vertrag @o.Nummer, @(o.Ausfertigung). Ausfertigung vom @Texte.Zeitpunkt(o.ErstelltAm) · offen: @string.Join(", ", o.Offen.Select(Texte.Vertragsfreigabe))</span>
-                    <a class="knopf zweit klein" href="vertragswerke/@o.VertragswerkId/ansicht" target="_blank" rel="noopener">Ansehen</a>
+                <li class="stapel">
+                    <div>
+                        <a href="projekte/@o.ProjektId#vertragswerk"><strong>@o.Firma</strong></a>
+                        <span class="unterzeile">@o.Projekt · Vertrag @o.Nummer, @(o.Ausfertigung). Ausfertigung vom @Texte.Zeitpunkt(o.ErstelltAm)</span>
+                    </div>
+                    <div class="aktionen">
+                        <a class="knopf zweit klein" href="vertragswerke/@o.VertragswerkId/ansicht" target="_blank" rel="noopener">Vertrag ansehen</a>
+                        @foreach (var art in o.Offen)
+                        {
+                            <button type="button" class="knopf klein" disabled="@_beschaeftigt" @onclick="() => FreigebenAsync(o.VertragswerkId, art)">@Texte.Vertragsfreigabe(art) freigeben</button>
+                            <button type="button" class="knopf zweit klein" disabled="@_beschaeftigt" @onclick="() => { _ablehnung = (o.VertragswerkId, art); _begruendung = null; }">@Texte.Vertragsfreigabe(art) ablehnen</button>
+                        }
+                    </div>
+                    @if (_ablehnung is { } ab && ab.Werk == o.VertragswerkId)
+                    {
+                        <div class="stapel">
+                            <label for="begruendung-@o.VertragswerkId">Begründung der Ablehnung (@Texte.Vertragsfreigabe(ab.Art)) *</label>
+                            <textarea id="begruendung-@o.VertragswerkId" rows="2" maxlength="1000" @bind="_begruendung" @bind:event="oninput"></textarea>
+                            <div class="aktionen">
+                                <button type="button" class="knopf gefahr klein" disabled="@(_beschaeftigt || string.IsNullOrWhiteSpace(_begruendung))" @onclick="AblehnenAsync">Ablehnung senden</button>
+                                <button type="button" class="knopf zweit klein" @onclick="() => _ablehnung = null">Abbrechen</button>
+                            </div>
+                        </div>
+                    }
                 </li>
             }
         </ul>
@@ -52,6 +78,46 @@ else if (new Berechtigung(Benutzer).DarfVertraegeFreigeben)
 
 @code {
     private IReadOnlyList<OffeneVertragsfreigabe>? _offen;
+    private (int Werk, VertragsfreigabeArt Art)? _ablehnung;
+    private string? _begruendung, _meldung;
+    private bool _meldungIstFehler, _beschaeftigt;
 
     protected override async Task OnInitializedAsync() => _offen = await Vertragswerk.OffeneFreigabenAsync();
+
+    /// <summary>Schnellfreigabe direkt aus der Liste; dieselben Regeln wie in der Projektansicht.</summary>
+    private Task FreigebenAsync(int werkId, VertragsfreigabeArt art) => PruefenAsync(werkId, art, true, null);
+
+    private Task AblehnenAsync() =>
+        _ablehnung is { } ab ? PruefenAsync(ab.Werk, ab.Art, false, _begruendung) : Task.CompletedTask;
+
+    private async Task PruefenAsync(int werkId, VertragsfreigabeArt art, bool erteilt, string? begruendung)
+    {
+        var eintrag = _offen?.FirstOrDefault(o => o.VertragswerkId == werkId);
+        _beschaeftigt = true;
+        try
+        {
+            await Vertragswerk.FreigebenAsync(werkId, art, erteilt, begruendung);
+            _ablehnung = null;
+            _begruendung = null;
+            var werk = eintrag is null ? null : (await Vertragswerk.ListeAsync(eintrag.ProjektId)).FirstOrDefault(w => w.Id == werkId);
+            var wer = $"{Texte.Vertragsfreigabe(art)} für {eintrag?.Firma} ({eintrag?.Nummer})";
+            (_meldung, _meldungIstFehler) = (erteilt, werk) switch
+            {
+                (false, _) => ($"{wer} abgelehnt. Der Vertrieb korrigiert und erzeugt das Vertragswerk neu.", false),
+                (true, { PaperlessDokumentId: { } pid }) => ($"{wer} freigegeben. Beide Freigaben liegen vor; das Vertragswerk ist an Paperless übergeben (Dokument {pid}).", false),
+                (true, { UebergabeFehler: { } fehler }) => ($"{wer} freigegeben, aber die Übergabe an Paperless ist fehlgeschlagen: {fehler}", true),
+                (true, { IstFreigegeben: true }) => ($"{wer} freigegeben. Beide Freigaben liegen vor.", false),
+                _ => ($"{wer} freigegeben. Es fehlt noch die andere Freigabe.", false),
+            };
+        }
+        catch (Exception e) when (e is InvalidOperationException or ArgumentException or KeyNotFoundException)
+        {
+            (_meldung, _meldungIstFehler) = (e.Message, true);
+        }
+        finally
+        {
+            _beschaeftigt = false;
+            _offen = await Vertragswerk.OffeneFreigabenAsync();
+        }
+    }
 }

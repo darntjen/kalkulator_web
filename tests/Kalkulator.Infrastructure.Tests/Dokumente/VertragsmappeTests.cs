@@ -61,6 +61,7 @@ public class VertragsmappeTests
         var gemeinsam = new Datensatz
         {
             ["kunde.anschrift"] = "Muster Spedition GmbH\nHafenstraße 12\n26135 Oldenburg",
+            ["kunde.adresszeile"] = "Hafenstraße 12, 26135 Oldenburg",
             ["kunde.firma"] = "Muster Spedition GmbH",
             ["vertrag.nummer"] = "MS-A-2026-0001",
             ["vertrag.angebot"] = "MS-A-2026-0001 V2",

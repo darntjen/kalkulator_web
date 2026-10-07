@@ -187,7 +187,7 @@ else
                     {
                         <p class="unterzeile">Preisfelder für: @string.Join(", ", f.Komponenten)</p>
                     }
-                    @if (_pflegen && f.Status is VorlagenStatus.ZurPruefung or VorlagenStatus.Abgeloest)
+                    @if (_freigeben && f.Status is VorlagenStatus.ZurPruefung or VorlagenStatus.Abgeloest)
                     {
                         <form class="felder" @onsubmit="() => AktivierenAsync(f)">
                             <div class="feld breit">
@@ -264,7 +264,7 @@ else
 
     private IReadOnlyList<VorlagenUebersicht>? _vorlagen;
     private VorlagenQuellinfo? _quelle;
-    private bool _pflegen, _meldungIstFehler, _gleichtAb;
+    private bool _pflegen, _freigeben, _meldungIstFehler, _gleichtAb;
     private string? _fehler, _meldung, _kommentar;
     private int? _gewaehlt;
     private Neu _neu = new();
@@ -278,6 +278,7 @@ else
             _vorlagen = await Dienst.UebersichtAsync();
             _quelle = await Dienst.QuellinfoAsync();
             _pflegen = Dienst.Recht.DarfKatalogPflegen;
+            _freigeben = Dienst.Recht.DarfKatalogFreigeben;
         }
         catch (KeinZugriffException e)
         {

@@ -33,21 +33,24 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
     private bool Vertrieb => benutzer.IstInRolle(Rollen.Vertrieb);
     private bool Leitung => benutzer.IstInRolle(Rollen.Vertriebsleitung);
 
+    /// <summary>Admin sieht alles und darf jede Freigabe erteilen (Entscheidung 07.10.2026); pflegen und kalkulieren nicht.</summary>
+    private bool Admin => benutzer.IstInRolle(Rollen.Admin);
+
     /// <summary>
-    /// Vertriebsleitung, Consultant, Führung und die Vertragsfreigaben sehen alle Kundenprojekte; der Vertrieb nur seine
-    /// eigenen.
+    /// Vertriebsleitung, Consultant, Führung, Admin und die Vertragsfreigaben sehen alle Kundenprojekte; der Vertrieb nur
+    /// seine eigenen.
     /// </summary>
-    public bool SiehtAlleProjekte => Leitung || benutzer.IstInRolle(Rollen.Consultant) || benutzer.IstInRolle(Rollen.Fuehrung) || DarfVertraegeFreigeben;
+    public bool SiehtAlleProjekte => Admin || Leitung || benutzer.IstInRolle(Rollen.Consultant) || benutzer.IstInRolle(Rollen.Fuehrung) || DarfVertraegeFreigeben;
 
     /// <summary>Freigabe eines Vertragswerks vor der Übergabe an Paperless: AVV bzw. Technik (Entscheidung 05.10.2026).</summary>
     public bool DarfVertragFreigeben(VertragsfreigabeArt art) => art switch
     {
-        VertragsfreigabeArt.Avv => benutzer.IstInRolle(Rollen.FreigabeAvv),
-        VertragsfreigabeArt.Technik => benutzer.IstInRolle(Rollen.FreigabeTechnik),
+        VertragsfreigabeArt.Avv => Admin || benutzer.IstInRolle(Rollen.FreigabeAvv),
+        VertragsfreigabeArt.Technik => Admin || benutzer.IstInRolle(Rollen.FreigabeTechnik),
         _ => false,
     };
 
-    public bool DarfVertraegeFreigeben => benutzer.IstInRolle(Rollen.FreigabeAvv) || benutzer.IstInRolle(Rollen.FreigabeTechnik);
+    public bool DarfVertraegeFreigeben => Admin || benutzer.IstInRolle(Rollen.FreigabeAvv) || benutzer.IstInRolle(Rollen.FreigabeTechnik);
 
     public bool DarfProjekteSehen => SiehtAlleProjekte || Vertrieb;
 
@@ -55,23 +58,26 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
     public bool DarfKalkulieren => Vertrieb || Leitung;
 
     /// <summary>EK, Deckungsbeitrag und Marge der Managed Services sieht nur die Führungsebene.</summary>
-    public bool DarfEinkaufSehen => benutzer.IstInRolle(Rollen.Fuehrung);
+    public bool DarfEinkaufSehen => Admin || benutzer.IstInRolle(Rollen.Fuehrung);
 
-    public bool DarfSonderpositionenFreigeben => Leitung;
+    public bool DarfSonderpositionenFreigeben => Admin || Leitung;
 
     /// <summary>Vertriebsfreigabe einer Kalkulation (#26): Vertriebsleitung bzw. Solution Consultant (Rolle „Consultant“).</summary>
     public bool DarfVertriebFreigeben(FreigabeRolle rolle) => rolle switch
     {
-        FreigabeRolle.Vertriebsleitung => Leitung,
-        FreigabeRolle.SolutionConsultant => benutzer.IstInRolle(Rollen.Consultant),
+        FreigabeRolle.Vertriebsleitung => Admin || Leitung,
+        FreigabeRolle.SolutionConsultant => Admin || benutzer.IstInRolle(Rollen.Consultant),
         _ => false,
     };
 
     /// <summary>Katalog, Preislisten, EK-Kalkulation und Änderungsprotokoll einsehen: Produktmanagement und Führung.</summary>
-    public bool DarfKatalogSehen => benutzer.IstInRolle(Rollen.Produktmanagement) || benutzer.IstInRolle(Rollen.Fuehrung);
+    public bool DarfKatalogSehen => Admin || benutzer.IstInRolle(Rollen.Produktmanagement) || benutzer.IstInRolle(Rollen.Fuehrung);
 
-    /// <summary>Katalog und Preislisten pflegen und Preislisten freigeben: nur das Produktmanagement (A-07).</summary>
+    /// <summary>Katalog und Preislisten pflegen: nur das Produktmanagement (A-07).</summary>
     public bool DarfKatalogPflegen => benutzer.IstInRolle(Rollen.Produktmanagement);
+
+    /// <summary>Preislisten und Vertragsvorlagen freigeben bzw. ablehnen: Produktmanagement und Admin.</summary>
+    public bool DarfKatalogFreigeben => Admin || DarfKatalogPflegen;
 
     public bool DarfSehen(Kundenprojekt projekt) => SiehtAlleProjekte || (Vertrieb && IstVerantwortlich(projekt));
 

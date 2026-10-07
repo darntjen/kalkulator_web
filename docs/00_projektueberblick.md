@@ -95,7 +95,7 @@ in Word zusammengesetzt.
 | **Freigabe Technik** (`FreigabeTechnik`, zusätzliche Rolle) | Prüft das Vertragswerk aus technischer Sicht | Wie Freigabe AVV, für die technische Prüfung. Erst nach beiden Freigaben geht das Vertragswerk an Paperless |
 | **Produktmanagement / Service-Owner** | Pflegt Services, Preise, EK und Vorlagen | Pflege von Servicekatalog, Preislisten, EK-Kalkulation sowie Angebots- und Vertragsvorlagen |
 | **Führungsebene** | Steuert anhand der Kennzahlen | Lesender Zugriff auf alle Daten und Statistiken inkl. Deckungsbeitrag und Marge |
-| **Administration (IT)** | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups |
+| **Administration (IT)** (`Admin`) | Betreibt die Anwendung | Benutzer und Rollen, Systemeinstellungen, Backups. **Sieht ausnahmslos alles** (alle Kundenprojekte, EK und Marge, Katalog) und **darf jede Freigabe erteilen**: Vertriebsfreigabe (beide Rollen, aber nicht beide selbst), Sonderpositionen, Vertragsfreigaben AVV und Technik, Preislisten und Vertragsvorlagen. Pflegen und kalkulieren darf der Admin nicht (Entscheidung 07.10.2026) |
 
 ## 6. Erfolgskriterien für Version 1.0
 
