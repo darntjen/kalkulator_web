@@ -25,8 +25,11 @@
             }
             else
             {
+                <Statusfilter T="AnalyseAngebotsStatus" Werte="Enum.GetValues<AnalyseAngebotsStatus>()" Text="Texte.AnalyseStatus"
+                              Anzahl="s => d.Angebote.Count(a => a.Status == s)" Auswahl="_auswahl" AuswahlGeaendert="a => _auswahl = a"
+                              Bezeichnung="Angebote Analyse und Workshop nach Status filtern" />
                 <ul class="ablage-liste">
-                    @foreach (var a in d.Angebote)
+                    @foreach (var a in d.Angebote.Where(a => _auswahl.Count == 0 || _auswahl.Contains(a.Status)))
                     {
                         <li>
                             <strong>@a.Nummer</strong>
@@ -99,6 +102,7 @@
     public int ProjektId { get; set; }
 
     private AnalyseAngebote? _daten;
+    private IReadOnlySet<AnalyseAngebotsStatus> _auswahl = new HashSet<AnalyseAngebotsStatus>();
     private int? _bearbeitet, _loeschen, _unterlage;
     private string? _nummer, _bemerkung, _meldung;
     private DateOnly _datum = DateOnly.FromDateTime(DateTime.Today);

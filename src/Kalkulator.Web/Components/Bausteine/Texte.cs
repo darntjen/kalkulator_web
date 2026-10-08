@@ -82,6 +82,16 @@ public static class Texte
         _ => "Technik",
     };
 
+    public static string Angebotsstatus(AngebotsStatus status) => status switch
+    {
+        AngebotsStatus.Erzeugt => "erzeugt",
+        AngebotsStatus.Versendet => "versendet",
+        AngebotsStatus.Angenommen => "angenommen",
+        AngebotsStatus.NichtAngenommen => "nicht angenommen",
+        AngebotsStatus.Ersetzt => "ersetzt",
+        _ => "abgelaufen",
+    };
+
     public static string AnalyseStatus(AnalyseAngebotsStatus status) => status switch
     {
         AnalyseAngebotsStatus.Versendet => "versendet",
