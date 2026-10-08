@@ -116,6 +116,36 @@ public class AngebotsDienstTests(SqlServerFixture db)
     }
 
     [Fact]
+    public async Task Angebote_des_Projekts_mit_abgeleitetem_Status()
+    {
+        var (projekt, id, dienste) = await KalkulationAsync(Rk01);
+        var erstes = await dienste.Angebote.ErzeugenAsync(id, null, null);
+        var zweites = await dienste.Angebote.ErzeugenAsync(id, null, null);
+
+        var liste = await dienste.Projekte.AngeboteAsync(projekt);
+        Assert.Equal([(zweites, AngebotsStatus.Erzeugt), (erstes, AngebotsStatus.Ersetzt)], liste.Select(a => (a.Id, a.Status)));
+        Assert.Equal(("Variante A", 2), (liste[0].Kalkulation, liste[0].Version));
+
+        await dienste.Angebote.AlsVersendetMarkierenAsync(zweites, dienste.Angebote.Heute);
+        Assert.Equal(AngebotsStatus.Versendet, (await dienste.Projekte.AngeboteAsync(projekt))[0].Status);
+
+        // Eine zweite Variante bleibt eigenständig; mit „Gewonnen“ ist alles außer dem angenommenen Angebot nicht angenommen.
+        var variante = await dienste.Projekte.DuplizierenAsync(id, "Variante B");
+        await FreigebenAsync(variante);
+        var drittes = await dienste.Angebote.ErzeugenAsync(variante, null, null);
+        Assert.Equal(AngebotsStatus.Erzeugt, (await dienste.Projekte.AngeboteAsync(projekt)).Single(a => a.Id == drittes).Status);
+
+        await dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Gewonnen, null, null, zweites);
+        var abgeschlossen = (await dienste.Projekte.AngeboteAsync(projekt)).ToDictionary(a => a.Id, a => a.Status);
+        Assert.Equal(AngebotsStatus.Angenommen, abgeschlossen[zweites]);
+        Assert.Equal(AngebotsStatus.NichtAngenommen, abgeschlossen[erstes]);
+        Assert.Equal(AngebotsStatus.NichtAngenommen, abgeschlossen[drittes]);
+
+        var fremd = await DiensteAsync(Neu(Rollen.Vertrieb));
+        await Assert.ThrowsAsync<KeinZugriffException>(() => fremd.Projekte.AngeboteAsync(projekt));
+    }
+
+    [Fact]
     public async Task Angebot_friert_ein_vergibt_Nummer_und_archiviert_das_Dokument()
     {
         var (_, id, dienste) = await KalkulationAsync(Rk01);

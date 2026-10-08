@@ -39,6 +39,62 @@ public class Angebot
     }
 }
 
+/// <summary>
+/// Status eines Angebots für Übersicht und Filter (Entscheidung 08.10.2026). Er wird nicht gespeichert, sondern aus
+/// Versandvermerk, Gültigkeit, neueren Versionen und dem Projektabschluss abgeleitet (<see cref="Angebotsstatus"/>).
+/// </summary>
+public enum AngebotsStatus
+{
+    /// <summary>Erzeugt, noch nicht als versendet markiert.</summary>
+    Erzeugt = 1,
+
+    Versendet = 2,
+
+    /// <summary>Das Angebot, mit dem das Projekt auf „Gewonnen“ steht.</summary>
+    Angenommen = 3,
+
+    /// <summary>Das Projekt ist gewonnen oder verloren, dieses Angebot wurde nicht angenommen.</summary>
+    NichtAngenommen = 4,
+
+    /// <summary>Es gibt eine neuere Version derselben Angebotsnummer.</summary>
+    Ersetzt = 5,
+
+    /// <summary>Versendet, aber die Gültigkeit ist überschritten.</summary>
+    Abgelaufen = 6,
+}
+
+public static class Angebotsstatus
+{
+    /// <summary>
+    /// Leitet den Status ab. Vorrang: angenommen, nicht angenommen (Projekt abgeschlossen), ersetzt, abgelaufen,
+    /// versendet, erzeugt.
+    /// </summary>
+    public static AngebotsStatus Bestimme(bool angenommen, bool projektAbgeschlossen, bool neuereVersion, DateOnly? versendetAm, DateOnly gueltigBis, DateOnly heute)
+    {
+        if (angenommen)
+        {
+            return AngebotsStatus.Angenommen;
+        }
+
+        if (projektAbgeschlossen)
+        {
+            return AngebotsStatus.NichtAngenommen;
+        }
+
+        if (neuereVersion)
+        {
+            return AngebotsStatus.Ersetzt;
+        }
+
+        if (versendetAm is null)
+        {
+            return AngebotsStatus.Erzeugt;
+        }
+
+        return gueltigBis < heute ? AngebotsStatus.Abgelaufen : AngebotsStatus.Versendet;
+    }
+}
+
 /// <summary>Das erzeugte Word-Dokument eines Angebots (Archiv, C-07).</summary>
 public class AngebotsDatei
 {

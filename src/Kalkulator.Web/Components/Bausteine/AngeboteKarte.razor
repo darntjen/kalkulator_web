@@ -1,0 +1,99 @@
+@inject KundenprojektDienst Dienst
+
+@* Alle Managed-Services-Angebote des Kundenprojekts mit abgeleitetem Status und Filter (Entscheidung 08.10.2026). *@
+<section class="karte" id="angebote">
+    <div class="karte-kopf">
+        <h2>Angebote</h2>
+        <span class="unterzeile">aus allen Kalkulationen dieses Projekts</span>
+    </div>
+
+    @if (_fehler is not null)
+    {
+        <p class="karte-inhalt meldung fehler">@_fehler</p>
+    }
+    else if (_angebote is null)
+    {
+        <p class="karte-inhalt unterzeile">Lade …</p>
+    }
+    else if (_angebote.Count == 0)
+    {
+        <p class="karte-inhalt unterzeile">Noch kein Angebot erzeugt. Angebote entstehen in der Kalkulation nach der Vertriebsfreigabe.</p>
+    }
+    else
+    {
+        <div class="karte-inhalt">
+            <Statusfilter T="AngebotsStatus" Werte="Enum.GetValues<AngebotsStatus>()" Text="Texte.Angebotsstatus" Anzahl="s => _angebote.Count(a => a.Status == s)"
+                          Auswahl="_auswahl" AuswahlGeaendert="a => _auswahl = a" Bezeichnung="Angebote nach Status filtern" />
+        </div>
+        @if (Sichtbar.Count == 0)
+        {
+            <p class="karte-inhalt unterzeile">Keine Angebote mit diesem Status.</p>
+        }
+        else
+        {
+            <div class="tab-rahmen">
+                <table class="liste">
+                    <thead>
+                        <tr>
+                            <th>Angebot</th>
+                            <th>Kalkulation</th>
+                            <th>Datum</th>
+                            <th class="num">Monatlich</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Sichtbar)
+                        {
+                            <tr>
+                                <td><strong>@a.Nummer</strong> V@(a.Version)<br /><span class="unterzeile">@a.ErstelltVon</span></td>
+                                <td><a href="kalkulationen/@a.KalkulationId">@a.Kalkulation</a></td>
+                                <td>
+                                    @Texte.Datum(a.Datum)
+                                    <br /><span class="unterzeile">gültig bis @Texte.Datum(a.GueltigBis)</span>
+                                    @if (a.VersendetAm is { } v)
+                                    {
+                                        <br /><span class="unterzeile">versendet @Texte.Datum(v)</span>
+                                    }
+                                </td>
+                                <td class="num">@Texte.Euro(a.SummeMonatlich)</td>
+                                <td><span class="pille ang-@a.Status">@Texte.Angebotsstatus(a.Status)</span></td>
+                                <td><a class="knopf zweit klein" href="angebote/@a.Id/datei" download>Word</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter, EditorRequired] public int ProjektId { get; set; }
+
+    /// <summary>Statuswechsel und Annahme ändern den Angebotsstatus; die Parameter lösen das Neuladen aus.</summary>
+    [Parameter] public ProjektStatus Projektstatus { get; set; }
+
+    [Parameter] public int? AngenommenesAngebot { get; set; }
+
+    private IReadOnlyList<ProjektAngebot>? _angebote;
+    private IReadOnlySet<AngebotsStatus> _auswahl = new HashSet<AngebotsStatus>();
+    private string? _fehler;
+
+    private IReadOnlyList<ProjektAngebot> Sichtbar =>
+        _angebote is null ? [] : _auswahl.Count == 0 ? _angebote : [.. _angebote.Where(a => _auswahl.Contains(a.Status))];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        try
+        {
+            _angebote = await Dienst.AngeboteAsync(ProjektId);
+            _fehler = null;
+        }
+        catch (KeinZugriffException e)
+        {
+            _fehler = e.Message;
+        }
+    }
+}

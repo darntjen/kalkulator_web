@@ -20,6 +20,20 @@ public sealed record AngebotsAuswahl(int Id, string Nummer, int Version, string 
     public string Text => $"{Nummer} V{Version} · {Kalkulation}";
 }
 
+/// <summary>Ein Angebot des Kundenprojekts mit abgeleitetem Status (Übersicht im Projekt, Filter).</summary>
+public sealed record ProjektAngebot(
+    int Id,
+    string Nummer,
+    int Version,
+    int KalkulationId,
+    string Kalkulation,
+    DateOnly Datum,
+    DateOnly GueltigBis,
+    DateOnly? VersendetAm,
+    string ErstelltVon,
+    decimal SummeMonatlich,
+    AngebotsStatus Status);
+
 public sealed record NeuesKundenprojekt(
     string Firma,
     string? Strasse,
@@ -38,6 +52,8 @@ public sealed record NeuesKundenprojekt(
 /// </summary>
 public sealed class KundenprojektDienst(IDbContextFactory<KalkulatorDbContext> kontexte, IBenutzerKontext benutzer, TimeProvider zeit)
 {
+    private static readonly TimeZoneInfo Zeitzone = TimeZoneInfo.FindSystemTimeZoneById("Europe/Berlin");
+
     private readonly Berechtigung _recht = new(benutzer);
 
     public Berechtigung Recht => _recht;
@@ -161,6 +177,47 @@ public sealed class KundenprojektDienst(IDbContextFactory<KalkulatorDbContext> k
             .OrderByDescending(x => x.a.VersendetAm).ThenByDescending(x => x.a.Id)
             .Select(x => new AngebotsAuswahl(x.a.Id, x.a.Nummer, x.a.Version!.Nummer, x.Titel, x.a.VersendetAm, x.a.Version.SummeMonatlich))
             .ToListAsync(abbruch);
+    }
+
+    /// <summary>
+    /// Alle Angebote aller Kalkulationen des Projekts, neueste zuerst, mit abgeleitetem Status (Entscheidung
+    /// 08.10.2026). Abgeschlossen ist ein Projekt mit „Gewonnen“ oder „Verloren“.
+    /// </summary>
+    public async Task<IReadOnlyList<ProjektAngebot>> AngeboteAsync(int projektId, CancellationToken abbruch = default)
+    {
+        await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
+        var projekt = await kontext.Kundenprojekte.AsNoTracking().SingleOrDefaultAsync(p => p.Id == projektId, abbruch)
+            ?? throw new KeyNotFoundException($"Kundenprojekt {projektId} gibt es nicht.");
+        if (!_recht.DarfSehen(projekt))
+        {
+            throw new KeinZugriffException("Dieses Kundenprojekt gehört einem anderen Vertriebsmitarbeiter.");
+        }
+
+        var kalkulationen = kontext.Kalkulationen.Where(k => k.KundenprojektId == projektId);
+        var zeilen = await kontext.Angebote.AsNoTracking()
+            .Join(kalkulationen, a => a.Version!.KalkulationId, k => k.Id, (a, k) => new
+            {
+                a.Id,
+                a.Nummer,
+                Version = a.Version!.Nummer,
+                KalkulationId = k.Id,
+                k.Titel,
+                a.Datum,
+                a.GueltigBis,
+                a.VersendetAm,
+                a.ErstelltVon,
+                a.Version.SummeMonatlich,
+            })
+            .ToListAsync(abbruch);
+
+        var neueste = zeilen.GroupBy(z => z.Nummer).ToDictionary(g => g.Key, g => g.Max(z => z.Version), StringComparer.Ordinal);
+        var abgeschlossen = projekt.Status is ProjektStatus.Gewonnen or ProjektStatus.Verloren;
+        var heute = DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(zeit.GetUtcNow(), Zeitzone).DateTime);
+        return [.. zeilen
+            .OrderByDescending(z => z.Datum).ThenByDescending(z => z.Id)
+            .Select(z => new ProjektAngebot(z.Id, z.Nummer, z.Version, z.KalkulationId, z.Titel, z.Datum, z.GueltigBis, z.VersendetAm,
+                z.ErstelltVon, z.SummeMonatlich,
+                Angebotsstatus.Bestimme(z.Id == projekt.AngenommenesAngebotId, abgeschlossen, z.Version < neueste[z.Nummer], z.VersendetAm, z.GueltigBis, heute)))];
     }
 
     public Task SetzeForecastAsync(int projektId, int? wahrscheinlichkeit, DateOnly? abschlussmonat, CancellationToken abbruch = default) =>

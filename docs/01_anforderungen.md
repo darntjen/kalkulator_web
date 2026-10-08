@@ -39,7 +39,7 @@
 | B-06 | ~~Rabatte je Position oder auf die Gesamtsumme~~. **Entfällt:** Vertriebler geben keine Rabatte (Entscheidung 25.09.2026) | – |
 | B-07 | Prüfung der Regeln R1–R6 (Connect-Pflicht, Abhängigkeiten, keine Doppelberechnung Bundle/Einzelservice, zukünftige Services gesperrt) mit verständlichen Hinweisen | M |
 | B-08 | Kalkulation speichern und duplizieren. Eine Kalkulation gehört immer zu einem Kundenprojekt (G-01); ein Kundenprojekt kann mehrere Kalkulationen haben (z. B. für Varianten). Beim Erzeugen eines Angebots wird ein eingefrorener Stand (Version V1, V2 …) angelegt (C-06, C-07) | M |
-| B-09 | **Projektstatus je Kundenprojekt**, vom Vertrieb gesetzt: Entwurf, Angebot versendet, Vertrag erstellt, Gewonnen, Verloren (Grund Pflicht), Zurückgestellt; mit Änderungshistorie | M |
+| B-09 | **Projektstatus je Kundenprojekt**, vom Vertrieb gesetzt: Entwurf, Angebot versendet, Vertrag erstellt, Gewonnen, Verloren (Grund Pflicht), Zurückgestellt; mit Änderungshistorie. Die Projektliste lässt sich nach einem oder mehreren Status filtern; die Auswahl steht in der Adresse (Entscheidung 08.10.2026) | M |
 | B-10 | Anzeige von Marge und Deckungsbeitrag nur für berechtigte Rollen | S |
 | B-11 | Freitextpositionen bzw. individuelle Sonderleistungen (mit Kennzeichnung) | S |
 | B-12 | Übernahme von Kundendaten aus HubSpot | K |
@@ -68,6 +68,7 @@
 | C-06 | Fortlaufende Angebotsnummer nach festgelegtem Schema | M |
 | C-07 | Jedes erzeugte Dokument wird mit Nummer und Version archiviert. Summen und Inhalte werden eingefroren | M |
 | C-10 | **Versandvermerk:** Der Vertrieb markiert eine Angebotsversion als versendet (Datum). Daraus entsteht die Übersicht, welche Version wann an den Kunden ging. Der Projektstatus wechselt auf „Angebot versendet“ | M |
+| C-11 | **Angebote im Projekt nach Status filtern** (Entscheidung 08.10.2026): Das Kundenprojekt zeigt alle Angebote aller Kalkulationen. Der Status wird abgeleitet, nicht gespeichert: erzeugt, versendet, angenommen, nicht angenommen (Projekt gewonnen oder verloren), ersetzt (neuere Version derselben Nummer), abgelaufen (versendet, Gültigkeit überschritten). Auch die Angebote zu Analyse und Workshop lassen sich nach Status filtern | M |
 | C-08 | Zusätzliche PDF-Ausgabe | K |
 | C-09 | Mehrere Vorlagen (z. B. Kurzangebot, ausführliches Angebot) | K |
 

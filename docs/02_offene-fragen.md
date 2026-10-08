@@ -159,3 +159,18 @@ Claude-API mit Kundendaten freigegeben. Konzept: [13_ki-angebotserstellung.md](1
 | 14.3 🟠 | **Rohtranskripte:** Sollen neben den Zusammenfassungen in `80_Protokolle` auch die Rohtranskripte einfließen dürfen? | Nur auf ausdrückliche Auswahl je Angebot | ✅ Ja, wie vorgeschlagen (04.10.2026) |
 | 14.4 🟢 | **Lesezugriff Team „Kundenprojekte“:** App-Registrierung mit `Sites.Selected`, Rolle `read` auf die Website des Teams | IT richtet ihn zusammen mit 12.3 ein | ✅ Steht im Dokument „Einrichtung durch die IT“ (Abschnitt 5.2) (04.10.2026) |
 | 14.5 🟠 | **Muster für Tests:** Zwei bis drei Navision-PDFs (Projekt mit Dienstleistung, mit Alternativpositionen) für synthetische Testdateien im selben Layout | Dennis stellt sie bereit; im Repository nur synthetische Fassungen | ⏳ Dennis stellt die PDFs bereit, sobald sie für Phase 5 gebraucht werden (04.10.2026) |
+
+## 15. Archivierung und unterschriebene Verträge (08.10.2026)
+
+Ziel (Dennis, 08.10.2026): Nach dem Abschluss eines Projekts bleiben im Kalkulator nur das beauftragte Angebot und der
+unterschriebene Vertrag; alle übrigen Angebote und Vertragsausfertigungen gehen in den Kundenordner in SharePoint und
+werden im Kalkulator nur noch verlinkt. Der unterschriebene Vertrag soll automatisch im Projekt und im Kundenordner
+landen, die zuständigen Kollegen erhalten eine E-Mail mit Link. Die Filter nach Status sind umgesetzt (B-09, C-11).
+
+| Nr. | Frage | Vorschlag | Antwort |
+|-----|-------|-----------|---------|
+| 15.1 🟠 | **Unterschriebene Verträge:** Webhook von Paperless oder regelmäßige Abfrage durch den Kalkulator? | Abfrage (z. B. alle 15 Minuten) über den vorhandenen API-Schlüssel: Der Kalkulator läuft intern, ein Webhook bräuchte eine Öffnung aus dem Internet. Webhook später möglich | |
+| 15.2 🟠 | **Verlorene Projekte und Wartefrist:** Gehen bei „Verloren“ alle Angebote nach SharePoint? Wie lange nach dem Abschluss wird archiviert? | Ja; 30 Tage nach dem Abschluss | |
+| 15.3 🟠 | **E-Mail-Empfänger** beim unterschriebenen Vertrag | Verantwortlicher Vertrieb, weitere Empfänger offen (Vertriebsleitung, Technik/Onboarding, Sammeladresse) | |
+| 15.4 🟢 | **Standard der Projektliste:** nur laufende Projekte oder alle? | Umgesetzt: alle, Filter wählbar (08.10.2026) | |
+| 15.5 🟢 | **IT:** Schreibrecht auf die Website „Kundenprojekte“ (Sites.Selected `write`) und Mailversand (`Mail.Send`, auf ein Absenderpostfach beschränkt, oder SMTP-Relay) | IT richtet beides ein, sobald 15.1 bis 15.3 entschieden sind | |
