@@ -209,6 +209,9 @@ internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertr
         builder.Ignore(v => v.IstUebergeben);
         builder.Ignore(v => v.IstAbgelehnt);
         builder.Ignore(v => v.IstFreigegeben);
+        builder.Ignore(v => v.IstUnterzeichnet);
+        builder.Property(v => v.PaperlessStatus).HasMaxLength(50);
+        builder.HasOne(v => v.Unterschrift).WithOne().HasForeignKey<VertragswerkUnterschrift>(u => u.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(v => v.Freigaben).WithOne().HasForeignKey(f => f.VertragswerkId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Angebot>().WithMany().HasForeignKey(v => v.AngebotId).OnDelete(DeleteBehavior.Restrict);
@@ -247,6 +250,15 @@ internal sealed class VertragswerkDateiKonfiguration : IEntityTypeConfiguration<
     {
         builder.ToTable("VertragswerkDateien", "kalkulation");
         builder.HasKey(d => d.VertragswerkId);
+    }
+}
+
+internal sealed class VertragswerkUnterschriftKonfiguration : IEntityTypeConfiguration<VertragswerkUnterschrift>
+{
+    public void Configure(EntityTypeBuilder<VertragswerkUnterschrift> builder)
+    {
+        builder.ToTable("VertragswerkUnterschriften", "kalkulation");
+        builder.HasKey(u => u.VertragswerkId);
     }
 }
 

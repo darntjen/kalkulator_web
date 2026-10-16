@@ -628,6 +628,105 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         await DiensteFuer(datenbank, Technik, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(werkId, VertragsfreigabeArt.Technik, erteilt: true);
     }
 
+    /// <summary>Nachgebautes Paperless für die Abfrage: Status je Dokument, Ergebnis erst, wenn gesetzt.</summary>
+    private sealed class TestAbruf : IPaperlessAbruf
+    {
+        public Dictionary<string, string> Status { get; } = [];
+
+        public PaperlessErgebnis? Ergebnis { get; set; }
+
+        public HashSet<string> Fehlerhaft { get; } = [];
+
+        public int Abfragen { get; private set; }
+
+        public Task<PaperlessStand> StandAsync(string dokumentId, CancellationToken abbruch)
+        {
+            Abfragen++;
+            if (Fehlerhaft.Contains(dokumentId))
+            {
+                throw new PaperlessFehler("Paperless nicht erreichbar.");
+            }
+
+            var status = Status.GetValueOrDefault(dokumentId, "dispatched");
+            return Task.FromResult(new PaperlessStand(status, status == "completed"));
+        }
+
+        public Task<PaperlessErgebnis?> ErgebnisAsync(string dokumentId, CancellationToken abbruch) => Task.FromResult(Ergebnis);
+    }
+
+    private UnterschriftenAbfrage Abfrage(string datenbank, TestBenutzer benutzer, TestAbruf abruf) =>
+        new(new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, benutzer)), benutzer, abruf, Options.Create(PaperlessAn), TimeProvider.System,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<UnterschriftenAbfrage>.Instance);
+
+    [Fact]
+    public async Task Abfrage_vermerkt_Unterzeichnung_und_legt_den_unterschriebenen_Vertrag_ab()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        var abruf = new TestAbruf();
+        var hintergrund = Abfrage(datenbank, new TestBenutzer("Paperless-Abfrage"), abruf);
+
+        // Noch nichts übergeben: nichts abzufragen.
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        Assert.Equal(new UnterschriftenErgebnis(0, 0, 0, 0), await hintergrund.AusfuehrenAsync());
+
+        await AlleFreigebenAsync(datenbank, werkId);
+        Assert.Equal(new UnterschriftenErgebnis(1, 0, 0, 0), await hintergrund.AusfuehrenAsync());
+        var werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.Equal("dispatched", werk.PaperlessStatus);
+        Assert.NotNull(werk.StatusGeprueftAm);
+        Assert.Null(werk.UnterzeichnetAm);
+
+        // Unterschrieben, Download noch nicht eingerichtet: Unterzeichnung vermerkt, PDF folgt bei der nächsten Abfrage.
+        abruf.Status["pl-1"] = "completed";
+        Assert.Equal(new UnterschriftenErgebnis(1, 1, 0, 0), await hintergrund.AusfuehrenAsync());
+        werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.NotNull(werk.UnterzeichnetAm);
+        Assert.False(werk.UnterschriftAbgelegt);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => dienste.Vertragswerk.UnterschriftAsync(werkId, pruefprotokoll: false));
+
+        var vorher = abruf.Abfragen;
+        abruf.Ergebnis = new PaperlessErgebnis([1, 2, 3], [9]);
+        Assert.Equal(new UnterschriftenErgebnis(1, 0, 1, 0), await hintergrund.AusfuehrenAsync());
+        Assert.Equal(vorher, abruf.Abfragen); // Der Status wird nach der Unterzeichnung nicht mehr abgefragt.
+        werk = Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt));
+        Assert.True(werk.UnterschriftAbgelegt);
+        Assert.True(werk.PruefprotokollAbgelegt);
+        var (name, pdf) = await dienste.Vertragswerk.UnterschriftAsync(werkId, pruefprotokoll: false);
+        Assert.Equal([1, 2, 3], pdf);
+        Assert.EndsWith("_unterschrieben.pdf", name, StringComparison.Ordinal);
+        Assert.Equal([9], (await dienste.Vertragswerk.UnterschriftAsync(werkId, pruefprotokoll: true)).Inhalt);
+
+        // Danach ist nichts mehr offen.
+        Assert.Equal(new UnterschriftenErgebnis(0, 0, 0, 0), await hintergrund.AusfuehrenAsync());
+        var fremd = DiensteFuer(datenbank, new TestBenutzer("andere@noesse.de", Rollen.Vertrieb));
+        await Assert.ThrowsAsync<KeinZugriffException>(() => fremd.Vertragswerk.UnterschriftAsync(werkId, pruefprotokoll: false));
+    }
+
+    [Fact]
+    public async Task Abfrage_eines_Vertrags_nur_mit_Recht_Fehler_halten_nichts_auf()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        var abruf = new TestAbruf();
+        var werkId = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+        await AlleFreigebenAsync(datenbank, werkId);
+
+        await Assert.ThrowsAsync<KeinZugriffException>(() => Abfrage(datenbank, new TestBenutzer("consultant@noesse.de", Rollen.Consultant), abruf).PruefeAsync(werkId));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => Abfrage(datenbank, Vertrieb, abruf).PruefeAsync(999_999));
+
+        abruf.Fehlerhaft.Add("pl-1");
+        Assert.Equal(new UnterschriftenErgebnis(1, 0, 0, 1), await Abfrage(datenbank, Vertrieb, abruf).PruefeAsync(werkId));
+        Assert.Null(Assert.Single(await dienste.Vertragswerk.ListeAsync(projekt)).StatusGeprueftAm);
+
+        abruf.Fehlerhaft.Clear();
+        abruf.Status["pl-1"] = "completed";
+        Assert.Equal(new UnterschriftenErgebnis(1, 1, 0, 0), await Abfrage(datenbank, Vertrieb, abruf).PruefeAsync(werkId));
+
+        // Ohne eingerichtetes Paperless gibt es keine Abfrage.
+        var aus = new UnterschriftenAbfrage(new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, Vertrieb)), Vertrieb, abruf,
+            Options.Create(new PaperlessEinstellungen()), TimeProvider.System, Microsoft.Extensions.Logging.Abstractions.NullLogger<UnterschriftenAbfrage>.Instance);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => aus.AusfuehrenAsync());
+    }
+
     [Fact]
     public void Fehlt_ein_Feld_im_PDF_wird_nicht_uebergeben()
     {

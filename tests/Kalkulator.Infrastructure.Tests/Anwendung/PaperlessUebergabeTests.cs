@@ -166,4 +166,85 @@ public class PaperlessUebergabeTests
         Assert.DoesNotContain("geheim", ausgabe.ToString(), StringComparison.Ordinal);
         Assert.Contains("blob-geheim", await antwort.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
+
+    /// <summary>Antwortet mit festem Inhalt und Medientyp je Pfad; merkt sich die angefragten Pfade.</summary>
+    private sealed class DateiServer(Dictionary<string, (string Typ, byte[] Inhalt)> antworten) : HttpMessageHandler
+    {
+        public List<string> Pfade { get; } = [];
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var pfad = request.RequestUri!.AbsolutePath;
+            Pfade.Add(pfad);
+            if (!antworten.TryGetValue(pfad, out var a))
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{}") });
+            }
+
+            var inhalt = new ByteArrayContent(a.Inhalt);
+            inhalt.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(a.Typ);
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = inhalt });
+        }
+    }
+
+    [Theory]
+    [InlineData("completed", true)]
+    [InlineData("COMPLETED", true)]
+    [InlineData("dispatched", false)]
+    public async Task Status_des_Dokuments_und_Unterzeichnung_laut_Einstellung(string status, bool unterzeichnet)
+    {
+        var server = new TestServer((HttpStatusCode.OK, $$"""{"id":4711,"state":"{{status}}"}"""));
+
+        var stand = await new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).StandAsync("4711", CancellationToken.None);
+
+        Assert.Equal((status, unterzeichnet), (stand.Status, stand.Unterzeichnet));
+        Assert.Equal(HttpMethod.Get, server.Anfragen[0].Anfrage.Method);
+        Assert.Equal("/api/v1/documents/4711", server.Anfragen[0].Anfrage.RequestUri!.AbsolutePath);
+        Assert.Equal("test-schluessel", server.Anfragen[0].Anfrage.Headers.Authorization!.Parameter);
+    }
+
+    [Fact]
+    public async Task Ohne_Status_nennt_der_Fehler_den_Aufbau_der_Antwort()
+    {
+        var server = new TestServer((HttpStatusCode.OK, """{"id":4711,"submission":{"status":"x"}}"""));
+
+        var fehler = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(Einstellungen)).StandAsync("4711", CancellationToken.None));
+
+        Assert.Contains("{id, submission{status}}", fehler.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Ergebnis_erst_mit_eingerichtetem_Pfad_und_nur_als_Datei()
+    {
+        var ohnePfad = new PaperlessUebergabe(new HttpClient(new DateiServer([])), Options.Create(Einstellungen));
+        Assert.Null(await ohnePfad.ErgebnisAsync("4711", CancellationToken.None));
+
+        var server = new DateiServer(new()
+        {
+            ["/api/v1/documents/4711/pdf"] = ("application/pdf", Pdf),
+            ["/api/v1/documents/4711/audit"] = ("application/pdf", [1, 2]),
+            ["/api/v1/documents/4711/json"] = ("application/json", Encoding.UTF8.GetBytes("""{"url":"x"}""")),
+        });
+        var mitPfad = new PaperlessEinstellungen
+        {
+            Adresse = Einstellungen.Adresse,
+            ApiSchluessel = Einstellungen.ApiSchluessel,
+            ArbeitsbereichId = Einstellungen.ArbeitsbereichId,
+            PdfPfad = "documents/{id}/pdf",
+            ProtokollPfad = "/documents/{id}/audit",
+        };
+
+        var ergebnis = await new PaperlessUebergabe(new HttpClient(server), Options.Create(mitPfad)).ErgebnisAsync("4711", CancellationToken.None);
+
+        Assert.Equal(Pdf, ergebnis!.Pdf);
+        Assert.Equal([1, 2], ergebnis.Pruefprotokoll);
+
+        mitPfad.ProtokollPfad = null;
+        mitPfad.PdfPfad = "documents/{id}/json";
+        var json = await Assert.ThrowsAsync<PaperlessFehler>(() =>
+            new PaperlessUebergabe(new HttpClient(server), Options.Create(mitPfad)).ErgebnisAsync("4711", CancellationToken.None));
+        Assert.Contains("JSON statt einer Datei", json.Message, StringComparison.Ordinal);
+        Assert.Contains("{url}", json.Message, StringComparison.Ordinal);
+    }
 }

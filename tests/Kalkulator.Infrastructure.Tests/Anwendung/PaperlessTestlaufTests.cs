@@ -73,4 +73,31 @@ public class PaperlessTestlaufTests
         await Assert.ThrowsAsync<ArgumentException>(() =>
             PaperlessTestlauf.AusfuehrenAsync(Einstellungen(), "", _ => throw new InvalidOperationException(), TextWriter.Null));
     }
+
+    [Fact]
+    public async Task Statuslauf_zeigt_Status_und_Adressen_aber_keine_persoenlichen_Daten()
+    {
+        const string Dokument = """
+            {"id":4711,"state":"completed","name":"Vertrag Muster GmbH","completed_at":"2026-10-16T10:00:00Z",
+             "result_pdf_url":"https://speicher.test/abc.pdf?signature=geheim","filename":"Vertrag.pdf",
+             "participants":[{"slot_name":"Kunde","email":"erika@example.org","name":"Erika","token":"t0k3n","state":"completed"}]}
+            """;
+        var server = new TestServer((HttpStatusCode.OK, Dokument), (HttpStatusCode.OK, Dokument));
+        var e = new PaperlessEinstellungen { Adresse = "https://paperless.test/api/v1", ApiSchluessel = "s", ArbeitsbereichId = 1 };
+        var ausgabe = new StringWriter();
+
+        await PaperlessStatuslauf.AusfuehrenAsync(e, "4711", new HttpClient(server), ausgabe);
+
+        var text = ausgabe.ToString();
+        Assert.Contains("state: \"completed\"", text, StringComparison.Ordinal);
+        Assert.Contains("completed_at: \"2026-10-16T10:00:00Z\"", text, StringComparison.Ordinal);
+        Assert.Contains("result_pdf_url: https://speicher.test/abc.pdf (ohne Abfrageteil)", text, StringComparison.Ordinal);
+        Assert.Contains("filename: \"Vertrag.pdf\"", text, StringComparison.Ordinal);
+        Assert.Contains("participants: Liste mit 1 Einträgen", text, StringComparison.Ordinal);
+        Assert.Contains("documents/4711?expand[]=participants", server.Anfragen[1].Anfrage.RequestUri!.PathAndQuery, StringComparison.Ordinal);
+        foreach (var geheim in new[] { "Muster GmbH", "erika@example.org", "Erika", "t0k3n", "signature", "geheim" })
+        {
+            Assert.DoesNotContain(geheim, text, StringComparison.Ordinal);
+        }
+    }
 }

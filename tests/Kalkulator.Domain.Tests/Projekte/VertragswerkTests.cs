@@ -124,4 +124,39 @@ public class VertragswerkTests
         werk.VermerkeUebergabe("101", Jetzt);
         Assert.Throws<InvalidOperationException>(() => werk.Pruefe(VertragsfreigabeArt.Technik, true, null, "technik@noesse.de", Jetzt));
     }
+
+    [Fact]
+    public void Status_erst_nach_Uebergabe_Unterzeichnung_einmalig()
+    {
+        var werk = NeuesWerk();
+        Assert.Throws<InvalidOperationException>(() => werk.VermerkeStatus("dispatched", false, Jetzt));
+
+        werk.VermerkeUebergabe("101", Jetzt);
+        werk.VermerkeStatus("dispatched", false, Jetzt.AddHours(1));
+        Assert.Equal(("dispatched", Jetzt.AddHours(1)), (werk.PaperlessStatus, werk.StatusGeprueftAm));
+        Assert.False(werk.IstUnterzeichnet);
+        Assert.Throws<InvalidOperationException>(() => werk.HinterlegeUnterschrift([1], null, Jetzt));
+
+        werk.VermerkeStatus("completed", true, Jetzt.AddHours(2));
+        Assert.Equal(Jetzt.AddHours(2), werk.UnterzeichnetAm);
+
+        // Nach der Unterzeichnung ändert eine weitere Abfrage nichts mehr.
+        werk.VermerkeStatus("anders", false, Jetzt.AddHours(3));
+        Assert.Equal(("completed", Jetzt.AddHours(2)), (werk.PaperlessStatus, werk.UnterzeichnetAm));
+    }
+
+    [Fact]
+    public void Unterschriebener_Vertrag_wird_einmal_abgelegt()
+    {
+        var werk = NeuesWerk();
+        werk.VermerkeUebergabe("101", Jetzt);
+        werk.VermerkeStatus("completed", true, Jetzt);
+
+        Assert.Throws<ArgumentException>(() => werk.HinterlegeUnterschrift([], null, Jetzt));
+        werk.HinterlegeUnterschrift([1, 2], [], Jetzt);
+
+        Assert.Equal([1, 2], werk.Unterschrift!.Pdf);
+        Assert.Null(werk.Unterschrift.Pruefprotokoll);
+        Assert.Throws<InvalidOperationException>(() => werk.HinterlegeUnterschrift([3], null, Jetzt));
+    }
 }

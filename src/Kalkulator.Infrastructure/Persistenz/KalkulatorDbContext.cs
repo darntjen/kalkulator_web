@@ -114,9 +114,12 @@ public class KalkulatorDbContext(
     private static readonly HashSet<string> EntscheidungsFelder =
         [nameof(Vorlagenversion.Status), nameof(Vorlagenversion.EntschiedenVon), nameof(Vorlagenversion.EntschiedenAm), nameof(Vorlagenversion.Kommentar)];
 
-    /// <summary>Am Vertragswerk ändert sich nach dem Erzeugen nur der Vermerk der Übergabe an Paperless.</summary>
+    /// <summary>Am Vertragswerk ändern sich nach dem Erzeugen nur die Vermerke der Übergabe an Paperless und der Unterzeichnung.</summary>
     private static readonly HashSet<string> UebergabeFelder =
-        [nameof(Vertragswerk.PaperlessDokumentId), nameof(Vertragswerk.UebergebenAm), nameof(Vertragswerk.UebergabeFehler), nameof(Vertragswerk.UebergabeVersuchtAm)];
+    [
+        nameof(Vertragswerk.PaperlessDokumentId), nameof(Vertragswerk.UebergebenAm), nameof(Vertragswerk.UebergabeFehler), nameof(Vertragswerk.UebergabeVersuchtAm),
+        nameof(Vertragswerk.PaperlessStatus), nameof(Vertragswerk.StatusGeprueftAm), nameof(Vertragswerk.UnterzeichnetAm),
+    ];
 
     /// <summary>
     /// Eingefrorene Versionen, ihre Positionen und Kosten sowie archivierte Angebotsdokumente dürfen nur angelegt werden;
@@ -127,7 +130,7 @@ public class KalkulatorDbContext(
         var geaendert = ChangeTracker.Entries()
             .FirstOrDefault(e => (e.State is EntityState.Modified or EntityState.Deleted
                     && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei
-                        or VertragswerkEintrag or VertragswerkDatei)
+                        or VertragswerkEintrag or VertragswerkDatei or VertragswerkUnterschrift)
                 || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion or Vertragswerk)
                 || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name)))
                 || (e.State == EntityState.Modified && e.Entity is Vertragswerk && e.Properties.Any(p => p.IsModified && !UebergabeFelder.Contains(p.Metadata.Name))));
@@ -161,7 +164,7 @@ public class KalkulatorDbContext(
 
     private List<(EntityEntry Eintrag, string Aktion, string? Werte)> ErfasseAenderungen() =>
         [.. ChangeTracker.Entries()
-            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich or VertragswerkDatei or UnterlageDatei))
+            .Where(e => e.Entity is not (AenderungsEintrag or VorlagenDatei or Vorlagenabgleich or VertragswerkDatei or VertragswerkUnterschrift or UnterlageDatei))
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
             .Select(e => (e, e.State switch
             {

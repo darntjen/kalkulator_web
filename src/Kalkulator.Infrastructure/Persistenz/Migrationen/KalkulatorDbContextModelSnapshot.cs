@@ -1410,6 +1410,13 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("PaperlessStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTimeOffset?>("StatusGeprueftAm")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("UebergabeFehler")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
@@ -1423,6 +1430,9 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                     b.Property<string>("Unterzeichner")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTimeOffset?>("UnterzeichnetAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("ZipDateiname")
                         .IsRequired()
@@ -1496,6 +1506,26 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                     b.HasIndex("VorlagenversionId");
 
                     b.ToTable("VertragswerkDokumente", "kalkulation");
+                });
+
+            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkUnterschrift", b =>
+                {
+                    b.Property<int>("VertragswerkId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AbgelegtAm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<byte[]>("Pdf")
+                        .IsRequired()
+                        .HasColumnType("varbinary(max)");
+
+                    b.Property<byte[]>("Pruefprotokoll")
+                        .HasColumnType("varbinary(max)");
+
+                    b.HasKey("VertragswerkId");
+
+                    b.ToTable("VertragswerkUnterschriften", "kalkulation");
                 });
 
             modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertriebsfreigabe", b =>
@@ -1939,6 +1969,15 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Kalkulator.Domain.Projekte.VertragswerkUnterschrift", b =>
+                {
+                    b.HasOne("Kalkulator.Domain.Projekte.Vertragswerk", null)
+                        .WithOne("Unterschrift")
+                        .HasForeignKey("Kalkulator.Domain.Projekte.VertragswerkUnterschrift", "VertragswerkId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Kalkulator.Domain.Projekte.Vertriebsfreigabe", b =>
                 {
                     b.HasOne("Kalkulator.Domain.Projekte.Kalkulation", null)
@@ -2026,6 +2065,8 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                     b.Navigation("Dokumente");
 
                     b.Navigation("Freigaben");
+
+                    b.Navigation("Unterschrift");
                 });
 #pragma warning restore 612, 618
         }

@@ -66,3 +66,12 @@ Ein vom Vertrieb erzeugtes Vertragswerk gibt zuerst die Vertriebsleitung frei; e
 Technik es. Erzeugt die Vertriebsleitung selbst, wird ihre Freigabe beim Erzeugen vermerkt. Die Freigabe ist eine
 weitere Art der Vertragsfreigabe (`Vertriebsleitung`); ein Schema-Update ist nicht nötig, weil die Art als Text
 gespeichert wird. An Paperless geht das Vertragswerk mit der letzten der drei Freigaben.
+
+## Nachtrag 2026-10-16: Unterzeichnung per Abfrage statt Webhook
+
+Paperless bietet Webhooks; der Kalkulator läuft aber auf einem internen Server, und ein Webhook bräuchte eine
+Öffnung aus dem Internet. Entschieden ist deshalb eine **stündliche Abfrage** (`StuendlicheUnterschriftenAbfrage`)
+mit dem vorhandenen API-Schlüssel: `GET documents/{id}`, Feld `state`. Ist der Vertrag vollständig unterschrieben,
+vermerkt der Kalkulator das und holt PDF und Prüfprotokoll über einstellbare Pfade. Statuswert und Pfade sind noch
+mit dem echten Schlüssel zu bestätigen (Testlauf `--paperless-status`, offene Frage 15.7); bis dahin wird nur die
+Unterzeichnung vermerkt. Das unterschriebene PDF liegt getrennt vom Vertragswerk in `VertragswerkUnterschriften`.

@@ -77,7 +77,12 @@ public sealed record VertragswerkZeile(
     DateTimeOffset? UebergebenAm = null,
     string? UebergabeFehler = null,
     DateTimeOffset? UebergabeVersuchtAm = null,
-    IReadOnlyList<Vertragsfreigabe>? Freigaben = null)
+    IReadOnlyList<Vertragsfreigabe>? Freigaben = null,
+    string? PaperlessStatus = null,
+    DateTimeOffset? StatusGeprueftAm = null,
+    DateTimeOffset? UnterzeichnetAm = null,
+    bool UnterschriftAbgelegt = false,
+    bool PruefprotokollAbgelegt = false)
 {
     public Vertragsfreigabe? Freigabe(VertragsfreigabeArt art) => Freigaben?.FirstOrDefault(f => f.Art == art);
 
@@ -174,8 +179,28 @@ public sealed class VertragswerkDienst(
         await LadeAsync(kontext, projektId, abbruch);
         var werke = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Dokumente).Include(v => v.Freigaben)
             .Where(v => v.KundenprojektId == projektId).OrderByDescending(v => v.Ausfertigung).ToListAsync(abbruch);
+        var ids = werke.Select(v => v.Id).ToList();
+        var unterschriften = await kontext.Set<VertragswerkUnterschrift>().AsNoTracking().Where(u => ids.Contains(u.VertragswerkId))
+            .Select(u => new { u.VertragswerkId, Protokoll = u.Pruefprotokoll != null }).ToDictionaryAsync(u => u.VertragswerkId, u => u.Protokoll, abbruch);
         return [.. werke.Select(v => new VertragswerkZeile(v.Id, v.Nummer, v.Ausfertigung, v.ErstelltVon, v.ErstelltAm, [.. v.Dokumente.OrderBy(d => d.Reihenfolge)],
-            v.PaperlessDokumentId, v.UebergebenAm, v.UebergabeFehler, v.UebergabeVersuchtAm, [.. v.Freigaben.OrderBy(f => f.Art)]))];
+            v.PaperlessDokumentId, v.UebergebenAm, v.UebergabeFehler, v.UebergabeVersuchtAm, [.. v.Freigaben.OrderBy(f => f.Art)],
+            v.PaperlessStatus, v.StatusGeprueftAm, v.UnterzeichnetAm, unterschriften.ContainsKey(v.Id), unterschriften.GetValueOrDefault(v.Id)))];
+    }
+
+    /// <summary>Unterschriebener Vertrag bzw. Prüfprotokoll aus Paperless; wer das Kundenprojekt sehen darf.</summary>
+    public async Task<(string Name, byte[] Inhalt)> UnterschriftAsync(int vertragswerkId, bool pruefprotokoll, CancellationToken abbruch = default)
+    {
+        await using var kontext = await kontexte.CreateDbContextAsync(abbruch);
+        var werk = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Unterschrift).SingleOrDefaultAsync(v => v.Id == vertragswerkId, abbruch)
+            ?? throw new KeyNotFoundException($"Vertragswerk {vertragswerkId} gibt es nicht.");
+        await LadeAsync(kontext, werk.KundenprojektId, abbruch);
+        var name = Path.GetFileNameWithoutExtension(werk.GesamtDateiname);
+        return (werk.Unterschrift, pruefprotokoll) switch
+        {
+            ({ } u, false) => ($"{name}_unterschrieben.pdf", u.Pdf),
+            ({ Pruefprotokoll: { } p }, true) => ($"{name}_Pruefprotokoll.pdf", p),
+            _ => throw new KeyNotFoundException("Für dieses Vertragswerk liegt die Datei aus Paperless noch nicht vor."),
+        };
     }
 
     /// <summary>Gesamt-PDF oder ZIP eines erzeugten Vertragswerks.</summary>

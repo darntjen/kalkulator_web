@@ -19,8 +19,13 @@ var erstbefuellung = args.Contains(ErstbefuellungSchalter);
 var paperlessTest = Array.IndexOf(args, PaperlessTestlauf.Schalter);
 var paperlessEmpfaenger = paperlessTest >= 0 && paperlessTest + 1 < args.Length ? args[paperlessTest + 1] : "";
 
+// „--paperless-status 12345“: Aufbau und Status eines Paperless-Dokuments ausgeben und beenden (stündliche Abfrage).
+var paperlessStatus = Array.IndexOf(args, PaperlessStatuslauf.Schalter);
+var paperlessDokument = paperlessStatus >= 0 && paperlessStatus + 1 < args.Length ? args[paperlessStatus + 1] : "";
+
 var builder = WebApplication.CreateBuilder(args
-    .Where((a, i) => a != ErstbefuellungSchalter && (paperlessTest < 0 || (i != paperlessTest && i != paperlessTest + 1)))
+    .Where((a, i) => a != ErstbefuellungSchalter && (paperlessTest < 0 || (i != paperlessTest && i != paperlessTest + 1))
+        && (paperlessStatus < 0 || (i != paperlessStatus && i != paperlessStatus + 1)))
     .ToArray());
 
 builder.Services.AddRazorComponents()
@@ -80,6 +85,23 @@ if (paperlessTest >= 0)
     catch (Exception e) when (e is PaperlessFehler or ArgumentException)
     {
         Console.Error.WriteLine($"Paperless-Testlauf fehlgeschlagen: {e.Message}");
+        Environment.ExitCode = 1;
+    }
+
+    return;
+}
+
+if (paperlessStatus >= 0)
+{
+    var einstellungen = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<PaperlessEinstellungen>>().Value;
+    using var http = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
+    try
+    {
+        await PaperlessStatuslauf.AusfuehrenAsync(einstellungen, paperlessDokument, http, Console.Out);
+    }
+    catch (Exception e) when (e is PaperlessFehler or ArgumentException or HttpRequestException)
+    {
+        Console.Error.WriteLine($"Paperless-Statusabfrage fehlgeschlagen: {e.Message}");
         Environment.ExitCode = 1;
     }
 
@@ -153,6 +175,24 @@ app.MapGet("/vertragswerke/{id:int}/{art:regex(^(pdf|zip)$)}", async (int id, st
         var zip = art == "zip";
         var (name, inhalt) = await dienst.DateiAsync(id, zip, abbruch);
         return Results.File(inhalt, zip ? "application/zip" : "application/pdf", name);
+    }
+    catch (KeinZugriffException)
+    {
+        return Results.Forbid();
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+});
+
+// Unterschriebener Vertrag bzw. Prüfprotokoll aus Paperless (stündliche Abfrage); wer das Kundenprojekt sehen darf.
+app.MapGet("/vertragswerke/{id:int}/{art:regex(^(unterschrieben|pruefprotokoll)$)}", async (int id, string art, VertragswerkDienst dienst, CancellationToken abbruch) =>
+{
+    try
+    {
+        var (name, inhalt) = await dienst.UnterschriftAsync(id, art == "pruefprotokoll", abbruch);
+        return Results.File(inhalt, "application/pdf", name);
     }
     catch (KeinZugriffException)
     {
