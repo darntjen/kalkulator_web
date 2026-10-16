@@ -211,6 +211,7 @@ internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertr
         builder.Ignore(v => v.IstFreigegeben);
         builder.Ignore(v => v.IstUnterzeichnet);
         builder.Property(v => v.PaperlessStatus).HasMaxLength(50);
+        builder.Property(v => v.AblageLink).HasMaxLength(1000);
         builder.HasOne(v => v.Unterschrift).WithOne().HasForeignKey<VertragswerkUnterschrift>(u => u.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(v => v.Freigaben).WithOne().HasForeignKey(f => f.VertragswerkId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);

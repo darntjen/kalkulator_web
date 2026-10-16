@@ -2,6 +2,7 @@ using System.Globalization;
 using Kalkulator.Infrastructure;
 using Kalkulator.Infrastructure.Ablage;
 using Kalkulator.Infrastructure.Anwendung;
+using Kalkulator.Infrastructure.Benachrichtigung;
 using Kalkulator.Infrastructure.Erstbefuellung;
 using Kalkulator.Infrastructure.Paperless;
 using Kalkulator.Infrastructure.Persistenz;
@@ -45,6 +46,7 @@ builder.Services.Configure<VorlagenEinstellungen>(builder.Configuration.GetSecti
 builder.Services.Configure<PdfEinstellungen>(builder.Configuration.GetSection(PdfEinstellungen.Abschnitt));
 builder.Services.Configure<PaperlessEinstellungen>(builder.Configuration.GetSection(PaperlessEinstellungen.Abschnitt));
 builder.Services.Configure<KundenablageEinstellungen>(builder.Configuration.GetSection(KundenablageEinstellungen.Abschnitt));
+builder.Services.Configure<BenachrichtigungsEinstellungen>(builder.Configuration.GetSection(BenachrichtigungsEinstellungen.Abschnitt));
 builder.Services.PostConfigure<AngebotsEinstellungen>(e =>
 {
     if (string.IsNullOrWhiteSpace(e.Vorlagenordner))

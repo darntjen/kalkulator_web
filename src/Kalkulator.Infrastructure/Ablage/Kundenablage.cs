@@ -1,3 +1,4 @@
+using System.Net.Http.Json;
 using System.Text.Json.Serialization;
 using Kalkulator.Infrastructure.Vorlagen;
 
@@ -58,6 +59,13 @@ public interface IKundenablage
 
     /// <summary>Inhalt einer Datei; nur aus den gelesenen Bereichen des angegebenen Kanalordners.</summary>
     Task<(string Name, byte[] Inhalt)> LadeAsync(string kanalId, string dateiId, CancellationToken abbruch);
+
+    /// <summary>
+    /// Legt eine Datei im Kanalordner ab (Entscheidung 08.10.2026: unterschriebene Verträge und Archiv), nur in den
+    /// Ablagebereichen (<see cref="Kundenablage.Ablagebereiche"/>) und ihren Unterordnern; fehlende Ordner entstehen,
+    /// eine gleichnamige Datei wird ersetzt. Braucht in SharePoint Schreibrecht (Sites.Selected, Rolle „write“).
+    /// </summary>
+    Task<AblageDatei> AblegenAsync(string kanalId, string ordner, string dateiname, byte[] inhalt, CancellationToken abbruch);
 }
 
 public static class Kundenablage
@@ -70,6 +78,37 @@ public static class Kundenablage
         ["00_Kundenakte", "10_Recherche", "20_Standortgespraech", "30_Analyse", "40_Workshop_Roadmap", "60_Angebote", "80_Protokolle"];
 
     public static bool IstBereich(string ordnername) => Bereiche.Contains(ordnername, StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Bereiche, in die der Kalkulator schreibt: Angebote und Verträge (Entscheidung 08.10.2026).</summary>
+    public static readonly IReadOnlyList<string> Ablagebereiche = ["60_Angebote", "70_Vertraege"];
+
+    /// <summary>Unterordner für archivierte Angebote und Ausfertigungen (Entscheidung 08.10.2026).</summary>
+    public const string Archivordner = "Archiv Kalkulator";
+
+    private static readonly char[] Verboten = ['"', '*', ':', '<', '>', '?', '/', '\\', '|', '#', '%'];
+
+    /// <summary>
+    /// Prüft Zielordner und Dateinamen: Der Ordner beginnt mit einem Ablagebereich, kein Teil darf leer sein, „..“ enthalten
+    /// oder Zeichen, die SharePoint nicht erlaubt. Gibt den Ordner in einheitlicher Schreibweise zurück.
+    /// </summary>
+    public static string PruefeZiel(string ordner, string dateiname)
+    {
+        var teile = (ordner ?? "").Split('/', StringSplitOptions.TrimEntries);
+        if (teile.Length == 0 || !Ablagebereiche.Contains(teile[0], StringComparer.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException($"Abgelegt wird nur in {string.Join(" und ", Ablagebereiche)}.", nameof(ordner));
+        }
+
+        foreach (var teil in teile.Append(dateiname ?? ""))
+        {
+            if (teil.Length == 0 || teil is "." or ".." || teil.IndexOfAny(Verboten) >= 0 || teil.Any(char.IsControl))
+            {
+                throw new ArgumentException($"Ungültiger Ordner- oder Dateiname „{teil}“.", nameof(dateiname));
+            }
+        }
+
+        return string.Join('/', teile);
+    }
 
     /// <summary>
     /// Vorschlag eines Kanalordners für eine Firma: Kanalnamen sind in Teams auf 50 Zeichen begrenzt, deshalb gilt ein
@@ -98,6 +137,9 @@ public sealed class KeineKundenablage(string grund = "Die Kundenablage in Teams 
     public Task<IReadOnlyList<AblageDatei>> DateienAsync(string kanalId, CancellationToken abbruch) => throw new InvalidOperationException(grund);
 
     public Task<(string Name, byte[] Inhalt)> LadeAsync(string kanalId, string dateiId, CancellationToken abbruch) => throw new InvalidOperationException(grund);
+
+    public Task<AblageDatei> AblegenAsync(string kanalId, string ordner, string dateiname, byte[] inhalt, CancellationToken abbruch) =>
+        throw new InvalidOperationException(grund);
 }
 
 /// <summary>Lokaler Ordner mit derselben Struktur wie das Team (für Entwicklung und Tests); Kennungen sind relative Pfade.</summary>
@@ -151,6 +193,18 @@ public sealed class OrdnerKundenablage(string ordner) : IKundenablage
         }
 
         return (Path.GetFileName(voll), await File.ReadAllBytesAsync(voll, abbruch));
+    }
+
+    public async Task<AblageDatei> AblegenAsync(string kanalId, string ordner, string dateiname, byte[] inhalt, CancellationToken abbruch)
+    {
+        var kanal = Kanal(kanalId);
+        var ziel = Kundenablage.PruefeZiel(ordner, dateiname);
+        var verzeichnis = Path.Combine(kanal, ziel.Replace('/', Path.DirectorySeparatorChar));
+        Directory.CreateDirectory(verzeichnis);
+        var voll = Path.Combine(verzeichnis, dateiname);
+        await File.WriteAllBytesAsync(voll, inhalt, abbruch);
+        var pfad = $"{ziel}/{dateiname}";
+        return new AblageDatei(pfad, ziel.Split('/')[0], pfad, dateiname, inhalt.Length, DateTimeOffset.UtcNow, null, new Uri(voll).AbsoluteUri);
     }
 
     /// <summary>Vollständiger Pfad des Kanalordners; die Kennung darf nicht aus dem Ordner herausführen.</summary>
@@ -220,6 +274,25 @@ public sealed class SharePointKundenablage(GraphZugang graph, KundenablageEinste
         }
 
         return (datei.Name, await graph.LadeAsync($"drives/{laufwerk}/items/{datei.Id}/content", abbruch));
+    }
+
+    public async Task<AblageDatei> AblegenAsync(string kanalId, string ordner, string dateiname, byte[] inhalt, CancellationToken abbruch)
+    {
+        var ziel = Kundenablage.PruefeZiel(ordner, dateiname);
+        var laufwerk = await LaufwerkAsync(abbruch);
+        var pfad = $"{ziel}/{dateiname}";
+
+        // Hochladen über den Pfad legt fehlende Ordner an; eine gleichnamige Datei wird ersetzt (erneuter Versuch).
+        using var anfrage = new HttpRequestMessage(HttpMethod.Put,
+            $"https://graph.microsoft.com/v1.0/drives/{laufwerk}/items/{Kennung(kanalId)}:/{GraphZugang.Pfad(pfad)}:/content?@microsoft.graph.conflictBehavior=replace")
+        {
+            Content = new ByteArrayContent(inhalt),
+        };
+        anfrage.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        using var antwort = await graph.SendeAsync(anfrage, abbruch);
+        var element = await antwort.Content.ReadFromJsonAsync<Element>(abbruch)
+            ?? throw new InvalidOperationException("Microsoft Graph hat nach dem Hochladen keine Datei zurückgegeben.");
+        return new AblageDatei(element.Id, ziel.Split('/')[0], pfad, element.Name, element.Groesse ?? inhalt.Length, element.Geaendert, null, element.Link);
     }
 
     private async Task SammleAsync(string laufwerk, Element ordner, string bereich, string pfad, List<AblageDatei> ergebnis, CancellationToken abbruch)

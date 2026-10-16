@@ -59,6 +59,14 @@ public class Vertragswerk
     /// <summary>Unterschriebenes PDF und Prüfprotokoll aus Paperless; getrennt gespeichert wie <see cref="Datei"/>.</summary>
     public VertragswerkUnterschrift? Unterschrift { get; private set; }
 
+    /// <summary>Link auf den unterschriebenen Vertrag im Kanalordner (70_Vertraege), sobald er dort abgelegt ist.</summary>
+    public string? AblageLink { get; private set; }
+
+    public DateTimeOffset? AbgelegtAm { get; private set; }
+
+    /// <summary>Wann die Benachrichtigung über den unterschriebenen Vertrag hinausging (Liste für Power Automate).</summary>
+    public DateTimeOffset? GemeldetAm { get; private set; }
+
     /// <summary>
     /// Reihenfolge der Prüfungen: Zuerst gibt die Vertriebsleitung frei (Entscheidung 07.10.2026), danach prüfen AVV und
     /// Technik parallel (Entscheidung 05.10.2026).
@@ -204,6 +212,34 @@ public class Vertragswerk
         }
 
         Unterschrift = new VertragswerkUnterschrift { Pdf = pdf, Pruefprotokoll = pruefprotokoll is { Length: > 0 } ? pruefprotokoll : null, AbgelegtAm = zeitpunkt };
+    }
+
+    /// <summary>Vermerkt die Ablage des unterschriebenen Vertrags im Kanalordner; einmalig.</summary>
+    public void VermerkeAblage(string? link, DateTimeOffset zeitpunkt)
+    {
+        if (Unterschrift is null)
+        {
+            throw new InvalidOperationException("Abgelegt wird erst der unterschriebene Vertrag.");
+        }
+
+        if (AbgelegtAm is not null)
+        {
+            throw new InvalidOperationException("Der unterschriebene Vertrag ist bereits im Kanalordner abgelegt.");
+        }
+
+        AblageLink = string.IsNullOrWhiteSpace(link) ? null : link.Length > 1000 ? link[..1000] : link;
+        AbgelegtAm = zeitpunkt;
+    }
+
+    /// <summary>Vermerkt die Benachrichtigung über den unterschriebenen Vertrag; einmalig.</summary>
+    public void VermerkeMeldung(DateTimeOffset zeitpunkt)
+    {
+        if (!IstUnterzeichnet)
+        {
+            throw new InvalidOperationException("Gemeldet wird erst ein unterschriebener Vertrag.");
+        }
+
+        GemeldetAm ??= zeitpunkt;
     }
 
     public void VermerkeUebergabeFehler(string fehler, DateTimeOffset zeitpunkt)

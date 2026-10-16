@@ -1,5 +1,6 @@
 using Kalkulator.Infrastructure.Ablage;
 using Kalkulator.Infrastructure.Anwendung;
+using Kalkulator.Infrastructure.Benachrichtigung;
 using Kalkulator.Infrastructure.Berechnung;
 using Kalkulator.Infrastructure.Paperless;
 using Kalkulator.Infrastructure.Persistenz;
@@ -40,6 +41,8 @@ public static class DependencyInjection
             new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
         services.TryAddSingleton<IPaperlessAbruf>(d => d.GetRequiredService<IPaperlessUebergabe>() as IPaperlessAbruf
             ?? new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
+        services.AddOptions<BenachrichtigungsEinstellungen>();
+        services.TryAddSingleton(Benachrichtigung);
         services.AddScoped<UnterschriftenAbfrage>();
         services.AddHostedService<StuendlicheUnterschriftenAbfrage>();
         services.AddHostedService<NaechtlicherVorlagenabgleich>();
@@ -92,6 +95,19 @@ public static class DependencyInjection
         {
             return new KeineVorlagenquelle(ex.Message);
         }
+    }
+
+    /// <summary>Benachrichtigungen über die SharePoint-Liste laut „Benachrichtigung“; ohne Website nur ins Protokoll.</summary>
+    private static IBenachrichtigung Benachrichtigung(IServiceProvider dienste)
+    {
+        var e = dienste.GetRequiredService<IOptions<BenachrichtigungsEinstellungen>>().Value;
+        if (!e.Aktiv)
+        {
+            return new ProtokollBenachrichtigung(dienste.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ProtokollBenachrichtigung>>());
+        }
+
+        var sharePoint = dienste.GetRequiredService<IOptions<VorlagenEinstellungen>>().Value.SharePoint;
+        return new SharePointBenachrichtigung(GraphZugang.Aus(sharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }), e);
     }
 
     /// <summary>Kanalordner der Kunden laut Konfiguration „Kundenablage“; Graph nutzt die Anmeldung aus „Vorlagen:SharePoint“.</summary>

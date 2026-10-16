@@ -1379,6 +1379,13 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("AbgelegtAm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("AblageLink")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("AngebotId")
                         .HasColumnType("int");
 
@@ -1392,6 +1399,9 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("GemeldetAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("GesamtDateiname")
                         .IsRequired()

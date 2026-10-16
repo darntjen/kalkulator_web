@@ -119,6 +119,7 @@ public class KalkulatorDbContext(
     [
         nameof(Vertragswerk.PaperlessDokumentId), nameof(Vertragswerk.UebergebenAm), nameof(Vertragswerk.UebergabeFehler), nameof(Vertragswerk.UebergabeVersuchtAm),
         nameof(Vertragswerk.PaperlessStatus), nameof(Vertragswerk.StatusGeprueftAm), nameof(Vertragswerk.UnterzeichnetAm),
+        nameof(Vertragswerk.AblageLink), nameof(Vertragswerk.AbgelegtAm), nameof(Vertragswerk.GemeldetAm),
     ];
 
     /// <summary>
