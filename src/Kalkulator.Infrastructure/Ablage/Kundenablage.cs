@@ -30,6 +30,12 @@ public sealed class KundenablageEinstellungen
 
     /// <summary>Uhrzeit (Ortszeit) der täglichen Löschung abgelaufener Uploads; leer schaltet sie ab.</summary>
     public string? LoeschungUm { get; set; } = "03:15";
+
+    /// <summary>
+    /// Uhrzeit (Ortszeit) der nächtlichen Archivierung abgeschlossener Projekte in den Kanalordner (Entscheidung
+    /// 08.10.2026); leer schaltet sie ab.
+    /// </summary>
+    public string? ArchivierungUm { get; set; } = "02:45";
 }
 
 /// <summary>Ein Kanalordner im Team „Kundenprojekte“, z. B. „Muster Spedition GmbH“.</summary>

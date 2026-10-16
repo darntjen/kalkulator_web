@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 {
     [DbContext(typeof(KalkulatorDbContext))]
-    [Migration("20261016135351_VertraegeVerteilen")]
-    partial class VertraegeVerteilen
+    [Migration("20261016140030_VertraegeVerteilenUndArchivieren")]
+    partial class VertraegeVerteilenUndArchivieren
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -680,6 +680,13 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("Dateiname")
                         .IsRequired()
@@ -1391,6 +1398,17 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     b.Property<int>("AngebotId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ArchivZipLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Ausfertigung")
                         .HasColumnType("int");

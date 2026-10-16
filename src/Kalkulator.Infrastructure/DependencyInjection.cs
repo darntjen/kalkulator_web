@@ -51,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<UnterlagenDienst>();
         services.AddScoped<KundensituationDienst>();
         services.AddHostedService<UnterlagenAufbewahrung>();
+        services.AddHostedService<NaechtlicheArchivierung>();
         return services;
     }
 

@@ -824,6 +824,119 @@ public class VertragswerkDienstTests(SqlServerFixture db)
         }
     }
 
+    private Archivierung Archiv(string datenbank, IKundenablage ablage) =>
+        new(new Fabrik(() => db.NeuerKontextAufDatenbank(datenbank, new TestBenutzer(NaechtlicheArchivierung.Benutzer))), ablage, TimeProvider.System,
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<Archivierung>.Instance);
+
+    private async Task KanalordnerAsync(string datenbank, int projekt, string ordner)
+    {
+        await using var kontext = db.NeuerKontextAufDatenbank(datenbank);
+        (await kontext.Kundenprojekte.SingleAsync(p => p.Id == projekt)).VerknuepfeKanalordner(ordner, ordner);
+        await kontext.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Gewonnenes_Projekt_wird_erst_nach_der_Ablage_des_Vertrags_archiviert()
+    {
+        var (datenbank, dienste, projekt) = await MitUnterschriftenAsync();
+        var verzeichnis = Directory.CreateTempSubdirectory("kanal-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(verzeichnis.FullName, "Muster Spedition GmbH"));
+            await KanalordnerAsync(datenbank, projekt, "Muster Spedition GmbH");
+            var ablage = new OrdnerKundenablage(verzeichnis.FullName);
+            var archiv = Archiv(datenbank, ablage);
+
+            // Erste Ausfertigung abgelehnt, zweite freigegeben und unterschrieben.
+            var abgelehnt = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+            await DiensteFuer(datenbank, Leitung, paperless: PaperlessAn).Vertragswerk.FreigebenAsync(abgelehnt, VertragsfreigabeArt.Vertriebsleitung, erteilt: false, "Preis falsch");
+            var unterschrieben = await dienste.Vertragswerk.ErzeugenAsync(projekt, Kunde);
+            await AlleFreigebenAsync(datenbank, unterschrieben);
+
+            // Solange der unterschriebene Vertrag nicht im Kanalordner liegt, bleibt alles im Kalkulator.
+            Assert.Equal(new ArchivErgebnis(0, 0, 0, 0), await archiv.AusfuehrenAsync());
+
+            var abruf = new TestAbruf { Ergebnis = new PaperlessErgebnis([1, 2, 3], null) };
+            abruf.Status["pl-1"] = "completed";
+            await Abfrage(datenbank, new TestBenutzer("Paperless-Abfrage"), abruf, ablage).AusfuehrenAsync();
+            var (pdfName, pdf) = await dienste.Vertragswerk.DateiAsync(abgelehnt, zip: false);
+            var (zipName, zip) = await dienste.Vertragswerk.DateiAsync(abgelehnt, zip: true);
+
+            // Das angenommene Angebot und die unterzeichnete Ausfertigung bleiben; die abgelehnte geht ins Archiv.
+            Assert.Equal(new ArchivErgebnis(1, 0, 1, 0), await archiv.AusfuehrenAsync());
+
+            var ordner = Path.Combine(verzeichnis.FullName, "Muster Spedition GmbH", "70_Vertraege", Kundenablage.Archivordner);
+            Assert.Equal(pdf, await File.ReadAllBytesAsync(Path.Combine(ordner, pdfName)));
+            Assert.Equal(zip, await File.ReadAllBytesAsync(Path.Combine(ordner, zipName)));
+            var umleitung = await Assert.ThrowsAsync<ArchiviertException>(() => dienste.Vertragswerk.DateiAsync(abgelehnt, zip: true));
+            Assert.Equal(new Uri(Path.Combine(ordner, zipName)).AbsoluteUri, umleitung.Link);
+            Assert.NotEmpty((await dienste.Vertragswerk.DateiAsync(unterschrieben, zip: false)).Inhalt);
+            var angenommen = Assert.Single(await dienste.Projekte.AngeboteAsync(projekt));
+            Assert.Null(angenommen.ArchivLink);
+            Assert.NotEmpty((await dienste.Angebote.DateiAsync(angenommen.Id)).Inhalt);
+
+            var zeilen = await dienste.Vertragswerk.ListeAsync(projekt);
+            Assert.Equal(new Uri(Path.Combine(ordner, pdfName)).AbsoluteUri, zeilen.Single(z => z.Id == abgelehnt).ArchivLink);
+            Assert.Null(zeilen.Single(z => z.Id == unterschrieben).ArchivLink);
+            await using (var kontext = db.NeuerKontextAufDatenbank(datenbank))
+            {
+                Assert.False(await kontext.Set<VertragswerkDatei>().AnyAsync(d => d.VertragswerkId == abgelehnt));
+            }
+
+            // Ein zweiter Lauf findet nichts mehr.
+            Assert.Equal(new ArchivErgebnis(1, 0, 0, 0), await archiv.AusfuehrenAsync());
+        }
+        finally
+        {
+            verzeichnis.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task Verlorenes_Projekt_wird_vollstaendig_archiviert_aber_nur_mit_Kanalordner()
+    {
+        var datenbank = await NeueDatenbankAsync();
+        var dienste = DiensteFuer(datenbank, Vertrieb);
+        var (projekt, id) = await KalkulationAsync(dienste, Angaben("Frau Beispiel"));
+        await FreigebenAsync(datenbank, id);
+        var angebot = await dienste.Angebote.ErzeugenAsync(id, null, null);
+        await dienste.Angebote.AlsVersendetMarkierenAsync(angebot, dienste.Angebote.Heute);
+        await dienste.Projekte.SetzeStatusAsync(projekt, ProjektStatus.Verloren, "anderer Anbieter", Verlustgrund.Preis);
+        var (name, inhalt) = await dienste.Angebote.DateiAsync(angebot);
+        var verzeichnis = Directory.CreateTempSubdirectory("kanal-");
+        try
+        {
+            var archiv = Archiv(datenbank, new OrdnerKundenablage(verzeichnis.FullName));
+
+            // Die Datei darf nicht ohne Archivvermerk verschwinden.
+            await using (var kontext = db.NeuerKontextAufDatenbank(datenbank))
+            {
+                kontext.Remove(await kontext.Set<AngebotsDatei>().SingleAsync(d => d.AngebotId == angebot));
+                await Assert.ThrowsAsync<InvalidOperationException>(() => kontext.SaveChangesAsync());
+            }
+
+            // Ohne verknüpften Kanalordner bleibt das Projekt, wie es ist.
+            Assert.Equal(new ArchivErgebnis(0, 0, 0, 0), await archiv.AusfuehrenAsync());
+
+            Directory.CreateDirectory(Path.Combine(verzeichnis.FullName, "Muster Spedition GmbH"));
+            await KanalordnerAsync(datenbank, projekt, "Muster Spedition GmbH");
+            Assert.Equal(new ArchivErgebnis(1, 1, 0, 0), await archiv.AusfuehrenAsync());
+
+            var datei = Path.Combine(verzeichnis.FullName, "Muster Spedition GmbH", "60_Angebote", Kundenablage.Archivordner, name);
+            Assert.Equal(inhalt, await File.ReadAllBytesAsync(datei));
+            Assert.Equal(new Uri(datei).AbsoluteUri, Assert.Single(await dienste.Projekte.AngeboteAsync(projekt)).ArchivLink);
+            Assert.Equal(new Uri(datei).AbsoluteUri, (await Assert.ThrowsAsync<ArchiviertException>(() => dienste.Angebote.DateiAsync(angebot))).Link);
+            await using (var kontext = db.NeuerKontextAufDatenbank(datenbank))
+            {
+                Assert.False(await kontext.Set<AngebotsDatei>().AnyAsync(d => d.AngebotId == angebot));
+            }
+        }
+        finally
+        {
+            verzeichnis.Delete(true);
+        }
+    }
+
     [Fact]
     public void Fehlt_ein_Feld_im_PDF_wird_nicht_uebergeben()
     {

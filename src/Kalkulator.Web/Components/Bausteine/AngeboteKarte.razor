@@ -59,7 +59,16 @@
                                 </td>
                                 <td class="num">@Texte.Euro(a.SummeMonatlich)</td>
                                 <td><span class="pille ang-@a.Status">@Texte.Angebotsstatus(a.Status)</span></td>
-                                <td><a class="knopf zweit klein" href="angebote/@a.Id/datei" download>Word</a></td>
+                                <td>
+                                    @if (a.ArchivLink is { } archiv)
+                                    {
+                                        <a class="knopf zweit klein" href="@archiv" target="_blank" rel="noopener" title="Im Kanalordner archiviert (60_Angebote/Archiv Kalkulator)">SharePoint</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="knopf zweit klein" href="angebote/@a.Id/datei" download>Word</a>
+                                    }
+                                </td>
                             </tr>
                         }
                     </tbody>

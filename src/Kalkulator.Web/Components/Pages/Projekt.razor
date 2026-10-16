@@ -193,12 +193,25 @@ else
                                             }
                                             <td>
                                                 <div class="aktionen">
-                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/ansicht" target="_blank" rel="noopener">Ansehen</a>
-                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
-                                                    <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
+                                                    @if (w.ArchivLink is { } archivPdf)
+                                                    {
+                                                        @* Nach dem Projektabschluss liegen Gesamt-PDF und ZIP im Kanalordner (70_Vertraege/Archiv Kalkulator). *@
+                                                        <a class="knopf zweit klein" href="@archivPdf" target="_blank" rel="noopener" title="Im Kanalordner archiviert">Gesamt-PDF (SharePoint)</a>
+                                                        <a class="knopf zweit klein" href="@w.ArchivZipLink" target="_blank" rel="noopener" title="Im Kanalordner archiviert">ZIP (SharePoint)</a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <a class="knopf zweit klein" href="vertragswerke/@w.Id/ansicht" target="_blank" rel="noopener">Ansehen</a>
+                                                        <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
+                                                        <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
+                                                    }
                                                     @if (w.UnterschriftAbgelegt)
                                                     {
                                                         <a class="knopf klein" href="vertragswerke/@w.Id/unterschrieben" download>Unterschrieben (PDF)</a>
+                                                        @if (w.AblageLink is { } ablage)
+                                                        {
+                                                            <a class="knopf zweit klein" href="@ablage" target="_blank" rel="noopener">Im Kanalordner</a>
+                                                        }
                                                         @if (w.PruefprotokollAbgelegt)
                                                         {
                                                             <a class="knopf zweit klein" href="vertragswerke/@w.Id/pruefprotokoll" download>Prüfprotokoll</a>

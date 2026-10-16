@@ -678,6 +678,13 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Dateiname")
                         .IsRequired()
                         .HasMaxLength(260)
@@ -1388,6 +1395,17 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     b.Property<int>("AngebotId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ArchivZipLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Ausfertigung")
                         .HasColumnType("int");

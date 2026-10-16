@@ -134,13 +134,18 @@ app.UseAntiforgery();
 app.MapHealthChecks("/health").AllowAnonymous();
 app.MapEntwicklungsRollenwechsel();
 
-// Archiviertes Angebot herunterladen (C-07); Rechte prüft der Dienst wie in der Oberfläche.
+// Archiviertes Angebot herunterladen (C-07); Rechte prüft der Dienst wie in der Oberfläche. Liegt es nach dem
+// Projektabschluss im Kanalordner, geht es dorthin weiter.
 app.MapGet("/angebote/{id:int}/datei", async (int id, AngebotsDienst dienst, CancellationToken abbruch) =>
 {
     try
     {
         var (name, inhalt) = await dienst.DateiAsync(id, abbruch);
         return Results.File(inhalt, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", name);
+    }
+    catch (ArchiviertException e)
+    {
+        return Results.Redirect(e.Link);
     }
     catch (KeinZugriffException)
     {
@@ -178,6 +183,10 @@ app.MapGet("/vertragswerke/{id:int}/{art:regex(^(pdf|zip)$)}", async (int id, st
         var (name, inhalt) = await dienst.DateiAsync(id, zip, abbruch);
         return Results.File(inhalt, zip ? "application/zip" : "application/pdf", name);
     }
+    catch (ArchiviertException e)
+    {
+        return Results.Redirect(e.Link);
+    }
     catch (KeinZugriffException)
     {
         return Results.Forbid();
@@ -213,6 +222,10 @@ app.MapGet("/vertragswerke/{id:int}/ansicht", async (int id, VertragswerkDienst 
     {
         var (_, inhalt) = await dienst.DateiAsync(id, zip: false, abbruch);
         return Results.File(inhalt, "application/pdf");
+    }
+    catch (ArchiviertException e)
+    {
+        return Results.Redirect(e.Link);
     }
     catch (KeinZugriffException)
     {

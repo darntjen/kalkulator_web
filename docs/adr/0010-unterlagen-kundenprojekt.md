@@ -39,3 +39,16 @@ einfließen (Konzept 13).
 - Öffnen einer Teams-Datei geht über den SharePoint-Link mit den Rechten des Benutzers; ohne Link (Ordnerquelle) über
   den Kalkulator.
 - Die Datenbank wächst um die Uploads; die Löschfrist begrenzt das.
+
+## Nachtrag 2026-10-16: Schreiben in den Kanalordner
+
+Entscheidung 08.10.2026, Einzelheiten in `docs/12_vertragsvorlagen.md`, Abschnitt 8:
+
+- Der Kalkulator schreibt jetzt in den Kanalordner, aber nur in die **Ablagebereiche** `60_Angebote` und
+  `70_Vertraege` samt Unterordnern (`Kundenablage.Ablagebereiche`); andere Bereiche, `..` und unzulässige Zeichen im
+  Pfad weist er ab. Eine gleichnamige Datei wird ersetzt, fehlende Ordner entstehen.
+- Geschrieben werden der unterschriebene Vertrag mit Prüfprotokoll (`70_Vertraege`) und nachts die archivierten
+  Angebote und Vertragsausfertigungen abgeschlossener Projekte (`Archiv Kalkulator`). Danach löscht der Kalkulator
+  die Datei aus seiner Datenbank und behält den Link; das Löschen ist nur mit Archivvermerk erlaubt.
+- Die App-Registrierung braucht dafür Sites.Selected mit der Rolle **`write`** statt `read` (Frage 15.5).
+- Teams bleibt die Leitablage; der Kalkulator legt dort nur ab und verschiebt oder löscht nichts.
