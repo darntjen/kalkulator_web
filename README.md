@@ -166,7 +166,7 @@ sich über `Angebot:Vorlagenordner` umstellen. Platzhalter: `docs/08_angebotsvor
 ### Unterlagen am Kundenprojekt
 
 Die Projektansicht zeigt die Unterlagen des Kunden: Das Projekt wird mit seinem Kanalordner im Team
-„Kundenprojekte“ verknüpft (nur lesend; Teams bleibt die Leitablage), dazu kommen Uploads im Kalkulator. Uploads
+„Kundenprojekte“ verknüpft (Teams bleibt die Leitablage; geschrieben wird nur in `60_Angebote` und `70_Vertraege`), dazu kommen Uploads im Kalkulator. Uploads
 abgeschlossener Projekte löscht der Kalkulator nach drei Jahren. Lokal ersetzt ein Ordner das Team:
 
 ```bash
@@ -220,6 +220,13 @@ stündlich ab, ob der Vertrag vollständig unterschrieben ist, und legt das unte
 (`Paperless__AbfrageStunden`, `Paperless__PdfPfad`). Den Aufbau eines echten Dokuments zeigt
 `dotnet run --project src/Kalkulator.Web -- --paperless-status <Dokumentkennung>`. Einrichtung:
 `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
+
+Ist das Projekt mit einem Kanalordner verknüpft, legt die Abfrage den unterschriebenen Vertrag dort in
+`70_Vertraege` ab und meldet ihn über die SharePoint-Liste „Kalkulator-Benachrichtigungen“, aus der ein
+Power-Automate-Flow die E-Mails schickt (`Benachrichtigung__Website`; leer = nur Protokoll). Nachts um 02:45 Uhr
+(`Kundenablage__ArchivierungUm`) verschiebt der Kalkulator die übrigen Angebote und Vertragsausfertigungen
+abgeschlossener Projekte nach `Archiv Kalkulator` im Kanalordner und behält nur den Link. Einrichtung:
+`docs/12_vertragsvorlagen.md`, Abschnitt 8.
 
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.

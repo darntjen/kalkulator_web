@@ -165,14 +165,16 @@ Claude-API mit Kundendaten freigegeben. Konzept: [13_ki-angebotserstellung.md](1
 Ziel (Dennis, 08.10.2026): Nach dem Abschluss eines Projekts bleiben im Kalkulator nur das beauftragte Angebot und der
 unterschriebene Vertrag; alle übrigen Angebote und Vertragsausfertigungen gehen in den Kundenordner in SharePoint und
 werden im Kalkulator nur noch verlinkt. Der unterschriebene Vertrag soll automatisch im Projekt und im Kundenordner
-landen, die zuständigen Kollegen erhalten eine E-Mail mit Link. Die Filter nach Status sind umgesetzt (B-09, C-11).
+landen, die zuständigen Kollegen erhalten eine E-Mail mit Link. Die Filter nach Status sind umgesetzt (B-09, C-11);
+Ablage des unterschriebenen Vertrags, Benachrichtigung über die SharePoint-Liste und nächtliche Archivierung ebenfalls
+(16.10.2026, Beschreibung und Einrichtung in `docs/12_vertragsvorlagen.md`, Abschnitt 8).
 
 | Nr. | Frage | Vorschlag | Antwort |
 |-----|-------|-----------|---------|
 | 15.1 🟠 | **Unterschriebene Verträge:** Webhook von Paperless oder regelmäßige Abfrage durch den Kalkulator? | Abfrage über den vorhandenen API-Schlüssel: Der Kalkulator läuft intern, ein Webhook bräuchte eine Öffnung aus dem Internet | ✅ Abfrage, stündlich (16.10.2026). Umgesetzt; offen ist die Bestätigung von Statuswert und Download-Pfad (15.7) |
-| 15.2 🟠 | **Verlorene Projekte und Wartefrist:** Gehen bei „Verloren“ alle Angebote nach SharePoint? Wie lange nach dem Abschluss wird archiviert? | Ja; keine Wartefrist, der Nachtjob archiviert in der ersten Nacht nach dem Abschluss | ✅ Bei „Verloren“ wird alles archiviert; keine Wartefrist (16.10.2026) |
-| 15.3 🟠 | **E-Mail-Empfänger** beim unterschriebenen Vertrag | Verantwortlicher Vertrieb und feste Empfänger | ✅ Dennis Arntjen (d.arntjen@noesse.de), der verantwortliche Vertrieb, Olaf Schmidt (o.schmidt@noesse.de) und Sascha Manczak (s.manczak@noesse.de); Adressen dürfen ins Repository (16.10.2026) |
+| 15.2 🟠 | **Verlorene Projekte und Wartefrist:** Gehen bei „Verloren“ alle Angebote nach SharePoint? Wie lange nach dem Abschluss wird archiviert? | Ja; keine Wartefrist, der Nachtjob archiviert in der ersten Nacht nach dem Abschluss | ✅ Bei „Verloren“ wird alles archiviert; keine Wartefrist (16.10.2026). Umgesetzt: Nachtjob um 02:45 Uhr |
+| 15.3 🟠 | **E-Mail-Empfänger** beim unterschriebenen Vertrag | Verantwortlicher Vertrieb und feste Empfänger | ✅ Dennis Arntjen (d.arntjen@noesse.de), der verantwortliche Vertrieb, Olaf Schmidt (o.schmidt@noesse.de) und Sascha Manczak (s.manczak@noesse.de); Adressen dürfen ins Repository (16.10.2026). Umgesetzt über die Liste „Kalkulator-Benachrichtigungen“ |
 | 15.4 🟢 | **Standard der Projektliste:** nur laufende Projekte oder alle? | Umgesetzt: alle, Filter wählbar (08.10.2026) | |
-| 15.5 🟢 | **IT:** Schreibrecht auf die Website „Kundenprojekte“ (Sites.Selected `write`) für die Archivierung | IT richtet es ein | |
+| 15.5 🟢 | **IT:** Schreibrecht auf die Website „Kundenprojekte“ (Sites.Selected `write`) für Ablage, Archivierung und die Liste der Benachrichtigungen | IT richtet es ein | |
 | 15.6 🟠 | **Power BI und Power Automate:** Statistik als eigene Seiten oder in Power BI? Benachrichtigungen aus dem Kalkulator oder über Power Automate? | Power BI für Statistik und Forecast (Phase 7) über SQL-Sichten und einen Lesebenutzer; Benachrichtigungen über eine SharePoint-Liste, auf die ein Flow reagiert (Standard-Connectoren). Was Daten im Kalkulator ändert, bleibt im Kalkulator | ✅ Lizenzen vorhanden (Power BI im Einsatz); On-Premises Data Gateway richtet die IT neu ein; Flows und Berichte pflegt Dennis (16.10.2026). `Mail.Send` für den Kalkulator entfällt damit |
 | 15.7 🟠 | **Paperless-Status und Download bestätigen:** Welcher `state` bedeutet „vollständig unterschrieben“, und unter welcher Adresse liefert Paperless das unterschriebene PDF und das Prüfprotokoll? | Testlauf `--paperless-status <Dokumentkennung>` mit einem unterschriebenen Testdokument; Ergebnis in `Paperless:StatusUnterzeichnet`, `PdfPfad`, `ProtokollPfad` | |

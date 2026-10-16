@@ -1,4 +1,6 @@
+using Kalkulator.Infrastructure.Ablage;
 using Kalkulator.Infrastructure.Anwendung;
+using Kalkulator.Infrastructure.Benachrichtigung;
 using Kalkulator.Infrastructure.Persistenz;
 using Kalkulator.Infrastructure.Vorlagen;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +19,9 @@ public sealed class StuendlicheUnterschriftenAbfrage(
     IServiceScopeFactory bereiche,
     IOptions<PaperlessEinstellungen> einstellungen,
     IPaperlessAbruf paperless,
+    IKundenablage ablage,
+    IBenachrichtigung benachrichtigung,
+    IOptions<BenachrichtigungsEinstellungen> nachrichten,
     TimeProvider zeit,
     ILoggerFactory protokolle) : BackgroundService
 {
@@ -44,12 +49,13 @@ public sealed class StuendlicheUnterschriftenAbfrage(
                 var optionen = bereich.ServiceProvider.GetRequiredService<DbContextOptions<KalkulatorDbContext>>();
                 var benutzer = new Hintergrundbenutzer(Benutzer);
                 var abfrage = new UnterschriftenAbfrage(new Fabrik(() => new KalkulatorDbContext(optionen, benutzer, zeit)), benutzer, paperless,
-                    einstellungen, zeit, protokolle.CreateLogger<UnterschriftenAbfrage>());
+                    einstellungen, ablage, benachrichtigung, nachrichten, zeit, protokolle.CreateLogger<UnterschriftenAbfrage>());
                 var ergebnis = await abfrage.AusfuehrenAsync(stoppingToken);
                 if (ergebnis.Geprueft > 0)
                 {
-                    protokoll.LogInformation("Paperless-Abfrage: {Geprueft} geprüft, {Unterzeichnet} neu unterzeichnet, {Abgelegt} abgelegt, {Fehler} Fehler.",
-                        ergebnis.Geprueft, ergebnis.Unterzeichnet, ergebnis.Abgelegt, ergebnis.Fehler);
+                    protokoll.LogInformation(
+                        "Paperless-Abfrage: {Geprueft} geprüft, {Unterzeichnet} neu unterzeichnet, {Abgelegt} PDFs geholt, {Hochgeladen} im Kanalordner abgelegt, {Gemeldet} gemeldet, {Fehler} Fehler.",
+                        ergebnis.Geprueft, ergebnis.Unterzeichnet, ergebnis.Abgelegt, ergebnis.Hochgeladen, ergebnis.Gemeldet, ergebnis.Fehler);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

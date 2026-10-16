@@ -322,3 +322,66 @@ Tokens. Mit ihr werden `StatusUnterzeichnet`, `PdfPfad` und `ProtokollPfad` best
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.
+
+## 8. Unterschriebene Verträge verteilen und Archivierung
+
+Entscheidungen 08.10.2026 und 16.10.2026 (Fragen 15.1 bis 15.6 in `docs/02`): Nach dem Projektabschluss bleiben im
+Kalkulator nur das angenommene Angebot und der unterschriebene Vertrag; alles Übrige liegt im Kanalordner des Kunden
+und wird im Kalkulator verlinkt. E-Mails verschickt nicht der Kalkulator, sondern ein Power-Automate-Flow.
+
+**Unterschriebener Vertrag** (stündliche Abfrage, Abschnitt 7):
+- Ist das Kundenprojekt mit einem Kanalordner verknüpft, legt die Abfrage das unterschriebene PDF und das
+  Prüfprotokoll in **`70_Vertraege`** ab (`<Vertragswerk>_unterschrieben.pdf`, `<Vertragswerk>_Pruefprotokoll.pdf`;
+  eine gleichnamige Datei wird ersetzt). Die Projektansicht zeigt danach „Im Kanalordner“.
+- Danach schreibt sie eine **Benachrichtigung** in die SharePoint-Liste: an Dennis Arntjen, Olaf Schmidt und Sascha
+  Manczak (`Benachrichtigung:EmpfaengerVertrag`) und den verantwortlichen Vertrieb, mit Link auf das Dokument im
+  Kanalordner und auf das Projekt im Kalkulator. Ohne Kanalordner geht die Meldung sofort hinaus, mit dem Hinweis, dass
+  der Vertrag nur im Kalkulator liegt.
+- Ablage und Meldung geschehen je Vertrag einmal; schlägt ein Schritt fehl, wiederholt ihn der nächste Takt.
+
+**Nächtliche Archivierung** (`Kundenablage:ArchivierungUm`, Standard 02:45 Uhr Ortszeit):
+- **Gewonnen:** sobald der unterschriebene Vertrag im Kanalordner liegt. Archiviert werden alle übrigen Angebote und
+  alle nicht unterzeichneten Ausfertigungen des Vertragswerks (Gesamt-PDF und ZIP). Ein gewonnenes Projekt ohne
+  unterschriebenen Vertrag (z. B. aus der Zeit vor Paperless) bleibt, wie es ist.
+- **Verloren:** alle Angebote und Ausfertigungen, ohne Wartefrist in der ersten Nacht nach dem Abschluss.
+- Ziel: `60_Angebote/Archiv Kalkulator` bzw. `70_Vertraege/Archiv Kalkulator` im Kanalordner; fehlende Ordner
+  entstehen. Projekte ohne verknüpften Kanalordner werden nicht archiviert.
+- Die Datei in der Datenbank wird erst gelöscht, wenn SharePoint den Upload bestätigt hat; der Kalkulator behält
+  Nummer, Daten, Status und den Link. Die Datenbank lässt das Löschen ohne Archivvermerk nicht zu.
+- In der Oberfläche führen archivierte Dokumente zu SharePoint („SharePoint“, „In SharePoint öffnen“,
+  „Gesamt-PDF (SharePoint)“); alte Download-Adressen leiten dorthin weiter.
+- Ein Fehler bei einem Dokument hält die übrigen nicht auf; der nächste Lauf versucht es erneut. Ergebnis und Fehler
+  stehen im Protokoll des Servers.
+
+**SharePoint-Liste für die Benachrichtigungen** (einmalig, Dennis):
+1. Auf der Website aus `Benachrichtigung:Website` eine Liste **„Kalkulator-Benachrichtigungen“** anlegen.
+2. Spalten anlegen (beim Anlegen genau diese Namen verwenden, damit die internen Namen stimmen):
+
+   | Spalte | Typ | Inhalt |
+   |---|---|---|
+   | `Title` (vorhanden) | Einzelne Textzeile | Betreff, z. B. „Vertrag unterschrieben: Muster Spedition GmbH (MS-A-2026-0001)“ |
+   | `Art` | Einzelne Textzeile | Art des Ereignisses, heute nur „Vertrag unterschrieben“ |
+   | `Empfaenger` | Mehrere Textzeilen (nur Text) | E-Mail-Adressen, durch „; “ getrennt |
+   | `Text` | Mehrere Textzeilen (nur Text) | Nachrichtentext |
+   | `Dokument` | Mehrere Textzeilen (nur Text) | Link auf den Vertrag im Kanalordner (kann fehlen) |
+   | `Kalkulator` | Mehrere Textzeilen (nur Text) | Link auf das Projekt im Kalkulator (kann fehlen) |
+
+   Die Links stehen bewusst in Textspalten: Eine einzelne Textzeile fasst nur 255 Zeichen.
+3. Flow in Power Automate: Auslöser „Wenn ein Element erstellt wird“ (SharePoint, diese Liste), Aktion „E-Mail senden
+   (V2)“ (Office 365 Outlook) an `Empfaenger`, Betreff `Title`, Text aus `Text`, `Dokument` und `Kalkulator`. Der
+   Flow kann nach `Art` verzweigen, wenn später weitere Ereignisse dazukommen.
+4. Die Liste dient zugleich als Protokoll der Benachrichtigungen; alte Einträge können bei Bedarf gelöscht werden.
+
+**Einrichtung (IT):** Die App-Registrierung braucht auf der Website „Kundenprojekte“ (Kanalordner) und auf der
+Website der Liste **Sites.Selected mit der Rolle `write`** (Frage 15.5). Ohne Schreibrecht schlagen Ablage,
+Archivierung und Meldung fehl und werden im nächsten Takt wiederholt; Dateien bleiben bis dahin im Kalkulator.
+
+**Konfiguration:**
+
+| Schlüssel | Wert |
+|---|---|
+| `Benachrichtigung:Website` | Website der Liste, z. B. `https://noessedatentechnik.sharepoint.com/sites/Kundenprojekte`; leer = Meldungen nur ins Protokoll |
+| `Benachrichtigung:Liste` | Name der Liste, Standard „Kalkulator-Benachrichtigungen“ |
+| `Benachrichtigung:EmpfaengerVertrag` | feste Empfänger beim unterschriebenen Vertrag; der verantwortliche Vertrieb kommt dazu |
+| `Benachrichtigung:KalkulatorAdresse` | Adresse des Kalkulators für den Projektlink, z. B. `https://kalkulator.noesse.de`; leer = ohne Link |
+| `Kundenablage:ArchivierungUm` | Uhrzeit der nächtlichen Archivierung, Standard `02:45`; leer = aus |

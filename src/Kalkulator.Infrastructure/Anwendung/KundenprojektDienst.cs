@@ -32,7 +32,8 @@ public sealed record ProjektAngebot(
     DateOnly? VersendetAm,
     string ErstelltVon,
     decimal SummeMonatlich,
-    AngebotsStatus Status);
+    AngebotsStatus Status,
+    string? ArchivLink = null);
 
 public sealed record NeuesKundenprojekt(
     string Firma,
@@ -207,6 +208,7 @@ public sealed class KundenprojektDienst(IDbContextFactory<KalkulatorDbContext> k
                 a.VersendetAm,
                 a.ErstelltVon,
                 a.Version.SummeMonatlich,
+                a.ArchivLink,
             })
             .ToListAsync(abbruch);
 
@@ -217,7 +219,8 @@ public sealed class KundenprojektDienst(IDbContextFactory<KalkulatorDbContext> k
             .OrderByDescending(z => z.Datum).ThenByDescending(z => z.Id)
             .Select(z => new ProjektAngebot(z.Id, z.Nummer, z.Version, z.KalkulationId, z.Titel, z.Datum, z.GueltigBis, z.VersendetAm,
                 z.ErstelltVon, z.SummeMonatlich,
-                Angebotsstatus.Bestimme(z.Id == projekt.AngenommenesAngebotId, abgeschlossen, z.Version < neueste[z.Nummer], z.VersendetAm, z.GueltigBis, heute)))];
+                Angebotsstatus.Bestimme(z.Id == projekt.AngenommenesAngebotId, abgeschlossen, z.Version < neueste[z.Nummer], z.VersendetAm, z.GueltigBis, heute),
+                z.ArchivLink))];
     }
 
     public Task SetzeForecastAsync(int projektId, int? wahrscheinlichkeit, DateOnly? abschlussmonat, CancellationToken abbruch = default) =>

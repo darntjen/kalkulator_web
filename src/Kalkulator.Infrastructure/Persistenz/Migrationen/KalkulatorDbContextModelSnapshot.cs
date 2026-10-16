@@ -678,6 +678,13 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("Dateiname")
                         .IsRequired()
                         .HasMaxLength(260)
@@ -1379,8 +1386,26 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("AbgelegtAm")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("AblageLink")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<int>("AngebotId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ArchivLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ArchivZipLink")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTimeOffset?>("ArchiviertAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<int>("Ausfertigung")
                         .HasColumnType("int");
@@ -1392,6 +1417,9 @@ namespace Kalkulator.Infrastructure.Persistenz.Migrationen
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("GemeldetAm")
+                        .HasColumnType("datetimeoffset");
 
                     b.Property<string>("GesamtDateiname")
                         .IsRequired()

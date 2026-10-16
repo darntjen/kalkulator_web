@@ -119,19 +119,31 @@ public class KalkulatorDbContext(
     [
         nameof(Vertragswerk.PaperlessDokumentId), nameof(Vertragswerk.UebergebenAm), nameof(Vertragswerk.UebergabeFehler), nameof(Vertragswerk.UebergabeVersuchtAm),
         nameof(Vertragswerk.PaperlessStatus), nameof(Vertragswerk.StatusGeprueftAm), nameof(Vertragswerk.UnterzeichnetAm),
+        nameof(Vertragswerk.AblageLink), nameof(Vertragswerk.AbgelegtAm), nameof(Vertragswerk.GemeldetAm),
+        nameof(Vertragswerk.ArchivLink), nameof(Vertragswerk.ArchivZipLink), nameof(Vertragswerk.ArchiviertAm),
+    ];
+
+    /// <summary>An einem Angebot ändern sich nur der Versandvermerk und der Archivvermerk.</summary>
+    private static readonly HashSet<string> AngebotsFelder =
+    [
+        nameof(Angebot.VersendetAm), nameof(Angebot.VersendetVon), nameof(Angebot.ArchivLink), nameof(Angebot.ArchiviertAm),
     ];
 
     /// <summary>
     /// Eingefrorene Versionen, ihre Positionen und Kosten sowie archivierte Angebotsdokumente dürfen nur angelegt werden;
-    /// an einem Angebot ist nur der Versandvermerk änderbar. Vorlagenfassungen und ihre Dateien sind ebenso unveränderlich.
+    /// an einem Angebot sind nur Versand- und Archivvermerk änderbar. Die Dateien von Angeboten und Vertragswerken dürfen
+    /// erst weg, wenn sie im Kanalordner liegen (Archivvermerk im selben Speichervorgang oder vorher). Vorlagenfassungen
+    /// und ihre Dateien sind ebenso unveränderlich.
     /// </summary>
     private void PruefeEingefroreneVersionen()
     {
         var geaendert = ChangeTracker.Entries()
             .FirstOrDefault(e => (e.State is EntityState.Modified or EntityState.Deleted
                     && e.Entity is Kalkulationsversion or VersionsPosition or PositionsKosten or AngebotsDatei or VorlagenDatei
-                        or VertragswerkEintrag or VertragswerkDatei or VertragswerkUnterschrift)
+                        or VertragswerkEintrag or VertragswerkDatei or VertragswerkUnterschrift
+                    && !IstArchivierteDatei(e))
                 || (e.State == EntityState.Deleted && e.Entity is Angebot or Vorlagenversion or Vertragswerk)
+                || (e.State == EntityState.Modified && e.Entity is Angebot && e.Properties.Any(p => p.IsModified && !AngebotsFelder.Contains(p.Metadata.Name)))
                 || (e.State == EntityState.Modified && e.Entity is Vorlagenversion && e.Properties.Any(p => p.IsModified && !EntscheidungsFelder.Contains(p.Metadata.Name)))
                 || (e.State == EntityState.Modified && e.Entity is Vertragswerk && e.Properties.Any(p => p.IsModified && !UebergabeFelder.Contains(p.Metadata.Name))));
         if (geaendert is not null)
@@ -142,6 +154,14 @@ public class KalkulatorDbContext(
                     : $"{geaendert.Metadata.ClrType.Name}: Eingefrorene Angebotsstände und archivierte Angebote sind unveränderlich. Bitte im Arbeitsstand weiterarbeiten.");
         }
     }
+
+    /// <summary>Löschen einer Angebots- bzw. Vertragswerkdatei, deren Angebot bzw. Vertragswerk archiviert ist.</summary>
+    private bool IstArchivierteDatei(EntityEntry eintrag) => eintrag.State == EntityState.Deleted && eintrag.Entity switch
+    {
+        AngebotsDatei d => ChangeTracker.Entries<Angebot>().Any(a => a.Entity.Id == d.AngebotId && a.Entity.IstArchiviert),
+        VertragswerkDatei d => ChangeTracker.Entries<Vertragswerk>().Any(v => v.Entity.Id == d.VertragswerkId && v.Entity.IstArchiviert),
+        _ => false,
+    };
 
     private static PreislistenStatus? GespeicherterStatus(EntityEntry<Preisliste> eintrag) =>
         eintrag.State == EntityState.Added
