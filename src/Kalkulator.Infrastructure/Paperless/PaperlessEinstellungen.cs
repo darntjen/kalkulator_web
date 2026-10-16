@@ -56,6 +56,27 @@ public sealed class PaperlessEinstellungen
     /// </summary>
     public double Skalierung { get; set; } = 96d / 72d;
 
+    /// <summary>
+    /// Abstand der Statusabfrage für übergebene Verträge in Stunden (Entscheidung 16.10.2026: stündlich statt Webhook);
+    /// 0 schaltet die Abfrage aus.
+    /// </summary>
+    public double AbfrageStunden { get; set; } = 1;
+
+    /// <summary>
+    /// Werte von <c>state</c> des Dokuments, die „vollständig unterschrieben“ bedeuten. Annahme „completed“, mit dem
+    /// echten Schlüssel zu bestätigen (Testlauf <c>--paperless-status</c>).
+    /// </summary>
+    public List<string> StatusUnterzeichnet { get; set; } = ["completed"];
+
+    /// <summary>
+    /// Pfad für das unterschriebene PDF relativ zur <see cref="Adresse"/>, <c>{id}</c> steht für die Dokumentkennung.
+    /// Leer, solange der Endpunkt nicht bestätigt ist: Dann wird die Unterzeichnung vermerkt, das PDF aber noch nicht geholt.
+    /// </summary>
+    public string? PdfPfad { get; set; }
+
+    /// <summary>Pfad für das Prüfprotokoll (Audit-Trail) wie <see cref="PdfPfad"/>; leer = nicht abholen.</summary>
+    public string? ProtokollPfad { get; set; }
+
     public bool Aktiv => !string.IsNullOrWhiteSpace(ApiSchluessel) && ArbeitsbereichId is not null;
 
     /// <summary>Rollen in der <see cref="Reihenfolge"/> der Unterschriften; nicht genannte behalten ihre Reihenfolge dahinter.</summary>

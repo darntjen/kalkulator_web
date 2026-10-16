@@ -242,7 +242,14 @@ eine Reihenfolge vorgeben, siehe unten):
 - **Entwurf oder Versand:** Standard ist ein Entwurf in Paperless, der von dort versendet wird. Mit `Paperless:Versenden = true` geht das Dokument sofort in den Ablauf (state `dispatched`): Paperless schickt die E-Mails selbst, erst an den Kunden und nach dessen Unterschrift an Nösse.
 - **Reihenfolge** (06.10.2026): Paperless lässt in der Reihenfolge unterschreiben, in der die Teilnehmer in der Anfrage stehen (Testlauf E: erst Kunde, dann Nösse). Der Kalkulator ordnet sie nach `Paperless:Reihenfolge` (Standard `Kunde`, `Nösse`), unabhängig davon, wo die Felder im PDF stehen. Im Grundvertrag steht der Provider links und damit zuerst; ohne diese Ordnung hätte Nösse vor dem Kunden gestanden.
 - **Sprache:** `Paperless:Sprache` (Standard `de-DE`) setzt `original_content_locale` und `rendering_locale` des Dokuments, damit Paperless es den Unterzeichnern auf Deutsch zeigt.
-- **Keine Rückmeldung:** Paperless meldet den Unterschriftsstatus nicht an den Kalkulator zurück.
+- **Unterzeichnete Verträge** (Entscheidung 16.10.2026: Abfrage statt Webhook): Der Kalkulator fragt **stündlich**
+  (`Paperless:AbfrageStunden`) bei Paperless den Status jedes übergebenen Vertrags ab, dessen unterschriebenes PDF noch
+  fehlt (`GET documents/{id}`, Feld `state`). Entspricht der Status einem Wert aus `Paperless:StatusUnterzeichnet`
+  (Annahme `completed`, noch zu bestätigen), wird die Unterzeichnung vermerkt und das PDF über `Paperless:PdfPfad`
+  geholt, dazu das Prüfprotokoll über `Paperless:ProtokollPfad` (`{id}` = Dokumentkennung). Solange die Pfade leer
+  sind, wird nur die Unterzeichnung vermerkt. Die Projektansicht zeigt Status, Zeitpunkt der Abfrage und die
+  Downloads; „Status jetzt abfragen“ wartet nicht auf den nächsten Takt. Ein Fehler bei einem Vertrag hält die übrigen
+  nicht auf; er steht im Protokoll des Servers.
 - **Fehler:** Schlägt die Übergabe fehl (Paperless nicht erreichbar, Feld im PDF nicht gefunden …), bleibt das
   Vertragswerk mit seinen Freigaben gespeichert. Die Projektansicht zeigt den Fehler und bietet „Erneut übergeben“
   (nur nach allen Freigaben). Jede Ausfertigung geht höchstens einmal an Paperless.
@@ -307,6 +314,11 @@ Anfrage vor der Anmeldung):
    Kunde, dann Nösse? Sprache Deutsch? Danach den Entwurf löschen.
 4. Der Testlauf protokolliert jede Anfrage mit Status und dem Aufbau der Antwort (nur Feldnamen, keine Werte). Bei
    Fehlern dieses Protokoll weitergeben.
+
+**Statusabfrage prüfen** (16.10.2026): `dotnet run --project src/Kalkulator.Web -- --paperless-status <Dokumentkennung>`
+liest ein vorhandenes Dokument, am besten eines, das alle unterschrieben haben. Die Ausgabe zeigt den Aufbau der
+Antwort mit Status-, Zeit- und Kennungswerten und Adressen ohne Abfrageteil, aber keine Namen, E-Mail-Adressen oder
+Tokens. Mit ihr werden `StatusUnterzeichnet`, `PdfPfad` und `ProtokollPfad` bestätigt bzw. eingetragen.
 
 Alle Annahmen stecken in `PaperlessUebergabe` (`src/Kalkulator.Infrastructure/Paperless`); Abweichungen lassen sich
 dort und über die Einstellungen anpassen.

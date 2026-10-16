@@ -1,6 +1,7 @@
 @page "/projekte"
 @rendermode InteractiveServer
 @inject KundenprojektDienst Dienst
+@inject NavigationManager Navigation
 
 <PageTitle>Kundenprojekte · Managed-Services-Kalkulator</PageTitle>
 
@@ -39,49 +40,76 @@ else if (_projekte.Count == 0)
 }
 else
 {
-    <div class="tab-rahmen">
-        <table class="liste">
-            <thead>
-                <tr>
-                    <th>Kunde</th>
-                    <th>Vorhaben</th>
-                    <th>Status</th>
-                    <th class="num">Wahrscheinlichkeit</th>
-                    <th>Abschluss erwartet</th>
-                    <th class="num">Kalkulationen</th>
-                    @if (Dienst.Recht.SiehtAlleProjekte)
-                    {
-                        <th>Verantwortlich</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in _projekte)
-                {
+    <Statusfilter T="ProjektStatus" Werte="Enum.GetValues<ProjektStatus>()" Text="Texte.Status" Anzahl="s => _projekte.Count(p => p.Status == s)"
+                  Auswahl="_auswahl" AuswahlGeaendert="Filtern" Bezeichnung="Kundenprojekte nach Status filtern" />
+    @if (Sichtbar.Count == 0)
+    {
+        <p class="hinweis">Keine Kundenprojekte mit diesem Status.</p>
+    }
+    else
+    {
+        <div class="tab-rahmen">
+            <table class="liste">
+                <thead>
                     <tr>
-                        <td><a href="projekte/@p.Id">@p.Firma</a></td>
-                        <td>@p.Titel</td>
-                        <td><StatusPille Status="p.Status" /></td>
-                        <td class="num">@(p.Wahrscheinlichkeit is { } w ? $"{w} %" : "–")</td>
-                        <td>@Texte.Monat(p.ErwarteterAbschlussmonat)</td>
-                        <td class="num">@p.Kalkulationen</td>
+                        <th>Kunde</th>
+                        <th>Vorhaben</th>
+                        <th>Status</th>
+                        <th class="num">Wahrscheinlichkeit</th>
+                        <th>Abschluss erwartet</th>
+                        <th class="num">Kalkulationen</th>
                         @if (Dienst.Recht.SiehtAlleProjekte)
                         {
-                            <td>@p.Verantwortlich</td>
+                            <th>Verantwortlich</th>
                         }
                     </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @foreach (var p in Sichtbar)
+                    {
+                        <tr>
+                            <td><a href="projekte/@p.Id">@p.Firma</a></td>
+                            <td>@p.Titel</td>
+                            <td><StatusPille Status="p.Status" /></td>
+                            <td class="num">@(p.Wahrscheinlichkeit is { } w ? $"{w} %" : "–")</td>
+                            <td>@Texte.Monat(p.ErwarteterAbschlussmonat)</td>
+                            <td class="num">@p.Kalkulationen</td>
+                            @if (Dienst.Recht.SiehtAlleProjekte)
+                            {
+                                <td>@p.Verantwortlich</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @code {
     private IReadOnlyList<ProjektZeile>? _projekte;
     private string? _suche;
     private string? _fehler;
+    private IReadOnlySet<ProjektStatus> _auswahl = new HashSet<ProjektStatus>();
+
+    /// <summary>Gewählte Status in der Adresse, z. B. <c>?status=Gewonnen&amp;status=Verloren</c>.</summary>
+    [SupplyParameterFromQuery(Name = "status")] public string[]? StatusInAdresse { get; set; }
+
+    private IReadOnlyList<ProjektZeile> Sichtbar =>
+        _projekte is null ? [] : _auswahl.Count == 0 ? _projekte : [.. _projekte.Where(p => _auswahl.Contains(p.Status))];
 
     protected override Task OnInitializedAsync() => LadeAsync();
+
+    protected override void OnParametersSet() =>
+        _auswahl = (StatusInAdresse ?? []).Select(s => Enum.TryParse<ProjektStatus>(s, out var st) && Enum.IsDefined(st) ? st : (ProjektStatus?)null)
+            .OfType<ProjektStatus>().ToHashSet();
+
+    private void Filtern(IReadOnlySet<ProjektStatus> auswahl)
+    {
+        _auswahl = auswahl;
+        var werte = Enum.GetValues<ProjektStatus>().Where(auswahl.Contains).Select(s => s.ToString()).ToArray();
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters(new Dictionary<string, object?> { ["status"] = werte.Length == 0 ? null : werte }), replace: true);
+    }
 
     private async Task LadeAsync()
     {

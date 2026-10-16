@@ -4,7 +4,8 @@ namespace Kalkulator.Domain.Projekte;
 /// Erzeugtes Vertragswerk eines gewonnenen Kundenprojekts (#26, Teil C): alle Dokumente als PDF, eine Gesamtdatei für
 /// den Kunden und ein ZIP. Grundlage sind die eingefrorene Version des angenommenen Angebots und die bei der Erzeugung
 /// aktiven Vorlagenfassungen, die in <see cref="Dokumente"/> festgehalten werden. Unveränderlich bis auf die
-/// Vertragsfreigaben (Vertriebsleitung, dann AVV und Technik) und den Vermerk der Übergabe an Paperless (Teil D); wird es neu erzeugt (z. B.
+/// Vertragsfreigaben (Vertriebsleitung, dann AVV und Technik), den Vermerk der Übergabe an Paperless (Teil D) und den
+/// Vermerk der Unterzeichnung; wird es neu erzeugt (z. B.
 /// nach einer Ablehnung oder einer korrigierten Vorlage), entsteht eine weitere Ausfertigung ohne Freigaben.
 /// </summary>
 public class Vertragswerk
@@ -43,6 +44,20 @@ public class Vertragswerk
     public DateTimeOffset? UebergabeVersuchtAm { get; private set; }
 
     public bool IstUebergeben => PaperlessDokumentId is not null;
+
+    /// <summary>Zuletzt von Paperless gemeldeter Status des Dokuments (stündliche Abfrage, Entscheidung 16.10.2026).</summary>
+    public string? PaperlessStatus { get; private set; }
+
+    /// <summary>Zeitpunkt der letzten Statusabfrage bei Paperless.</summary>
+    public DateTimeOffset? StatusGeprueftAm { get; private set; }
+
+    /// <summary>Wann der Kalkulator die vollständige Unterzeichnung festgestellt hat; danach wird nicht mehr abgefragt.</summary>
+    public DateTimeOffset? UnterzeichnetAm { get; private set; }
+
+    public bool IstUnterzeichnet => UnterzeichnetAm is not null;
+
+    /// <summary>Unterschriebenes PDF und Prüfprotokoll aus Paperless; getrennt gespeichert wie <see cref="Datei"/>.</summary>
+    public VertragswerkUnterschrift? Unterschrift { get; private set; }
 
     /// <summary>
     /// Reihenfolge der Prüfungen: Zuerst gibt die Vertriebsleitung frei (Entscheidung 07.10.2026), danach prüfen AVV und
@@ -144,6 +159,53 @@ public class Vertragswerk
         UebergabeFehler = null;
     }
 
+    /// <summary>
+    /// Vermerkt das Ergebnis einer Statusabfrage. Ist das Dokument laut Paperless vollständig unterzeichnet, wird die
+    /// Unterzeichnung einmalig festgehalten; der Status ändert sich danach nicht mehr.
+    /// </summary>
+    public void VermerkeStatus(string status, bool unterzeichnet, DateTimeOffset zeitpunkt)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(status);
+        if (!IstUebergeben)
+        {
+            throw new InvalidOperationException("Das Vertragswerk ist noch nicht an Paperless übergeben.");
+        }
+
+        if (IstUnterzeichnet)
+        {
+            return;
+        }
+
+        PaperlessStatus = status.Length > 50 ? status[..50] : status;
+        StatusGeprueftAm = zeitpunkt;
+        if (unterzeichnet)
+        {
+            UnterzeichnetAm = zeitpunkt;
+        }
+    }
+
+    /// <summary>Legt das unterschriebene PDF (und, falls geliefert, das Prüfprotokoll) einmalig ab.</summary>
+    public void HinterlegeUnterschrift(byte[] pdf, byte[]? pruefprotokoll, DateTimeOffset zeitpunkt)
+    {
+        ArgumentNullException.ThrowIfNull(pdf);
+        if (!IstUnterzeichnet)
+        {
+            throw new InvalidOperationException("Das Vertragswerk ist laut Paperless noch nicht vollständig unterzeichnet.");
+        }
+
+        if (Unterschrift is not null)
+        {
+            throw new InvalidOperationException("Der unterschriebene Vertrag ist bereits abgelegt.");
+        }
+
+        if (pdf.Length == 0)
+        {
+            throw new ArgumentException("Paperless hat ein leeres PDF geliefert.", nameof(pdf));
+        }
+
+        Unterschrift = new VertragswerkUnterschrift { Pdf = pdf, Pruefprotokoll = pruefprotokoll is { Length: > 0 } ? pruefprotokoll : null, AbgelegtAm = zeitpunkt };
+    }
+
     public void VermerkeUebergabeFehler(string fehler, DateTimeOffset zeitpunkt)
     {
         if (IstUebergeben)
@@ -196,6 +258,15 @@ public class VertragswerkEintrag
 
     /// <summary>Lesbare Fassung, z. B. „S14 V2 (5.7)“.</summary>
     public required string Fassung { get; init; }
+}
+
+/// <summary>Der in Paperless unterschriebene Vertrag mit Prüfprotokoll; getrennt gespeichert wie <see cref="VertragswerkDatei"/>.</summary>
+public class VertragswerkUnterschrift
+{
+    public int VertragswerkId { get; set; }
+    public required byte[] Pdf { get; init; }
+    public byte[]? Pruefprotokoll { get; init; }
+    public DateTimeOffset AbgelegtAm { get; init; }
 }
 
 /// <summary>Gesamt-PDF und ZIP; getrennt gespeichert, damit Übersichten sie nicht mitladen.</summary>

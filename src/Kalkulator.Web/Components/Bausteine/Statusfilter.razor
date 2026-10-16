@@ -1,0 +1,43 @@
+@typeparam T where T : struct, Enum
+
+@* Filter nach Status (Entscheidung 08.10.2026): mehrere Status wählbar; ohne Auswahl wird alles gezeigt. *@
+<div class="filterleiste" role="group" aria-label="@Bezeichnung">
+    <button type="button" class="filter @(Auswahl.Count == 0 ? "aktiv" : "")" aria-pressed="@(Auswahl.Count == 0 ? "true" : "false")" @onclick="AlleAsync">
+        Alle <span class="anzahl">@Werte.Sum(Anzahl)</span>
+    </button>
+    @foreach (var wert in Werte.Where(w => Anzahl(w) > 0 || Auswahl.Contains(w)))
+    {
+        var gewaehlt = Auswahl.Contains(wert);
+        <button type="button" class="filter @(gewaehlt ? "aktiv" : "")" aria-pressed="@(gewaehlt ? "true" : "false")" @onclick="() => UmschaltenAsync(wert)">
+            @Text(wert) <span class="anzahl">@Anzahl(wert)</span>
+        </button>
+    }
+</div>
+
+@code {
+    /// <summary>Alle Status in der Reihenfolge der Anzeige; solche ohne Treffer werden ausgeblendet.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<T> Werte { get; set; } = [];
+
+    [Parameter, EditorRequired] public Func<T, string> Text { get; set; } = w => w.ToString();
+
+    [Parameter, EditorRequired] public Func<T, int> Anzahl { get; set; } = _ => 0;
+
+    [Parameter, EditorRequired] public IReadOnlySet<T> Auswahl { get; set; } = new HashSet<T>();
+
+    [Parameter] public EventCallback<IReadOnlySet<T>> AuswahlGeaendert { get; set; }
+
+    [Parameter] public string Bezeichnung { get; set; } = "Nach Status filtern";
+
+    private Task AlleAsync() => AuswahlGeaendert.InvokeAsync(new HashSet<T>());
+
+    private Task UmschaltenAsync(T wert)
+    {
+        var neu = new HashSet<T>(Auswahl);
+        if (!neu.Remove(wert))
+        {
+            neu.Add(wert);
+        }
+
+        return AuswahlGeaendert.InvokeAsync(neu);
+    }
+}

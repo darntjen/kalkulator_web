@@ -38,6 +38,10 @@ public static class DependencyInjection
         services.AddOptions<PaperlessEinstellungen>();
         services.TryAddSingleton<IPaperlessUebergabe>(d =>
             new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
+        services.TryAddSingleton<IPaperlessAbruf>(d => d.GetRequiredService<IPaperlessUebergabe>() as IPaperlessAbruf
+            ?? new PaperlessUebergabe(new HttpClient { Timeout = TimeSpan.FromMinutes(2) }, d.GetRequiredService<IOptions<PaperlessEinstellungen>>()));
+        services.AddScoped<UnterschriftenAbfrage>();
+        services.AddHostedService<StuendlicheUnterschriftenAbfrage>();
         services.AddHostedService<NaechtlicherVorlagenabgleich>();
         services.AddOptions<KundenablageEinstellungen>();
         services.AddSingleton(Kundenablage);

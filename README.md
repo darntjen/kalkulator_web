@@ -215,7 +215,11 @@ Das erzeugte Vertragswerk gibt zuerst die Vertriebsleitung frei (entfällt, wenn
 prüfen AVV und Technik im Kalkulator (Rollen `FreigabeAvv`, `FreigabeTechnik`). Alle öffnen die Gesamtdatei im Browser und geben frei oder lehnen mit Begründung ab; offene Prüfungen stehen auf der
 Startseite. Nach einer Ablehnung erzeugt der Vertrieb das Vertragswerk neu. Ist Paperless eingerichtet
 (`Paperless__ApiSchluessel`, `Paperless__ArbeitsbereichId`), geht die Gesamtdatei mit der letzten Freigabe
-automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless. Einrichtung: `docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
+automatisch mit den Unterschriftsfeldern aus `{{unterschrift.Rolle}}` an Paperless. Danach fragt der Kalkulator
+stündlich ab, ob der Vertrag vollständig unterschrieben ist, und legt das unterschriebene PDF im Projekt ab
+(`Paperless__AbfrageStunden`, `Paperless__PdfPfad`). Den Aufbau eines echten Dokuments zeigt
+`dotnet run --project src/Kalkulator.Web -- --paperless-status <Dokumentkennung>`. Einrichtung:
+`docs/12_vertragsvorlagen.md`, Abschnitt 7; Technik: ADR-0008.
 
 Die Datenbanktests (`tests/Kalkulator.Infrastructure.Tests`) starten automatisch einen
 SQL Server in Docker (Testcontainers). Dafür muss Docker laufen.

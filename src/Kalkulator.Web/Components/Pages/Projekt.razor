@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @inject KundenprojektDienst Dienst
 @inject VertragswerkDienst Vertragswerk
+@inject UnterschriftenAbfrage Unterschriften
 @inject NavigationManager Navigation
 
 <PageTitle>@(_projekt?.Kunde?.Firma ?? "Kundenprojekt") · Managed-Services-Kalkulator</PageTitle>
@@ -161,10 +162,23 @@ else
                                             @if (MitPaperless)
                                             {
                                                 <td>
-                                                    @if (w.PaperlessDokumentId is { } pid)
+                                                    @if (w.UnterzeichnetAm is { } unterzeichnet)
                                                     {
-                                                        <span class="pille st-Gewonnen">übergeben</span><br />
+                                                        <span class="pille st-Gewonnen">unterzeichnet</span><br />
+                                                        <span class="unterzeile">festgestellt @Texte.Zeitpunkt(unterzeichnet) · Dokument @w.PaperlessDokumentId</span>
+                                                        @if (!w.UnterschriftAbgelegt)
+                                                        {
+                                                            <br /><span class="unterzeile">Das unterschriebene PDF ist noch nicht abgeholt.</span>
+                                                        }
+                                                    }
+                                                    else if (w.PaperlessDokumentId is { } pid)
+                                                    {
+                                                        <span class="pille st-AngebotVersendet">übergeben</span><br />
                                                         <span class="unterzeile">@Texte.Zeitpunkt(w.UebergebenAm!.Value) · Dokument @pid</span>
+                                                        @if (w.StatusGeprueftAm is { } geprueft)
+                                                        {
+                                                            <br /><span class="unterzeile">Status „@w.PaperlessStatus“, abgefragt @Texte.Zeitpunkt(geprueft)</span>
+                                                        }
                                                     }
                                                     else if (w.UebergabeFehler is { } fehler)
                                                     {
@@ -182,6 +196,18 @@ else
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/ansicht" target="_blank" rel="noopener">Ansehen</a>
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/pdf" download>Gesamt-PDF</a>
                                                     <a class="knopf zweit klein" href="vertragswerke/@w.Id/zip" download>ZIP</a>
+                                                    @if (w.UnterschriftAbgelegt)
+                                                    {
+                                                        <a class="knopf klein" href="vertragswerke/@w.Id/unterschrieben" download>Unterschrieben (PDF)</a>
+                                                        @if (w.PruefprotokollAbgelegt)
+                                                        {
+                                                            <a class="knopf zweit klein" href="vertragswerke/@w.Id/pruefprotokoll" download>Prüfprotokoll</a>
+                                                        }
+                                                    }
+                                                    else if (w.PaperlessDokumentId is not null && _darfBearbeiten && _bereitschaft?.Paperless == true)
+                                                    {
+                                                        <button type="button" class="knopf zweit klein" disabled="@_erzeugt" @onclick="() => StatusAbfragenAsync(w.Id)">Status jetzt abfragen</button>
+                                                    }
                                                     @if (_bereitschaft?.Paperless == true && _bereitschaft.DarfErzeugen && w.PaperlessDokumentId is null && w.IstFreigegeben && w == _vertragswerke[0])
                                                     {
                                                         <button type="button" class="knopf zweit klein" disabled="@_erzeugt" @onclick="() => ErneutUebergebenAsync(w.Id)">@(w.UebergabeFehler is null ? "An Paperless übergeben" : "Erneut übergeben")</button>
@@ -259,6 +285,8 @@ else
                     </div>
                 }
             </section>
+
+            <AngeboteKarte ProjektId="Id" Projektstatus="_projekt.Status" AngenommenesAngebot="_projekt.AngenommenesAngebotId" />
 
             <UnterlagenKarte ProjektId="Id" />
 
@@ -530,6 +558,20 @@ else
             _erzeugt = false;
         }
     }
+
+    /// <summary>Fragt einen Vertrag sofort bei Paperless ab, statt auf die stündliche Abfrage zu warten.</summary>
+    private Task StatusAbfragenAsync(int werkId) => AusfuehrenAsync(async () =>
+    {
+        var ergebnis = await Unterschriften.PruefeAsync(werkId);
+        var werk = (await Vertragswerk.ListeAsync(Id)).First(w => w.Id == werkId);
+        return (ergebnis, werk) switch
+        {
+            ({ Fehler: > 0 }, _) => ("Die Abfrage bei Paperless ist fehlgeschlagen; Einzelheiten stehen im Protokoll des Servers. Die stündliche Abfrage versucht es erneut.", true),
+            (_, { UnterschriftAbgelegt: true }) => ("Der Vertrag ist vollständig unterschrieben; das unterschriebene PDF ist abgelegt.", false),
+            (_, { UnterzeichnetAm: not null }) => ("Der Vertrag ist vollständig unterschrieben. Das PDF lässt sich noch nicht abholen (Paperless:PdfPfad ist nicht eingerichtet).", false),
+            _ => ($"Noch nicht vollständig unterschrieben (Status „{werk.PaperlessStatus}“).", false),
+        };
+    });
 
     private async Task ErneutUebergebenAsync(int werkId)
     {

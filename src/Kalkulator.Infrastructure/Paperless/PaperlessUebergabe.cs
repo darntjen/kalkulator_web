@@ -25,13 +25,28 @@ public interface IPaperlessUebergabe
     Task<string> UebergebenAsync(PaperlessAuftrag auftrag, CancellationToken abbruch);
 }
 
+/// <summary>Status eines Dokuments in Paperless; <see cref="Unterzeichnet"/> laut <c>Paperless:StatusUnterzeichnet</c>.</summary>
+public sealed record PaperlessStand(string Status, bool Unterzeichnet);
+
+/// <summary>Unterschriebenes PDF und, falls eingerichtet, Prüfprotokoll eines abgeschlossenen Dokuments.</summary>
+public sealed record PaperlessErgebnis(byte[] Pdf, byte[]? Pruefprotokoll);
+
+/// <summary>Abfrage übergebener Dokumente (Entscheidung 16.10.2026: stündliche Abfrage statt Webhook).</summary>
+public interface IPaperlessAbruf
+{
+    Task<PaperlessStand> StandAsync(string dokumentId, CancellationToken abbruch);
+
+    /// <summary><c>null</c>, solange der Download nicht eingerichtet ist (<c>Paperless:PdfPfad</c>).</summary>
+    Task<PaperlessErgebnis?> ErgebnisAsync(string dokumentId, CancellationToken abbruch);
+}
+
 public sealed class PaperlessFehler(string meldung) : InvalidOperationException(meldung);
 
 /// <summary>
 /// Übergabe an die Paperless-API (#26, Teil D): erst die PDF-Datei als Blob hochladen, dann das Dokument mit Teilnehmern
 /// und Unterschriftsfeldern anlegen. Paperless meldet nichts zurück (Entscheidung „keine Rückmeldung“).
 /// </summary>
-public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinstellungen> einstellungen) : IPaperlessUebergabe
+public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinstellungen> einstellungen) : IPaperlessUebergabe, IPaperlessAbruf
 {
     /// <summary>Umlaute im Klartext, auch in Fehlermeldungen aus Antworten von Paperless.</summary>
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
@@ -178,6 +193,69 @@ public sealed class PaperlessUebergabe(HttpClient http, IOptions<PaperlessEinste
         }
 
         return bloecke;
+    }
+
+    public async Task<PaperlessStand> StandAsync(string dokumentId, CancellationToken abbruch)
+    {
+        var e = PruefeAktiv();
+        var pfad = "documents/" + Uri.EscapeDataString(dokumentId);
+        var antwort = await SendeAsync(e, HttpMethod.Get, pfad, null, abbruch);
+        if (antwort["state"] is not JsonValue wert || !wert.TryGetValue<string>(out var status) || string.IsNullOrWhiteSpace(status))
+        {
+            throw new PaperlessFehler($"Paperless hat zu Dokument {dokumentId} keinen Status (state) geliefert. Aufbau: {Aufbau(antwort)}");
+        }
+
+        return new PaperlessStand(status, e.StatusUnterzeichnet.Contains(status, StringComparer.OrdinalIgnoreCase));
+    }
+
+    public async Task<PaperlessErgebnis?> ErgebnisAsync(string dokumentId, CancellationToken abbruch)
+    {
+        var e = PruefeAktiv();
+        if (string.IsNullOrWhiteSpace(e.PdfPfad))
+        {
+            return null;
+        }
+
+        var pdf = await LadeDateiAsync(e, e.PdfPfad, dokumentId, abbruch);
+        var protokoll = string.IsNullOrWhiteSpace(e.ProtokollPfad) ? null : await LadeDateiAsync(e, e.ProtokollPfad, dokumentId, abbruch);
+        return new PaperlessErgebnis(pdf, protokoll);
+    }
+
+    private PaperlessEinstellungen PruefeAktiv()
+    {
+        var e = einstellungen.Value;
+        return e.Aktiv ? e : throw new PaperlessFehler("Paperless ist nicht eingerichtet (Paperless:ApiSchluessel und Paperless:ArbeitsbereichId).");
+    }
+
+    /// <summary>Lädt eine Datei; eine JSON-Antwort statt einer Datei gilt als Fehler und nennt ihren Aufbau.</summary>
+    private async Task<byte[]> LadeDateiAsync(PaperlessEinstellungen e, string vorlage, string dokumentId, CancellationToken abbruch)
+    {
+        var pfad = vorlage.Replace("{id}", Uri.EscapeDataString(dokumentId), StringComparison.Ordinal).TrimStart('/');
+        using var anfrage = new HttpRequestMessage(HttpMethod.Get, new Uri(new Uri(e.Adresse.TrimEnd('/') + "/"), pfad));
+        anfrage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", e.ApiSchluessel);
+        using var antwort = await http.SendAsync(anfrage, abbruch);
+        var inhalt = await antwort.Content.ReadAsByteArrayAsync(abbruch);
+        if (!antwort.IsSuccessStatusCode)
+        {
+            throw new PaperlessFehler($"Paperless hat „{pfad}“ abgelehnt ({(int)antwort.StatusCode} {antwort.ReasonPhrase}): {Kurz(Encoding.UTF8.GetString(inhalt))}");
+        }
+
+        if (antwort.Content.Headers.ContentType?.MediaType?.Contains("json", StringComparison.OrdinalIgnoreCase) == true)
+        {
+            string aufbau;
+            try
+            {
+                aufbau = Aufbau(JsonNode.Parse(inhalt));
+            }
+            catch (JsonException)
+            {
+                aufbau = "nicht lesbar";
+            }
+
+            throw new PaperlessFehler($"Paperless liefert auf „{pfad}“ JSON statt einer Datei. Aufbau: {aufbau}");
+        }
+
+        return inhalt;
     }
 
     private static double Runde(double wert) => Math.Round(wert, 1);

@@ -898,6 +898,51 @@ dl.daten dd { overflow-wrap: anywhere; }
 .analyse-Beauftragt { background: var(--gut-bg); color: var(--gut); }
 .analyse-Abgelehnt { background: var(--kritisch-bg); color: var(--kritisch); }
 
+/* ---------- Statusfilter (08.10.2026) ---------- */
+
+.filterleiste {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+}
+
+    .filterleiste .filter {
+        font: inherit;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.2rem 0.7rem;
+        border-radius: 999px;
+        border: 1px solid var(--linie);
+        background: var(--weiss);
+        color: var(--petrol-dunkel);
+        cursor: pointer;
+    }
+
+        .filterleiste .filter:hover {
+            border-color: var(--petrol);
+        }
+
+        .filterleiste .filter.aktiv {
+            background: var(--petrol);
+            border-color: var(--petrol);
+            color: var(--weiss);
+        }
+
+        .filterleiste .filter .anzahl {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+.ang-Erzeugt { background: var(--flaeche-2); color: #44555b; }
+.ang-Versendet { background: var(--petrol-hell); color: var(--petrol-dunkel); }
+.ang-Angenommen { background: var(--gut-bg); color: var(--gut); }
+.ang-NichtAngenommen { background: var(--weiss); color: var(--grau); border-color: var(--linie); }
+.ang-Ersetzt { background: var(--weiss); color: var(--grau); border-color: var(--linie); }
+.ang-Abgelaufen { background: var(--warn-bg); color: var(--warn); }
+
 .loesungen {
     display: flex;
     flex-direction: column;
