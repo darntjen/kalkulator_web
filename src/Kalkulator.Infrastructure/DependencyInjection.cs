@@ -98,17 +98,28 @@ public static class DependencyInjection
         }
     }
 
-    /// <summary>Benachrichtigungen über die SharePoint-Liste laut „Benachrichtigung“; ohne Website nur ins Protokoll.</summary>
+    /// <summary>
+    /// Benachrichtigungen über die SharePoint-Liste laut „Benachrichtigung“; ohne Website oder ohne Anmeldung an
+    /// Microsoft Graph („Vorlagen:SharePoint“, z. B. im Codespace) nur ins Protokoll.
+    /// </summary>
     private static IBenachrichtigung Benachrichtigung(IServiceProvider dienste)
     {
         var e = dienste.GetRequiredService<IOptions<BenachrichtigungsEinstellungen>>().Value;
+        var protokoll = dienste.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ProtokollBenachrichtigung>>();
         if (!e.Aktiv)
         {
-            return new ProtokollBenachrichtigung(dienste.GetRequiredService<Microsoft.Extensions.Logging.ILogger<ProtokollBenachrichtigung>>());
+            return new ProtokollBenachrichtigung(protokoll);
         }
 
         var sharePoint = dienste.GetRequiredService<IOptions<VorlagenEinstellungen>>().Value.SharePoint;
-        return new SharePointBenachrichtigung(GraphZugang.Aus(sharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }), e);
+        try
+        {
+            return new SharePointBenachrichtigung(GraphZugang.Aus(sharePoint, new HttpClient { Timeout = TimeSpan.FromMinutes(2) }), e);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException or System.Security.Cryptography.CryptographicException or IOException)
+        {
+            return new ProtokollBenachrichtigung(protokoll, ex.Message);
+        }
     }
 
     /// <summary>Kanalordner der Kunden laut Konfiguration „Kundenablage“; Graph nutzt die Anmeldung aus „Vorlagen:SharePoint“.</summary>

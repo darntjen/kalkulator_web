@@ -39,14 +39,20 @@ public interface IBenachrichtigung
     Task MeldenAsync(Nachricht nachricht, CancellationToken abbruch);
 }
 
-/// <summary>Ohne Liste: Nachrichten gehen nur ins Protokoll des Servers (Entwicklung, Codespace).</summary>
-public sealed class ProtokollBenachrichtigung(ILogger<ProtokollBenachrichtigung> protokoll) : IBenachrichtigung
+/// <summary>
+/// Ohne Liste oder ohne Anmeldung an Microsoft Graph: Nachrichten gehen nur ins Protokoll des Servers (Entwicklung,
+/// Codespace); <paramref name="grund"/> nennt, was fehlt.
+/// </summary>
+public sealed class ProtokollBenachrichtigung(ILogger<ProtokollBenachrichtigung> protokoll, string? grund = null) : IBenachrichtigung
 {
     public bool Eingerichtet => false;
 
+    public string? Grund => grund;
+
     public Task MeldenAsync(Nachricht nachricht, CancellationToken abbruch)
     {
-        protokoll.LogInformation("Benachrichtigung (nicht eingerichtet) {Art} an {Empfaenger}: {Titel}", nachricht.Art, string.Join("; ", nachricht.Empfaenger), nachricht.Titel);
+        protokoll.LogInformation("Benachrichtigung (nicht eingerichtet: {Grund}) {Art} an {Empfaenger}: {Titel}",
+            grund ?? "keine Website", nachricht.Art, string.Join("; ", nachricht.Empfaenger), nachricht.Titel);
         return Task.CompletedTask;
     }
 }
