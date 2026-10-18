@@ -223,7 +223,7 @@ stündlich ab, ob der Vertrag vollständig unterschrieben ist, und legt das unte
 
 Ist das Projekt mit einem Kanalordner verknüpft, legt die Abfrage den unterschriebenen Vertrag dort in
 `70_Vertraege` ab und meldet ihn über die SharePoint-Liste „Kalkulator-Benachrichtigungen“, aus der ein
-Power-Automate-Flow die E-Mails schickt (`Benachrichtigung__Website`; leer = nur Protokoll). Nachts um 02:45 Uhr
+Power-Automate-Flow die E-Mails schickt (Liste auf „Kundenprojekte“; ohne Anmeldung an Microsoft Graph nur ins Protokoll). Nachts um 02:45 Uhr
 (`Kundenablage__ArchivierungUm`) verschiebt der Kalkulator die übrigen Angebote und Vertragsausfertigungen
 abgeschlossener Projekte nach `Archiv Kalkulator` im Kanalordner und behält nur den Link. Einrichtung:
 `docs/12_vertragsvorlagen.md`, Abschnitt 8.
