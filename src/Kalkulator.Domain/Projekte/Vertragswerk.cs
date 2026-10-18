@@ -4,8 +4,8 @@ namespace Kalkulator.Domain.Projekte;
 /// Erzeugtes Vertragswerk eines gewonnenen Kundenprojekts (#26, Teil C): alle Dokumente als PDF, eine Gesamtdatei für
 /// den Kunden und ein ZIP. Grundlage sind die eingefrorene Version des angenommenen Angebots und die bei der Erzeugung
 /// aktiven Vorlagenfassungen, die in <see cref="Dokumente"/> festgehalten werden. Unveränderlich bis auf die
-/// Vertragsfreigaben (Vertriebsleitung, dann AVV und Technik), den Vermerk der Übergabe an Paperless (Teil D) und den
-/// Vermerk der Unterzeichnung; wird es neu erzeugt (z. B.
+/// Vertragsfreigaben (Vertriebsleitung, dann AVV und Technik), den Vermerk der Übergabe an Paperless (Teil D), den
+/// Vermerk der Unterzeichnung und den Archivvermerk; wird es neu erzeugt (z. B.
 /// nach einer Ablehnung oder einer korrigierten Vorlage), entsteht eine weitere Ausfertigung ohne Freigaben.
 /// </summary>
 public class Vertragswerk
@@ -58,6 +58,24 @@ public class Vertragswerk
 
     /// <summary>Unterschriebenes PDF und Prüfprotokoll aus Paperless; getrennt gespeichert wie <see cref="Datei"/>.</summary>
     public VertragswerkUnterschrift? Unterschrift { get; private set; }
+
+    /// <summary>Link auf den unterschriebenen Vertrag im Kanalordner (70_Vertraege), sobald er dort abgelegt ist.</summary>
+    public string? AblageLink { get; private set; }
+
+    public DateTimeOffset? AbgelegtAm { get; private set; }
+
+    /// <summary>Wann die Benachrichtigung über den unterschriebenen Vertrag hinausging (Liste für Power Automate).</summary>
+    public DateTimeOffset? GemeldetAm { get; private set; }
+
+    /// <summary>Link auf das Gesamt-PDF im Kanalordner (70_Vertraege/Archiv Kalkulator), sobald es archiviert ist.</summary>
+    public string? ArchivLink { get; private set; }
+
+    /// <summary>Link auf das ZIP im Kanalordner (70_Vertraege/Archiv Kalkulator).</summary>
+    public string? ArchivZipLink { get; private set; }
+
+    public DateTimeOffset? ArchiviertAm { get; private set; }
+
+    public bool IstArchiviert => ArchiviertAm is not null;
 
     /// <summary>
     /// Reihenfolge der Prüfungen: Zuerst gibt die Vertriebsleitung frei (Entscheidung 07.10.2026), danach prüfen AVV und
@@ -204,6 +222,57 @@ public class Vertragswerk
         }
 
         Unterschrift = new VertragswerkUnterschrift { Pdf = pdf, Pruefprotokoll = pruefprotokoll is { Length: > 0 } ? pruefprotokoll : null, AbgelegtAm = zeitpunkt };
+    }
+
+    /// <summary>Vermerkt die Ablage des unterschriebenen Vertrags im Kanalordner; einmalig.</summary>
+    public void VermerkeAblage(string? link, DateTimeOffset zeitpunkt)
+    {
+        if (Unterschrift is null)
+        {
+            throw new InvalidOperationException("Abgelegt wird erst der unterschriebene Vertrag.");
+        }
+
+        if (AbgelegtAm is not null)
+        {
+            throw new InvalidOperationException("Der unterschriebene Vertrag ist bereits im Kanalordner abgelegt.");
+        }
+
+        AblageLink = string.IsNullOrWhiteSpace(link) ? null : link.Length > 1000 ? link[..1000] : link;
+        AbgelegtAm = zeitpunkt;
+    }
+
+    /// <summary>Vermerkt die Benachrichtigung über den unterschriebenen Vertrag; einmalig.</summary>
+    public void VermerkeMeldung(DateTimeOffset zeitpunkt)
+    {
+        if (!IstUnterzeichnet)
+        {
+            throw new InvalidOperationException("Gemeldet wird erst ein unterschriebener Vertrag.");
+        }
+
+        GemeldetAm ??= zeitpunkt;
+    }
+
+    /// <summary>
+    /// Archivvermerk (Entscheidung 08.10.2026): Gesamt-PDF und ZIP liegen jetzt im Kanalordner; die
+    /// <see cref="VertragswerkDatei"/> darf danach gelöscht werden. Die unterzeichnete Ausfertigung bleibt im Kalkulator.
+    /// </summary>
+    public void Archiviere(string pdfLink, string zipLink, DateTimeOffset zeitpunkt)
+    {
+        Angebot.PruefeLink(pdfLink);
+        Angebot.PruefeLink(zipLink);
+        if (IstUnterzeichnet)
+        {
+            throw new InvalidOperationException("Die unterzeichnete Ausfertigung bleibt im Kalkulator.");
+        }
+
+        if (IstArchiviert)
+        {
+            throw new InvalidOperationException("Das Vertragswerk ist bereits archiviert.");
+        }
+
+        ArchivLink = pdfLink;
+        ArchivZipLink = zipLink;
+        ArchiviertAm = zeitpunkt;
     }
 
     public void VermerkeUebergabeFehler(string fehler, DateTimeOffset zeitpunkt)

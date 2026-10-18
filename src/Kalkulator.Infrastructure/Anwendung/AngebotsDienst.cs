@@ -23,7 +23,8 @@ public sealed class AngebotsEinstellungen
     public string AbsenderTelefon { get; set; } = "+49 2171 7003-0";
 }
 
-public sealed record AngebotsZeile(int Id, string Nummer, string Version, DateOnly Datum, DateOnly GueltigBis, string ErstelltVon, DateOnly? VersendetAm);
+public sealed record AngebotsZeile(int Id, string Nummer, string Version, DateOnly Datum, DateOnly GueltigBis, string ErstelltVon, DateOnly? VersendetAm,
+    string? ArchivLink = null);
 
 /// <summary>
 /// Angebot erzeugen (C-01 bis C-07) und Versand vermerken (C-10). Beim Erzeugen wird der Arbeitsstand eingefroren,
@@ -149,7 +150,7 @@ public sealed class AngebotsDienst(
         return await kontext.Angebote.AsNoTracking()
             .Where(a => a.Version!.KalkulationId == kalkulationId)
             .OrderByDescending(a => a.Version!.Nummer)
-            .Select(a => new AngebotsZeile(a.Id, a.Nummer, "V" + a.Version!.Nummer, a.Datum, a.GueltigBis, a.ErstelltVon, a.VersendetAm))
+            .Select(a => new AngebotsZeile(a.Id, a.Nummer, "V" + a.Version!.Nummer, a.Datum, a.GueltigBis, a.ErstelltVon, a.VersendetAm, a.ArchivLink))
             .ToListAsync(abbruch);
     }
 
@@ -162,6 +163,11 @@ public sealed class AngebotsDienst(
             .SingleOrDefaultAsync(a => a.Id == angebotId, abbruch)
             ?? throw new KeyNotFoundException($"Angebot {angebotId} gibt es nicht.");
         await PruefeSehenAsync(kontext, angebot.Version!.KalkulationId, abbruch);
+        if (angebot.IstArchiviert)
+        {
+            throw new ArchiviertException(angebot.ArchivLink!);
+        }
+
         return (angebot.Dateiname, angebot.Datei!.Inhalt);
     }
 

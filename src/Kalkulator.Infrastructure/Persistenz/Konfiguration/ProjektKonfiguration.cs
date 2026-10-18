@@ -188,6 +188,7 @@ internal sealed class AngebotKonfiguration : IEntityTypeConfiguration<Angebot>
         builder.Property(a => a.Vorlage).HasMaxLength(260);
         builder.Property(a => a.ErstelltVon).HasMaxLength(200);
         builder.Property(a => a.VersendetVon).HasMaxLength(200);
+        builder.Property(a => a.ArchivLink).HasMaxLength(Angebot.LinkLaenge);
         builder.HasOne(a => a.Version).WithMany().HasForeignKey(a => a.KalkulationsversionId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(a => a.Datei).WithOne().HasForeignKey<AngebotsDatei>(d => d.AngebotId).OnDelete(DeleteBehavior.Restrict);
     }
@@ -211,6 +212,9 @@ internal sealed class VertragswerkKonfiguration : IEntityTypeConfiguration<Vertr
         builder.Ignore(v => v.IstFreigegeben);
         builder.Ignore(v => v.IstUnterzeichnet);
         builder.Property(v => v.PaperlessStatus).HasMaxLength(50);
+        builder.Property(v => v.AblageLink).HasMaxLength(1000);
+        builder.Property(v => v.ArchivLink).HasMaxLength(Angebot.LinkLaenge);
+        builder.Property(v => v.ArchivZipLink).HasMaxLength(Angebot.LinkLaenge);
         builder.HasOne(v => v.Unterschrift).WithOne().HasForeignKey<VertragswerkUnterschrift>(u => u.VertragswerkId).OnDelete(DeleteBehavior.Restrict);
         builder.HasMany(v => v.Freigaben).WithOne().HasForeignKey(f => f.VertragswerkId).OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<Kundenprojekt>().WithMany().HasForeignKey(v => v.KundenprojektId).OnDelete(DeleteBehavior.Restrict);

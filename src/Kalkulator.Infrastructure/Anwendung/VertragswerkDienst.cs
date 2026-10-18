@@ -82,7 +82,10 @@ public sealed record VertragswerkZeile(
     DateTimeOffset? StatusGeprueftAm = null,
     DateTimeOffset? UnterzeichnetAm = null,
     bool UnterschriftAbgelegt = false,
-    bool PruefprotokollAbgelegt = false)
+    bool PruefprotokollAbgelegt = false,
+    string? AblageLink = null,
+    string? ArchivLink = null,
+    string? ArchivZipLink = null)
 {
     public Vertragsfreigabe? Freigabe(VertragsfreigabeArt art) => Freigaben?.FirstOrDefault(f => f.Art == art);
 
@@ -184,7 +187,8 @@ public sealed class VertragswerkDienst(
             .Select(u => new { u.VertragswerkId, Protokoll = u.Pruefprotokoll != null }).ToDictionaryAsync(u => u.VertragswerkId, u => u.Protokoll, abbruch);
         return [.. werke.Select(v => new VertragswerkZeile(v.Id, v.Nummer, v.Ausfertigung, v.ErstelltVon, v.ErstelltAm, [.. v.Dokumente.OrderBy(d => d.Reihenfolge)],
             v.PaperlessDokumentId, v.UebergebenAm, v.UebergabeFehler, v.UebergabeVersuchtAm, [.. v.Freigaben.OrderBy(f => f.Art)],
-            v.PaperlessStatus, v.StatusGeprueftAm, v.UnterzeichnetAm, unterschriften.ContainsKey(v.Id), unterschriften.GetValueOrDefault(v.Id)))];
+            v.PaperlessStatus, v.StatusGeprueftAm, v.UnterzeichnetAm, unterschriften.ContainsKey(v.Id), unterschriften.GetValueOrDefault(v.Id),
+            v.AblageLink, v.ArchivLink, v.ArchivZipLink))];
     }
 
     /// <summary>Unterschriebener Vertrag bzw. Prüfprotokoll aus Paperless; wer das Kundenprojekt sehen darf.</summary>
@@ -210,6 +214,11 @@ public sealed class VertragswerkDienst(
         var werk = await kontext.Vertragswerke.AsNoTracking().Include(v => v.Datei).SingleOrDefaultAsync(v => v.Id == vertragswerkId, abbruch)
             ?? throw new KeyNotFoundException($"Vertragswerk {vertragswerkId} gibt es nicht.");
         await LadeAsync(kontext, werk.KundenprojektId, abbruch);
+        if (werk.IstArchiviert)
+        {
+            throw new ArchiviertException((zip ? werk.ArchivZipLink : werk.ArchivLink)!);
+        }
+
         return zip ? (werk.ZipDateiname, werk.Datei!.Zip) : (werk.GesamtDateiname, werk.Datei!.GesamtPdf);
     }
 
@@ -321,6 +330,7 @@ public sealed class VertragswerkDienst(
             });
         }
 
+        PruefeNichtArchiviert(werk);
         await PruefeNeuesteAsync(kontext, werk, abbruch);
         werk.Pruefe(art, erteilt, begruendung, _recht.Name, zeit.GetUtcNow());
         await kontext.SaveChangesAsync(abbruch);
@@ -406,8 +416,18 @@ public sealed class VertragswerkDienst(
             throw new InvalidOperationException("An Paperless geht das Vertragswerk erst nach den Freigaben durch Vertriebsleitung, AVV und Technik.");
         }
 
+        PruefeNichtArchiviert(werk);
         await PruefeNeuesteAsync(kontext, werk, abbruch);
         await UebergebenAsync(kontext, werk, projekt.Kunde!.Firma, werk.Datei!.GesamtPdf, await RollenAsync(kontext, werk, abbruch), abbruch);
+    }
+
+    /// <summary>Nach der Archivierung liegen Gesamt-PDF und ZIP nur noch im Kanalordner.</summary>
+    private static void PruefeNichtArchiviert(Vertragswerk werk)
+    {
+        if (werk.IstArchiviert)
+        {
+            throw new InvalidOperationException("Das Vertragswerk ist archiviert und liegt im Kanalordner; bearbeitet wird es nicht mehr.");
+        }
     }
 
     /// <summary>

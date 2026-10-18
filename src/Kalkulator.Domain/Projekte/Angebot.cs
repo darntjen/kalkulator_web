@@ -2,7 +2,8 @@ namespace Kalkulator.Domain.Projekte;
 
 /// <summary>
 /// Ein erzeugtes Angebotsdokument zu genau einer eingefrorenen Kalkulationsversion (C-06, C-07). Das Dokument selbst
-/// liegt getrennt in <see cref="AngebotsDatei"/>, damit Übersichten es nicht mitladen. Änderbar ist nur der Versandvermerk.
+/// liegt getrennt in <see cref="AngebotsDatei"/>, damit Übersichten es nicht mitladen. Änderbar sind nur der Versandvermerk
+/// und der Archivvermerk: Nach dem Projektabschluss liegt das Dokument im Kanalordner, der Kalkulator behält den Link.
 /// </summary>
 public class Angebot
 {
@@ -25,6 +26,42 @@ public class Angebot
     public string? VersendetVon { get; private set; }
 
     public AngebotsDatei? Datei { get; init; }
+
+    /// <summary>Höchstlänge eines Archivlinks; ein längerer Link wird nicht gekürzt, sondern abgewiesen.</summary>
+    public const int LinkLaenge = 2000;
+
+    /// <summary>Link auf das Dokument im Kanalordner (60_Angebote/Archiv Kalkulator), sobald es dorthin archiviert ist.</summary>
+    public string? ArchivLink { get; private set; }
+
+    public DateTimeOffset? ArchiviertAm { get; private set; }
+
+    public bool IstArchiviert => ArchiviertAm is not null;
+
+    /// <summary>
+    /// Archivvermerk (Entscheidung 08.10.2026): Das Dokument liegt jetzt im Kanalordner; die <see cref="AngebotsDatei"/>
+    /// darf danach gelöscht werden.
+    /// </summary>
+    public void Archiviere(string link, DateTimeOffset zeitpunkt)
+    {
+        PruefeLink(link);
+        if (IstArchiviert)
+        {
+            throw new InvalidOperationException($"Angebot {Nummer} ist bereits archiviert.");
+        }
+
+        ArchivLink = link;
+        ArchiviertAm = zeitpunkt;
+    }
+
+    /// <summary>Ein Archivlink muss vorhanden sein und in die Datenbank passen.</summary>
+    public static void PruefeLink(string link)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(link);
+        if (link.Length > LinkLaenge)
+        {
+            throw new ArgumentException($"Der Link ist länger als {LinkLaenge} Zeichen.", nameof(link));
+        }
+    }
 
     /// <summary>Versandvermerk (C-10): wann diese Version an den Kunden ging.</summary>
     public void AlsVersendetMarkieren(DateOnly datum, string benutzer)

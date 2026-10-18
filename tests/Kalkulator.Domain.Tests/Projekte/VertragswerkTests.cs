@@ -159,4 +159,32 @@ public class VertragswerkTests
         Assert.Null(werk.Unterschrift.Pruefprotokoll);
         Assert.Throws<InvalidOperationException>(() => werk.HinterlegeUnterschrift([3], null, Jetzt));
     }
+    [Fact]
+    public void Archiviert_wird_nur_eine_nicht_unterzeichnete_Ausfertigung_und_nur_einmal()
+    {
+        var werk = NeuesWerk();
+        Assert.Throws<ArgumentException>(() => werk.Archiviere("", "zip", Jetzt));
+        Assert.Throws<ArgumentException>(() => werk.Archiviere(new string('x', Angebot.LinkLaenge + 1), "zip", Jetzt));
+
+        werk.Archiviere("https://sp/pdf", "https://sp/zip", Jetzt);
+        Assert.Equal(("https://sp/pdf", "https://sp/zip", (DateTimeOffset?)Jetzt), (werk.ArchivLink, werk.ArchivZipLink, werk.ArchiviertAm));
+        Assert.Throws<InvalidOperationException>(() => werk.Archiviere("https://sp/pdf", "https://sp/zip", Jetzt));
+
+        var unterzeichnet = NeuesWerk();
+        unterzeichnet.VermerkeUebergabe("101", Jetzt);
+        unterzeichnet.VermerkeStatus("completed", true, Jetzt);
+        Assert.Throws<InvalidOperationException>(() => unterzeichnet.Archiviere("https://sp/pdf", "https://sp/zip", Jetzt));
+    }
+
+    [Fact]
+    public void Angebot_wird_einmal_archiviert()
+    {
+        var angebot = new Angebot { Nummer = "MS-A-2026-0001", Dateiname = "a.docx", Vorlage = "v.docx", ErstelltVon = "t" };
+        Assert.Throws<ArgumentException>(() => angebot.Archiviere(" ", Jetzt));
+
+        angebot.Archiviere("https://sp/a.docx", Jetzt);
+        Assert.True(angebot.IstArchiviert);
+        Assert.Equal("https://sp/a.docx", angebot.ArchivLink);
+        Assert.Throws<InvalidOperationException>(() => angebot.Archiviere("https://sp/b.docx", Jetzt));
+    }
 }

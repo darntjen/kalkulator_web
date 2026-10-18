@@ -69,6 +69,7 @@
 | C-07 | Jedes erzeugte Dokument wird mit Nummer und Version archiviert. Summen und Inhalte werden eingefroren | M |
 | C-10 | **Versandvermerk:** Der Vertrieb markiert eine Angebotsversion als versendet (Datum). Daraus entsteht die Übersicht, welche Version wann an den Kunden ging. Der Projektstatus wechselt auf „Angebot versendet“ | M |
 | C-11 | **Angebote im Projekt nach Status filtern** (Entscheidung 08.10.2026): Das Kundenprojekt zeigt alle Angebote aller Kalkulationen. Der Status wird abgeleitet, nicht gespeichert: erzeugt, versendet, angenommen, nicht angenommen (Projekt gewonnen oder verloren), ersetzt (neuere Version derselben Nummer), abgelaufen (versendet, Gültigkeit überschritten). Auch die Angebote zu Analyse und Workshop lassen sich nach Status filtern | M |
+| C-12 | **Archivierung nach dem Projektabschluss** (Entscheidungen 08.10. und 16.10.2026): Der unterschriebene Vertrag kommt aus Paperless ins Projekt und in den Kanalordner (`70_Vertraege`); Dennis Arntjen, Olaf Schmidt, Sascha Manczak und der verantwortliche Vertrieb erhalten über eine SharePoint-Liste und Power Automate eine E-Mail mit Link. Nachts gehen bei „Gewonnen“ (nach Ablage des unterschriebenen Vertrags) die übrigen Angebote und Vertragsausfertigungen, bei „Verloren“ alle in `Archiv Kalkulator` im Kanalordner; der Kalkulator behält Daten und Link | M |
 | C-08 | Zusätzliche PDF-Ausgabe | K |
 | C-09 | Mehrere Vorlagen (z. B. Kurzangebot, ausführliches Angebot) | K |
 

@@ -67,4 +67,88 @@ public class SharePointKundenablageTests
         await Assert.ThrowsAsync<KeyNotFoundException>(() => ablage.LadeAsync("k1", "d8", default));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => ablage.LadeAsync("k1", "../root", default));
     }
+
+    /// <summary>Nimmt Uploads entgegen und antwortet mit dem angelegten Element; Laufwerk wie oben.</summary>
+    private sealed class Hochladen : HttpMessageHandler
+    {
+        public List<(HttpMethod Methode, string Pfad, string Abfrage, byte[] Inhalt)> Anfragen { get; } = [];
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var pfad = Uri.UnescapeDataString(request.RequestUri!.AbsolutePath).Replace("/v1.0/", "", StringComparison.Ordinal);
+            var inhalt = request.Content is null ? [] : await request.Content.ReadAsByteArrayAsync(cancellationToken);
+            Anfragen.Add((request.Method, pfad, Uri.UnescapeDataString(request.RequestUri.Query), inhalt));
+            var json = pfad switch
+            {
+                "sites/noesse.sharepoint.com:/sites/Kundenprojekte" => """{"id":"site1","name":"Kundenprojekte"}""",
+                "sites/site1/drive" => """{"id":"lw1","name":"Dokumente"}""",
+                _ when request.Method == HttpMethod.Put => """{"id":"neu1","name":"Vertrag.pdf","size":3,"webUrl":"https://noesse.sharepoint.com/Vertrag.pdf"}""",
+                _ => null,
+            };
+            return json is null
+                ? new HttpResponseMessage(HttpStatusCode.NotFound) { Content = new StringContent("{}") }
+                : new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+        }
+    }
+
+    [Fact]
+    public async Task Ablegen_laedt_ueber_den_Pfad_hoch_und_ersetzt_gleichnamige_Dateien()
+    {
+        var server = new Hochladen();
+        var ablage = new SharePointKundenablage(new GraphZugang(new HttpClient(server), new TestAnmeldung()),
+            new KundenablageEinstellungen { Website = "https://noesse.sharepoint.com/sites/Kundenprojekte" });
+
+        var datei = await ablage.AblegenAsync("k1", "70_Vertraege/Archiv Kalkulator", "Vertrag.pdf", [1, 2, 3], default);
+
+        var hoch = Assert.Single(server.Anfragen, a => a.Methode == HttpMethod.Put);
+        Assert.Equal("drives/lw1/items/k1:/70_Vertraege/Archiv Kalkulator/Vertrag.pdf:/content", hoch.Pfad);
+        Assert.Contains("conflictBehavior=replace", hoch.Abfrage, StringComparison.Ordinal);
+        Assert.Equal([1, 2, 3], hoch.Inhalt);
+        Assert.Equal(("70_Vertraege", "70_Vertraege/Archiv Kalkulator/Vertrag.pdf", "https://noesse.sharepoint.com/Vertrag.pdf"), (datei.Bereich, datei.Pfad, datei.Link));
+    }
+
+    [Theory]
+    [InlineData("30_Analyse", "a.pdf")]
+    [InlineData("70_Vertraege/../30_Analyse", "a.pdf")]
+    [InlineData("70_Vertraege//x", "a.pdf")]
+    [InlineData("70_Vertraege", "a:b.pdf")]
+    [InlineData("70_Vertraege", "")]
+    public async Task Ablegen_nur_in_Ablagebereichen_mit_gueltigen_Namen(string ordner, string name)
+    {
+        var verzeichnis = Directory.CreateTempSubdirectory("ablage-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(verzeichnis.FullName, "Muster GmbH"));
+            var ablage = new OrdnerKundenablage(verzeichnis.FullName);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => ablage.AblegenAsync("Muster GmbH", ordner, name, [1], default));
+        }
+        finally
+        {
+            verzeichnis.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task Ordnerablage_legt_Unterordner_an_und_ersetzt()
+    {
+        var verzeichnis = Directory.CreateTempSubdirectory("ablage-");
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(verzeichnis.FullName, "Muster GmbH"));
+            var ablage = new OrdnerKundenablage(verzeichnis.FullName);
+
+            await ablage.AblegenAsync("Muster GmbH", "60_Angebote/Archiv Kalkulator", "Angebot.docx", [1], default);
+            var datei = await ablage.AblegenAsync("Muster GmbH", "60_Angebote/Archiv Kalkulator", "Angebot.docx", [2, 3], default);
+
+            var voll = Path.Combine(verzeichnis.FullName, "Muster GmbH", "60_Angebote", "Archiv Kalkulator", "Angebot.docx");
+            Assert.Equal([2, 3], await File.ReadAllBytesAsync(voll));
+            Assert.Equal(("60_Angebote/Archiv Kalkulator/Angebot.docx", 2L), (datei.Pfad, datei.Groesse));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => ablage.AblegenAsync("../x", "60_Angebote", "a.docx", [1], default));
+        }
+        finally
+        {
+            verzeichnis.Delete(true);
+        }
+    }
 }

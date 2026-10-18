@@ -99,3 +99,11 @@ public sealed class Berechtigung(IBenutzerKontext benutzer)
 
 /// <summary>Der Benutzer darf diese Aktion nicht ausführen; die Oberfläche zeigt die Meldung an.</summary>
 public class KeinZugriffException(string meldung) : InvalidOperationException(meldung);
+
+/// <summary>
+/// Die Datei liegt nach dem Projektabschluss nur noch im Kanalordner (Archivierung); <see cref="Link"/> führt dorthin.
+/// </summary>
+public class ArchiviertException(string link) : InvalidOperationException("Die Datei ist archiviert und liegt im Kanalordner.")
+{
+    public string Link { get; } = link;
+}
