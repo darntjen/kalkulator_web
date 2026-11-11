@@ -353,9 +353,13 @@ und wird im Kalkulator verlinkt. E-Mails verschickt nicht der Kalkulator, sonder
 - Ein Fehler bei einem Dokument hält die übrigen nicht auf; der nächste Lauf versucht es erneut. Ergebnis und Fehler
   stehen im Protokoll des Servers.
 
-**SharePoint-Liste für die Benachrichtigungen** (einmalig, Dennis):
-1. Auf der Website aus `Benachrichtigung:Website` eine Liste **„Kalkulator-Benachrichtigungen“** anlegen.
-2. Spalten anlegen (beim Anlegen genau diese Namen verwenden, damit die internen Namen stimmen):
+**SharePoint-Liste für die Benachrichtigungen** (einmalig, Dennis; Entscheidung 18.10.2026):
+1. **Ort:** Website **„Kundenprojekte“** (`https://noessedatentechnik.sharepoint.com/sites/Kundenprojekte`), dort über
+   Zahnrad → „Websiteinhalte“ → „Neu“ → „Liste“, nicht als Registerkarte in einem Kanal. Auf diese Website braucht der
+   Kalkulator für Ablage und Archivierung ohnehin Schreibrecht; die IT gibt also nur eine Website frei. Die Liste
+   gehört damit dem Team, nicht einer Person.
+2. **Name:** „Kalkulator-Benachrichtigungen“.
+3. **Spalten** anlegen (beim Anlegen genau diese Namen verwenden, damit die internen Namen stimmen):
 
    | Spalte | Typ | Inhalt |
    |---|---|---|
@@ -367,21 +371,33 @@ und wird im Kalkulator verlinkt. E-Mails verschickt nicht der Kalkulator, sonder
    | `Kalkulator` | Mehrere Textzeilen (nur Text) | Link auf das Projekt im Kalkulator (kann fehlen) |
 
    Die Links stehen bewusst in Textspalten: Eine einzelne Textzeile fasst nur 255 Zeichen.
-3. Flow in Power Automate: Auslöser „Wenn ein Element erstellt wird“ (SharePoint, diese Liste), Aktion „E-Mail senden
-   (V2)“ (Office 365 Outlook) an `Empfaenger`, Betreff `Title`, Text aus `Text`, `Dokument` und `Kalkulator`. Der
-   Flow kann nach `Art` verzweigen, wenn später weitere Ereignisse dazukommen.
-4. Die Liste dient zugleich als Protokoll der Benachrichtigungen; alte Einträge können bei Bedarf gelöscht werden.
+4. **Berechtigungen:** Listeneinstellungen → „Berechtigungen für diese Liste“ → „Berechtigungsvererbung beenden“ und
+   nur die Besitzer des Teams behalten. Sonst können alle Teammitglieder Einträge ändern oder löschen. Der Kalkulator
+   schreibt über die App-Berechtigung und ist davon nicht betroffen.
+5. **Flow** in Power Automate: Auslöser „Wenn ein Element erstellt wird“ (SharePoint, diese Liste), Aktion
+   **„E-Mail aus einem freigegebenen Postfach senden (V2)“** (Office 365 Outlook) an `Empfaenger`, Betreff `Title`,
+   Text aus `Text`, `Dokument` und `Kalkulator`. Der Flow kann nach `Art` verzweigen, wenn später weitere Ereignisse
+   dazukommen.
+6. **Unabhängig von einer Person:** Ein Flow, der über ein persönliches Konto läuft, bleibt stehen, sobald das Konto
+   deaktiviert wird oder sich das Kennwort ändert. Deshalb:
+   - Absender ist ein **freigegebenes Postfach** (Vorschlag `kalkulator@noesse.de`, legt die IT an), nicht das
+     Postfach von Dennis.
+   - Im Flow einen **zweiten Besitzer** eintragen (z. B. Olaf Schmidt oder die IT).
+   - Am besten laufen die Verbindungen (SharePoint, Outlook) über ein **Dienstkonto** statt über ein persönliches
+     Konto; ob es eines gibt bzw. geben soll, entscheidet die IT.
+7. Die Liste dient zugleich als Protokoll der Benachrichtigungen; alte Einträge können bei Bedarf gelöscht werden.
 
 **Einrichtung (IT):** Die App-Registrierung braucht auf der Website „Kundenprojekte“ (Kanalordner) und auf der
-Website der Liste **Sites.Selected mit der Rolle `write`** (Frage 15.5). Ohne Schreibrecht schlagen Ablage,
+Website der Liste (beides „Kundenprojekte“) **Sites.Selected mit der Rolle `write`** (Frage 15.5). Ohne Schreibrecht schlagen Ablage,
 Archivierung und Meldung fehl und werden im nächsten Takt wiederholt; Dateien bleiben bis dahin im Kalkulator.
 
-**Konfiguration:**
+**Konfiguration** (in `appsettings.json` im Repository; auf dem Server kann die IT einzelne Werte über
+Umgebungsvariablen überschreiben, z. B. `Benachrichtigung__KalkulatorAdresse`):
 
 | Schlüssel | Wert |
 |---|---|
-| `Benachrichtigung:Website` | Website der Liste, z. B. `https://noessedatentechnik.sharepoint.com/sites/Kundenprojekte`; leer = Meldungen nur ins Protokoll |
+| `Benachrichtigung:Website` | Website der Liste, eingetragen ist „Kundenprojekte“; leer = Meldungen nur ins Protokoll. Fehlt die Anmeldung an Microsoft Graph (`Vorlagen:SharePoint`, z. B. im Codespace), gehen die Meldungen ebenfalls nur ins Protokoll, mit dem Grund |
 | `Benachrichtigung:Liste` | Name der Liste, Standard „Kalkulator-Benachrichtigungen“ |
 | `Benachrichtigung:EmpfaengerVertrag` | feste Empfänger beim unterschriebenen Vertrag; der verantwortliche Vertrieb kommt dazu |
-| `Benachrichtigung:KalkulatorAdresse` | Adresse des Kalkulators für den Projektlink, z. B. `https://kalkulator.noesse.de`; leer = ohne Link |
+| `Benachrichtigung:KalkulatorAdresse` | Adresse des Kalkulators für den Projektlink, z. B. `https://kalkulator.noesse.de`; leer = ohne Link. Wird eingetragen, sobald die IT die Adresse des Pilotservers festlegt |
 | `Kundenablage:ArchivierungUm` | Uhrzeit der nächtlichen Archivierung, Standard `02:45`; leer = aus |
